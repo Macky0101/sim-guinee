@@ -22,27 +22,33 @@ const IntroScreens = () => {
         pages={[
           {
             backgroundColor: 'transparent',
+            image: <Image source={require('../../assets/images/logo.png')} style={styles.image} />,
+            title: 'Bienvenues !',
+            subtitle: 'sur le suivi et collecte des données',
+          },
+          {
+            backgroundColor: 'transparent',
             image: <Image source={require('../../assets/images/agriculture.png')} style={styles.image} />,
             title: 'Agriculture',
-            subtitle: 'test',
+            subtitle: "Enregistrer des informations essentielles sur les produits agricoles. Ces données sont cruciales pour analyser les tendances du marché, évaluer les besoins d'approvisionnement et améliorer les stratégies agricoles. ",
           },
           {
             backgroundColor: 'transparent',
             image: <Image source={require('../../assets/images/peche.png')} style={styles.image} />,
-            title: 'Peche',
-            subtitle: 'test',
+            title: 'Pêche',
+            subtitle: "Cette section vous permet de saisir des informations détaillées sur les produits de la pêche. Les données que vous entrez, telles que le prix par unité et les niveaux d'approvisionnement, sont essentielles pour comprendre les dynamiques du marché de la pêche",
           },
           {
             backgroundColor: 'transparent',
             image: <Image source={require('../../assets/images/elevage.png')} style={styles.image} />,
-            title: 'Bétail',
-            subtitle: 'test',
+            title: 'Élevage',
+            subtitle: "Dans cette section, vous collecterez des données importantes sur l'élevage, y compris les informations sur les quantités de produits, les prix de vente, et les principaux fournisseurs. Ces données sont essentielles pour suivre l'évolution des stocks et pour prendre des décisions éclairées sur la gestion des ressources d'élevage.",
           },
           {
             backgroundColor: 'transparent',
             image: <Image source={require('../../assets/images/stock-min.jpg')} style={styles.image} />,
             title: "Stocks d'intrants agricoles",
-            subtitle: 'test',
+            subtitle: "Cette section est dédiée à la collecte de données sur les stocks d'intrants agricoles. Ces informations sont cruciales pour garantir que les agriculteurs disposent des ressources nécessaires pour maximiser leur production. En documentant les niveaux de stock, les prix, et les conditions d'approvisionnement, vous aidez à éviter les pénuries et à maintenir la stabilité du marché.",
           },
         ]}
         DotComponent={({ selected }) => (

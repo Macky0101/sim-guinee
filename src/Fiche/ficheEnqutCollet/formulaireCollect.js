@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity,Modal } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRoute } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import FormCollect from '../../../services/serviceAgricultures/ficheCollect/serv
 import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
 import { Dropdown } from 'react-native-element-dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import Toast from 'react-native-toast-message';
 const FormCollecte = () => {
   const route = useRoute();
   const { id } = route.params;
@@ -68,7 +69,7 @@ const FormCollecte = () => {
           value: item.code_produit,
           image: item.image || 'https://via.placeholder.com/150',
         });
-        console.log('liste des produits',acc[category])
+        // console.log('liste des produits',acc[category])
         return acc;
       }, {});
       setGroupedProduits(grouped);
@@ -156,7 +157,7 @@ const FormCollecte = () => {
   const getCommune = async () => {
     try {
       const response = await FormConso.getCommune();
-      console.log('commune data response', response); // Log the full response
+      // console.log('commune data response', response); // Log the full response
       // console.log('commune data', response.data); // Log response.data
   
       if (!response || !response) {
@@ -168,7 +169,7 @@ const FormCollecte = () => {
         id: commune.id_commune,
         nom: commune.nom_commune ? commune.nom_commune.toLowerCase() : '',
       }));
-      console.log('commune data', communes);
+      // console.log('commune data', communes);
       setcommunes(communes);
     } catch (error) {
       console.error('Erreur lors de la récupération des communes:', error);
@@ -259,9 +260,19 @@ const FormCollecte = () => {
     try {
       setLoading(true);
       await FormCollect.postFormCollect(ficheData);
+      Toast.show({
+        type: 'success',
+        text1: 'Succès',
+        text2: 'Formulaire enregistré avec succès!',
+      });
       resetFields();
     } catch (error) {
       console.error('Erreur lors de la création de la fiche:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Une erreur est survenue. Veuillez réessayer.',
+      });
     } finally {
       setLoading(false);
     }
@@ -328,6 +339,20 @@ const FormCollecte = () => {
 
   return (
     <View style={styles.container}>
+
+      <Modal
+        transparent={true}
+        animationType="none"
+        visible={loading}
+        onRequestClose={() => {}}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.activityIndicatorWrapper}>
+            <ActivityIndicator size="large" color="#0000ff" />
+          </View>
+        </View>
+      </Modal>
+
       <KeyboardAwareScrollView contentContainerStyle={styles.inner}>
       <Text style={styles.sectionTitle}>Produit</Text>
       <Dropdown
@@ -434,7 +459,7 @@ const FormCollecte = () => {
 
 
         <Button mode="contained" onPress={postForm} style={styles.button}>
-          Envoyer
+        Enregistrer
         </Button>
       </KeyboardAwareScrollView>
     </View>
@@ -476,6 +501,19 @@ input: {
   },
   button: {
     marginTop: 20,
+  },
+  modalBackground: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  activityIndicatorWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

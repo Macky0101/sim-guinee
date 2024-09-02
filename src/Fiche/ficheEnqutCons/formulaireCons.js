@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   Alert,
+  Modal
 } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -16,6 +17,7 @@ import { Dropdown } from 'react-native-element-dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import * as DocumentPicker from 'expo-document-picker';
 import axios from 'axios';
+import Toast from 'react-native-toast-message';
 
 const FormCons = () => {
   const route = useRoute();
@@ -155,9 +157,8 @@ const FormCons = () => {
         });
   
         // console.log('FormData:', JSON.stringify(formData, null, 2));
-  
         const response = await axios.post(
-          'http://92.112.194.154:8000/api/enquetes/marches-prix/upload/document',
+          'https://cors-proxy.fringe.zone/http://92.112.194.154:8000/api/enquetes/marches-prix/upload/document',
           formData,
           {
             headers: {
@@ -165,6 +166,20 @@ const FormCons = () => {
             },
           }
         );
+        
+//         const response = await axios.post(
+//           // const SIMGUINEE_URL = 'https://cors-proxy.fringe.zone/http://92.112.194.154:8000/api/';
+// axios.defaults.headers.common['Content-Type'] = 'application/json',
+// axios.defaults.headers.common['x-requested-with'] = 'XMLHttpRequest',
+//           'https://cors-proxy.fringe.zone/http://92.112.194.154:8000/api/enquetes/marches-prix/upload/document',
+//           // 'http://92.112.194.154:8000/api/enquetes/marches-prix/upload/document',
+//           formData,
+//           {
+//             headers: {
+//               'Content-Type': 'multipart/form-data',
+//             },
+//           }
+//         );
   
         // console.log('Réponse du serveur:', JSON.stringify(response.data, null, 2));
   
@@ -204,8 +219,8 @@ const FormCons = () => {
       !prixFgKg ||
       !prixKgLitre ||
       !niveauApprovisionnement ||
-      !statut ||
-      !document 
+      !statut 
+      // !document 
     ) {
       Alert.alert(
         'Erreur',
@@ -233,14 +248,20 @@ const FormCons = () => {
     try {
       setLoading(true);
       await FormConso.postFormConso(ficheData);
-      Alert.alert('Succès', 'Formulaire soumis avec succès.');
+      Toast.show({
+        type: 'success',
+        text1: 'Succès',
+        text2: 'Formulaire soumis avec succès.',
+      });
+      // Alert.alert('Succès', 'Formulaire soumis avec succès.');
       resetFields();
     } catch (error) {
       console.error('Erreur lors de la soumission du formulaire:', error);
-      Alert.alert(
-        'Erreur',
-        'Impossible de soumettre le formulaire. Veuillez réessayer.'
-      );
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Impossible de soumettre le formulaire. Veuillez réessayer.',
+      });
     } finally {
       setLoading(false);
     }
@@ -303,9 +324,22 @@ const FormCons = () => {
 
   return (
     <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-      {loading && (
+        <Modal
+        transparent={true}
+        animationType="none"
+        visible={loading}
+        onRequestClose={() => {}}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.activityIndicatorWrapper}>
+            <ActivityIndicator size="large" color="#0000ff" />
+          </View>
+        </View>
+      </Modal>
+
+      {/* {loading && (
         <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />
-      )}
+      )} */}
 
       <Text style={styles.sectionTitle}>Produit</Text>
       <Dropdown
@@ -367,7 +401,7 @@ const FormCons = () => {
         )}
       />
 
-      <Text style={styles.sectionTitle}>Document</Text>
+      {/* <Text style={styles.sectionTitle}>Document</Text>
       <TouchableOpacity style={styles.uploadButton} onPress={uploadDocument}>
         <AntDesign name="cloudupload" size={24} color="#fff" />
         <Text style={styles.uploadButtonText}>Télécharger un document</Text>
@@ -376,7 +410,7 @@ const FormCons = () => {
         <Text style={styles.fileName}>
           Document téléchargé : {document.split('/').pop()}
         </Text>
-      )}
+      )} */}
 
       <TextInput
         label="Poids Unitaire"
@@ -449,6 +483,8 @@ const FormCons = () => {
       >
         Réinitialiser
       </Button>
+      <Toast />
+
     </KeyboardAwareScrollView>
   );
 };
@@ -515,16 +551,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   submitButton: {
-    paddingVertical: 10,
-    borderRadius: 5,
-    backgroundColor: '#28a745',
+    // paddingVertical: 10,
+    // borderRadius: 5,
+    // backgroundColor: '#28a745',
     marginBottom: 10,
   },
   resetButton: {
-    paddingVertical: 10,
-    borderRadius: 5,
-    borderColor: '#dc3545',
-    borderWidth: 1,
+    // paddingVertical: 10,
+    // borderRadius: 5,
+    // borderColor: '#dc3545',
+    // borderWidth: 1,
+  },
+  modalBackground: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  activityIndicatorWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

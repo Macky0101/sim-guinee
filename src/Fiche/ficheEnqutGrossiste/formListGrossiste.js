@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity,Alert } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity,Alert ,Modal} from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRoute } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import FormGrossiste from '../../../services/serviceAgricultures/ficheGrossiste/
 import { Dropdown } from 'react-native-element-dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
+import Toast from 'react-native-toast-message';
 
 const FormGrossistes = () => {
   const route = useRoute();
@@ -233,8 +234,18 @@ const FormGrossistes = () => {
     try {
       setLoading(true);
       await FormGrossiste.postFormGrossiste(ficheData);
+      Toast.show({
+        type: 'success',
+        text1: 'Succès',
+        text2: 'Formulaire soumis avec succès.',
+      });
       resetFields();
     } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Impossible de soumettre le formulaire. Veuillez réessayer.',
+      });
       console.error('Erreur lors de la création de la fiche:', error);
     } finally {
       setLoading(false);
@@ -275,9 +286,18 @@ const FormGrossistes = () => {
   return (
     <KeyboardAwareScrollView>
       <View style={styles.container}>
-      {loading && (
-        <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />
-      )}
+      <Modal
+        transparent={true}
+        animationType="none"
+        visible={loading}
+        onRequestClose={() => {}}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.activityIndicatorWrapper}>
+            <ActivityIndicator size="large" color="#0000ff" />
+          </View>
+        </View>
+      </Modal>
 
       <Text style={styles.sectionTitle}>Produit</Text>
       <Dropdown
@@ -448,6 +468,7 @@ const FormGrossistes = () => {
           Envoyer
         </Button>
       </View>
+      <Toast/>
     </KeyboardAwareScrollView>
   );
 };
@@ -499,6 +520,19 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 10,
+  },
+  modalBackground: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  activityIndicatorWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

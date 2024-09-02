@@ -21,7 +21,7 @@ const ListesConso = () => {
       const response = await FicheConsommationService.getListesConso();
       const filteredData = response.filter(collect => collect.enquete_relation.id === id);
       
-      console.log('listes conso', response);
+      // console.log('listes conso', response);
       setFilteredCollects(filteredData);
       // Mise à jour de l'état avec la réponse de l'API
     } catch (error) {
@@ -46,9 +46,7 @@ const ListesConso = () => {
           <CollectItem key={collect.id_fiche} collect={collect} />
         ))
       ) : (
-        <View style={styles.noDataContainer}>
-    <Text style={styles.noDataText}>Aucune collecte trouvée pour cette fiche.</Text>
-  </View>
+        <Text>Aucune collecte trouvée pour cette fiche.</Text>
       )}
     </View>
   );

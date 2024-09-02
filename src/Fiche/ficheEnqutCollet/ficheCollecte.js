@@ -46,9 +46,18 @@ const FicheCollecte = () => {
   
 
     useEffect(() => {
-        getFiche();
-        getMarches();
         fetchCollecteur();
+    }, []);
+
+    // Nouvel useEffect pour récupérer les marchés après avoir obtenu le collecteur
+    useEffect(() => {
+        if (collecteur) {
+            getMarches();
+        }
+    }, [collecteur]);
+
+    useEffect(() => {
+        getFiche();
     }, []);
 
     const fetchCollecteur = async () => {
@@ -56,6 +65,7 @@ const FicheCollecte = () => {
           const userInfoString = await AsyncStorage.getItem('userInfo');
           if (userInfoString) {
             const userInfo = JSON.parse(userInfoString);
+            console.log('info', userInfo);
             setCollecteur(userInfo.collecteur);
           }
         } catch (error) {
@@ -88,18 +98,25 @@ const FicheCollecte = () => {
     const getMarches = async () => {
         try {
             const response = await FicheCollect.getListeMarche();
-            // Filtrer les marchés en fonction du collecteur stocké localement
-            const filteredMarches = response.filter((marche) => marche.collecteur === collecteur);
+            // Assurez-vous que `collecteur` est bien défini et que `response` contient les marchés
+            console.log('Collecteur:', collecteur);
+            // console.log('Marchés:', response);
+    
+            // Filtrer les marchés en fonction du collecteur
+            const filteredMarches = response.filter((marche) => marche.id_collecteur === collecteur);
+    
             const formattedMarches = filteredMarches.map((marche) => ({
                 label: marche.nom_marche,
                 value: marche.id_marche.toString(),
             }));
-            // console.log('Marchés filtrés pour le collecteur:', filteredMarches);
+    
+            console.log('Marchés filtrés pour le collecteur:', filteredMarches);
             setMarches(formattedMarches);
         } catch (error) {
             console.error('Erreur lors de la récupération des marchés:', error);
         }
     };
+    
     
 
 
@@ -284,7 +301,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     headerText: {
-        fontSize: 18,
+        fontSize: 14,
         fontWeight: 'bold',
     },
     btnContenair: {

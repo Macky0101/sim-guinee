@@ -4,25 +4,17 @@ import Icon from 'react-native-vector-icons/Ionicons'; // Importation des icône
 import Animated, { Layout, FadeIn, FadeOut } from 'react-native-reanimated'; // Importation pour les animations
 import { useRoute } from '@react-navigation/native';
 import FicheCollect from '../../../services/serviceAgricultures/ficheCollect/serviceCollect';
-import NetInfo from '@react-native-community/netinfo';
 
 const ListesCollecte = () => {
   const route = useRoute();
-  const [isConnected, setIsConnected] = useState(true);
   const { id } = route.params;
   const [loading, setLoading] = useState(false);
   const [filteredCollects, setFilteredCollects] = useState([]);
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-        setIsConnected(state.isConnected);
-    });
 
-    return () => unsubscribe();
-}, []);
 
   useEffect(() => {
     getListeCollect();
-  }, [isConnected]);
+  }, []);
 
   const getListeCollect = async () => {
     setLoading(true);
@@ -65,16 +57,6 @@ const CollectItem = ({ collect }) => {
     setExpanded(!expanded);
   };
 
-  if (!isConnected) {
-    return (
-        <View style={styles.noConnectionContainer}>
-            <TouchableOpacity onPress={() => NetInfo.fetch().then(state => setIsConnected(state.isConnected))}>
-                <AntDesign name="reload1" size={40} />
-            </TouchableOpacity>
-            <Text style={styles.noConnectionText}>Connexion Internet perdue. Appuyez pour réessayer.</Text>
-        </View>
-    );
-}
   return (
     <TouchableOpacity onPress={toggleExpanded} style={styles.collectItem}>
       <View style={styles.header}>
