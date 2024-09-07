@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity,Modal } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity,Modal,Alert } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRoute } from '@react-navigation/native';
@@ -8,6 +8,9 @@ import FormConso from '../../../services/serviceAgricultures/ficheConsommation/s
 import { Dropdown } from 'react-native-element-dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
+
 const FormCollecte = () => {
   const route = useRoute();
   const { id } = route.params;
@@ -46,6 +49,55 @@ const FormCollecte = () => {
   const [groupedProduits, setGroupedProduits] = useState({});
   const [searchProduit, setSearchProduit] = useState('');
 
+  const [isConnected, setIsConnected] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
+    return () => unsubscribe();
+  }, []);
+
+
+  useEffect(() => {
+    const loadData = async () => {
+      const produitsLocaux = await loadDataFromStorage('produits');
+      const communesLocales = await loadDataFromStorage('communes');
+      const uniteMesuresLocales = await loadDataFromStorage('uniteMesures');
+      
+      if (produitsLocaux) setGroupedProduits(produitsLocaux);
+      if (communesLocales) setcommunes(communesLocales);
+      if (uniteMesuresLocales) setUniteMesures(uniteMesuresLocales);
+  
+      // Si les données ne sont pas présentes, on les charge depuis l'API
+      if (!produitsLocaux) fetchProduits();
+      if (!communesLocales) getCommune();
+      if (!uniteMesuresLocales) getUniteMesure();
+    };
+  
+    loadData();
+  }, []);
+
+  useEffect(() => {
+  if (!isConnected) {
+    loadDataFromStorage('produits');
+    loadDataFromStorage('communes');
+    loadDataFromStorage('uniteMesures');
+  } else {
+    fetchProduits();
+    getCommune();
+    getUniteMesure();
+  }
+}, [isConnected]);
+
+useEffect(() => {
+  if (isConnected) {
+    fetchProduits();
+    getCommune();
+    getUniteMesure();
+  }
+}, [isConnected]);
+
 
   useEffect(() => {
     // getProduit();
@@ -73,12 +125,13 @@ const FormCollecte = () => {
         return acc;
       }, {});
       setGroupedProduits(grouped);
+      await storeData('produits', grouped);
     } catch (error) {
       console.error('Erreur lors de la récupération des produits:', error);
-      Alert.alert(
-        'Erreur',
-        'Impossible de récupérer les produits. Veuillez réessayer plus tard.'
-      );
+      // Alert.alert(
+      //   'Erreur',
+      //   'Impossible de récupérer les produits. Veuillez réessayer plus tard.'
+      // );
     } finally {
       setLoading(false);
     }
@@ -127,10 +180,13 @@ const FormCollecte = () => {
         value: UniteMesure.id_unite.toString(), // Assurez-vous que la valeur est bien l'ID correct
       }));
       setUniteMesures(UniteMesures);
+      await storeData('uniteMesures', UniteMesures);
     } catch (error) {
       console.error('Erreur lors de la récupération des UniteMesure:', error);
     }
   };
+
+
 
   const renderUniteMesure = () => (
     <Dropdown
@@ -171,6 +227,7 @@ const FormCollecte = () => {
       }));
       // console.log('commune data', communes);
       setcommunes(communes);
+      await storeData('communes', communes);
     } catch (error) {
       console.error('Erreur lors de la récupération des communes:', error);
     }
@@ -234,6 +291,26 @@ const FormCollecte = () => {
       )}
     />
   );
+
+  const storeData = async (key, value) => {
+    try {
+      await AsyncStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des données:', error);
+    }
+  };
+  
+  const loadDataFromStorage = async (key) => {
+    try {
+      const jsonValue = await AsyncStorage.getItem(key);
+      return jsonValue != null ? JSON.parse(jsonValue) : null;
+    } catch (error) {
+      console.error('Erreur lors du chargement des données locales:', error);
+    }
+  };
+  
+
+
 
 
   const postForm = async () => {
