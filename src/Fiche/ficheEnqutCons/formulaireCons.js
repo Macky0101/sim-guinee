@@ -18,11 +18,15 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import * as DocumentPicker from 'expo-document-picker';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
+import { createTables, insertCollecte, } from '../../../database/requetteCons';
+
 
 const FormCons = () => {
   const route = useRoute();
-  const { id } = route.params;
-
+  const { id , num_fiche } = route.params;
+  const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
   // États pour gérer les valeurs du formulaire
   const [niveauApprovisionnement, setNiveauApprovisionnement] = useState('');
   const [statut, setStatut] = useState('');
@@ -49,11 +53,66 @@ const FormCons = () => {
   const [searchCommune, setSearchCommune] = useState('');
   const [searchUniteMesure, setSearchUniteMesure] = useState('');
 
+  const [isConnected, setIsConnected] = useState(true);
+
   useEffect(() => {
-    fetchProduits();
-    fetchCommunes();
-    fetchUniteMesures();
+    createTables(); // Créer la table lorsque le composant est monté
   }, []);
+
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
+    return () => unsubscribe();
+  }, []);
+  useEffect(() => {
+    const loadData = async () => {
+      const produitsLocaux = await loadDataFromStorage('produits');
+      // const communesLocales = await loadDataFromStorage('communes');
+      const uniteMesuresLocales = await loadDataFromStorage('uniteMesures');
+      
+      if (produitsLocaux) setGroupedProduits(produitsLocaux);
+      // if (communesLocales) setCommunes(communesLocales);
+      if (uniteMesuresLocales) setUniteMesures(uniteMesuresLocales);
+  
+      // Si les données ne sont pas présentes, on les charge depuis l'API
+      if (!produitsLocaux) fetchProduits();
+      // if (!communesLocales) fetchCommunes();
+      if (!uniteMesuresLocales) fetchUniteMesures();
+    };
+  
+    loadData();
+  }, []);
+  useEffect(() => {
+    if (!isConnected) {
+      loadDataFromStorage('produits');
+      // loadDataFromStorage('communes');
+      loadDataFromStorage('uniteMesures');
+    } else {
+      fetchProduits();
+      // fetchCommunes();
+      fetchUniteMesures();
+    }
+  }, [isConnected]);
+
+   /**
+   * Utilise un useEffect qui détecte le retour de la connexion et synchronise les données avec le serveur :
+   */
+  useEffect(() => {
+    if (isConnected) {
+      fetchProduits();
+      // fetchCommunes();
+      fetchUniteMesures();
+    }
+  }, [isConnected]);
+    
+  
+  // useEffect(() => {
+  //   fetchProduits();
+  //   fetchCommunes();
+  //   fetchUniteMesures();
+  // }, []);
 
   /** 
    * Fonction pour récupérer les produits depuis l'API
@@ -76,12 +135,13 @@ const FormCons = () => {
         return acc;
       }, {});
       setGroupedProduits(grouped);
+      await storeData('produits', grouped);
     } catch (error) {
       console.error('Erreur lors de la récupération des produits:', error);
-      Alert.alert(
-        'Erreur',
-        'Impossible de récupérer les produits. Veuillez réessayer plus tard.'
-      );
+      // Alert.alert(
+      //   'Erreur',
+      //   'Impossible de récupérer les produits. Veuillez réessayer plus tard.'
+      // );
     } finally {
       setLoading(false);
     }
@@ -90,22 +150,23 @@ const FormCons = () => {
   /**
    * Fonction pour récupérer les communes depuis l'API
    */
-  const fetchCommunes = async () => {
-    try {
-      const response = await FormConso.getCommune();
-      const communesData = response.map((commune) => ({
-        label: commune.nom_commune,
-        value: commune.id_commune,
-      }));
-      setCommunes(communesData);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des communes:', error);
-      Alert.alert(
-        'Erreur',
-        'Impossible de récupérer les communes. Veuillez réessayer plus tard.'
-      );
-    }
-  };
+  // const fetchCommunes = async () => {
+  //   try {
+  //     const response = await FormConso.getCommune();
+  //     const communesData = response.map((commune) => ({
+  //       label: commune.nom_commune,
+  //       value: commune.id_commune,
+  //     }));
+  //     setCommunes(communesData);
+  //     await storeData('communes', communesData);
+  //   } catch (error) {
+  //     console.error('Erreur lors de la récupération des communes:', error);
+  //     // Alert.alert(
+  //     //   'Erreur',
+  //     //   'Impossible de récupérer les communes. Veuillez réessayer plus tard.'
+  //     // );
+  //   }
+  // };
 
   /**
    * Fonction pour récupérer les unités de mesure depuis l'API
@@ -119,12 +180,13 @@ const FormCons = () => {
       }));
       // console.log(uniteMesuresData)
       setUniteMesures(uniteMesuresData);
+      await storeData('uniteMesures', uniteMesuresData);
     } catch (error) {
       console.error('Erreur lors de la récupération des unités de mesure:', error);
-      Alert.alert(
-        'Erreur',
-        'Impossible de récupérer les unités de mesure. Veuillez réessayer plus tard.'
-      );
+      // Alert.alert(
+      //   'Erreur',
+      //   'Impossible de récupérer les unités de mesure. Veuillez réessayer plus tard.'
+      // );
     }
   };
 
@@ -204,7 +266,28 @@ const FormCons = () => {
     }
   };
   
-  
+   /**
+   * Fonction pour sauvegarder les donnees
+   */
+   const storeData = async (key, value) => {
+    try {
+      await AsyncStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des données:', error);
+    }
+  };
+   /**
+   * Fonction pour récupérer les données stockées localement à partir de AsyncStorage :
+   */
+  const loadDataFromStorage = async (key) => {
+    try {
+      const jsonValue = await AsyncStorage.getItem(key);
+      return jsonValue != null ? JSON.parse(jsonValue) : null;
+    } catch (error) {
+      console.error('Erreur lors du chargement des données locales:', error);
+    }
+  };
+    
 
   /**
    * Fonction pour soumettre le formulaire
@@ -212,7 +295,6 @@ const FormCons = () => {
   const postForm = async () => {
     if (
       !produit ||
-      !commune ||
       !uniteMesure ||
       !poidsUnitaire ||
       !prixMesure ||
@@ -241,13 +323,30 @@ const FormCons = () => {
       observation,
       enquete: enquete, // Nombre attendu par l'API
       produit: produit.value, // Nombre attendu par l'API
+      num_fiche: numFiche 
     };
+     // Insérer les données dans la base de données
+     insertCollecte(
+      ficheData.unite,
+      ficheData.poids_unitaire,
+      ficheData.prix_mesure,
+      ficheData.prix_fg_kg,
+      ficheData.prix_kg_litre,
+      ficheData.niveau_approvisionement,
+      ficheData.statut,
+      ficheData.observation,
+      ficheData.enquete,
+      ficheData.produit,
+      ficheData.num_fiche
+    );
+    console.log('donne envoyer',ficheData);
+    Alert.alert('Succès', 'Les données ont été insérées dans la base de données.');
   
     console.log('ficheData', ficheData);
   
     try {
       setLoading(true);
-      await FormConso.postFormConso(ficheData);
+      // await FormConso.postFormConso(ficheData);
       Toast.show({
         type: 'success',
         text1: 'Succès',
@@ -299,8 +398,9 @@ const FormCons = () => {
       <Dropdown
         style={styles.dropdown}
         data={products.filter((product) =>
-          product.label.toLowerCase().includes(searchProduit.toLowerCase())
+          product.label && product.label.toLowerCase().includes(searchProduit.toLowerCase())
         )}
+        
         search
         searchPlaceholder="Rechercher un produit..."
         labelField="label"
@@ -363,12 +463,13 @@ const FormCons = () => {
 
       {renderProductsDropdown()}
 
-      <Text style={styles.sectionTitle}>Localité d'origine</Text>
+      {/* <Text style={styles.sectionTitle}>Localité d'origine</Text>
       <Dropdown
         style={styles.dropdown}
         data={communes.filter((item) =>
-          item.label.toLowerCase().includes(searchCommune.toLowerCase())
+          item.label && item.label.toLowerCase().includes(searchCommune.toLowerCase())
         )}
+        
         search
         searchPlaceholder="Rechercher une commune..."
         labelField="label"
@@ -380,14 +481,15 @@ const FormCons = () => {
         renderLeftIcon={() => (
           <AntDesign name="enviromento" size={20} color="black" style={styles.icon} />
         )}
-      />
+      /> */}
 
       <Text style={styles.sectionTitle}>Unité de mesure</Text>
       <Dropdown
         style={styles.dropdown}
         data={uniteMesures.filter((item) =>
-          item.label.toLowerCase().includes(searchUniteMesure.toLowerCase())
+          item.label && item.label.toLowerCase().includes(searchUniteMesure.toLowerCase())
         )}
+        
         search
         searchPlaceholder="Rechercher une unité..."
         labelField="label"

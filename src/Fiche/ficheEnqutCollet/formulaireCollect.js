@@ -10,10 +10,13 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import * as SQLite from 'expo-sqlite';
+import { createTables, insertCollecte,checkTableStructure } from '../../../database/db';
 
 const FormCollecte = () => {
   const route = useRoute();
-  const { id } = route.params;
+  const { id , num_fiche } = route.params;
+  const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
   const [unite, setUnite] = useState(0);
   const [poidsUnitaire, setPoidsUnitaire] = useState('');
   const [montantAchat, setMontantAchat] = useState('');
@@ -48,6 +51,11 @@ const FormCollecte = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [groupedProduits, setGroupedProduits] = useState({});
   const [searchProduit, setSearchProduit] = useState('');
+  
+  useEffect(() => {
+    createTables(); // Créer la table lorsque le composant est monté
+    checkTableStructure();
+  }, []);
 
   const [isConnected, setIsConnected] = useState(true);
 
@@ -99,13 +107,13 @@ useEffect(() => {
 }, [isConnected]);
 
 
-  useEffect(() => {
-    // getProduit();
-    getPrefecture();
-    getUniteMesure();
-    getCommune();
-    fetchProduits();
-  }, []);
+  // useEffect(() => {
+  //   // getProduit();
+  //   getPrefecture();
+  //   getUniteMesure();
+  //   getCommune();
+  //   fetchProduits();
+  // }, []);
 
   const fetchProduits = async () => {
     setLoading(true);
@@ -147,7 +155,8 @@ useEffect(() => {
         <Dropdown
           style={styles.dropdown}
           data={products.filter((product) =>
-            product.label.toLowerCase().includes(searchProduit.toLowerCase())
+          product.label && product.label.toLowerCase().includes(searchProduit.toLowerCase())
+
           )}
           search
           searchPlaceholder="Rechercher un produit..."
@@ -191,9 +200,8 @@ useEffect(() => {
   const renderUniteMesure = () => (
     <Dropdown
       style={styles.dropdown}
-      data={UniteMesures.filter(item =>
-        item.label.toLowerCase().includes(searchUniteMesure.toLowerCase())
-      )}
+      data={UniteMesures.filter(item => item.label?.toLowerCase().includes(searchUniteMesure.toLowerCase()))}
+
       labelField="label"
       valueField="value"
       placeholder="Sélectionnez une unite de mésure"
@@ -207,6 +215,7 @@ useEffect(() => {
       )}
     />
   );
+
   const [communes, setcommunes] = useState([]);
   const [commune, setCommune] = useState([]);
   const [searchCommune, setSearchCommune] = useState('');
@@ -237,9 +246,8 @@ useEffect(() => {
   const renderCommunes = () => (
     <Dropdown
       style={styles.dropdown}
-      data={communes.filter(item =>
-        item.nom.toLowerCase().includes(searchCommune.toLowerCase())
-      )}
+      data={communes.filter(item => item.nom && item.nom.toLowerCase().includes(searchCommune.toLowerCase()))}
+
       labelField="nom"
       valueField="id"
       placeholder="Sélectionnez une localité"
@@ -254,43 +262,6 @@ useEffect(() => {
     />
   );
 
-
-
-
-
-  const getPrefecture = async () => {
-    try {
-      const response = await FormCollect.getPrefecture();
-      const prefectures = response.map((prefecture) => ({
-        label: prefecture.nom_prefecture,
-        value: prefecture.id_prefecture.toString(),
-      }));
-      // console.log('liste des prefectures', response);
-      // console.log('liste des prefecturessss', prefectures);
-      setPrefectures(prefectures);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des préfectures:', error);
-    }
-  };
-  const renderPrefectures = () => (
-    <Dropdown
-      style={styles.input}
-      data={prefectures.filter(item =>
-        item.label.toLowerCase().includes(searchPrefecture.toLowerCase())
-      )}
-      labelField="label"
-      valueField="value"
-      placeholder="Sélectionnez une localité"
-      value={prefecture}
-      onChange={item => setPrefecture(item.value)}
-      search
-      searchPlaceholder="Rechercher..."
-      onSearch={setSearchPrefecture}
-      renderLeftIcon={() => (
-        <AntDesign style={styles.icon} color="black" name="Safety" size={20} />
-      )}
-    />
-  );
 
   const storeData = async (key, value) => {
     try {
@@ -310,9 +281,6 @@ useEffect(() => {
   };
   
 
-
-
-
   const postForm = async () => {
     const ficheData = {
       unite: parseInt(UniteMesure, 10), 
@@ -331,12 +299,34 @@ useEffect(() => {
       enquete: parseInt(enquete, 10) || 0,
       produit: produit.value, 
       localite_origine: parseInt(commune.id, 10) || 0, // Conversion de la localité d'origine
+      num_fiche: numFiche 
     };
+     // Insérer les données dans la base de données
+     insertCollecte(
+      ficheData.unite,
+      ficheData.poids_unitaire,
+      ficheData.montant_achat,
+      ficheData.prix_fg_kg,
+      ficheData.distance_origine_marche,
+      ficheData.montant_transport,
+      ficheData.etat_route,
+      ficheData.quantite_collecte,
+      ficheData.client_principal,
+      ficheData.fournisseur_principal,
+      ficheData.niveau_approvisionement,
+      ficheData.statut,
+      ficheData.observation,
+      ficheData.enquete,
+      ficheData.produit,
+      ficheData.localite_origine,
+      ficheData.num_fiche
+    );
     console.log('donne envoyer',ficheData);
+    Alert.alert('Succès', 'Les données ont été insérées dans la base de données.');
   
     try {
       setLoading(true);
-      await FormCollect.postFormCollect(ficheData);
+      // await FormCollect.postFormCollect(ficheData);
       Toast.show({
         type: 'success',
         text1: 'Succès',
@@ -452,7 +442,6 @@ useEffect(() => {
       />
 
       {renderProductsDropdown()}
-       {/* {renderPrefectures()} */}
        {renderCommunes()}
       {renderUniteMesure()}
         <TextInput

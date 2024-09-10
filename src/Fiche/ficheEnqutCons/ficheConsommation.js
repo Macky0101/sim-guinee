@@ -98,7 +98,7 @@ const FicheConsommation = () => {
             const response = await FicheCollect.getListeMarche();
             // Assurez-vous que `collecteur` est bien défini et que `response` contient les marchés
             console.log('Collecteur:', collecteur);
-            console.log('Marchés:', response);
+            // console.log('Marchés:', response);
     
             // Filtrer les marchés en fonction du collecteur
             const filteredMarches = response.filter((marche) => marche.id_collecteur === collecteur);
@@ -214,7 +214,7 @@ const FicheConsommation = () => {
                                         <Text style={{ color: '#fff' }}>Voir les données</Text>
                                     </View>
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => navigation.navigate('FormCons', { id: fiche.id })}>
+                                <TouchableOpacity onPress={() => navigation.navigate('FormCons', { id: fiche.id ,num_fiche: fiche.num_fiche})}>
                                     <View style={styles.btn1}>
                                         <Text style={{ color: '#fff' }}>Nouvelle donnée </Text>
                                     </View>

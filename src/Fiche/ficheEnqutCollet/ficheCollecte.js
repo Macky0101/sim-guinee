@@ -79,7 +79,7 @@ const FicheCollecte = () => {
             const response = await FicheCollect.getFicheCollect();
             setFiches(response);
             setFilteredFiches(response);
-            // console.log('fiche', response);
+            console.log('fiche enquet', response);
               // Sauvegarde des données localement
         await AsyncStorage.setItem('ficheCollectData', JSON.stringify(response));
         } catch (error) {
@@ -211,12 +211,12 @@ const FicheCollecte = () => {
 
                         {/* Buttons */}
                         <View style={styles.btnContainer}>
-                            <TouchableOpacity onPress={() => navigation.navigate('ListesCollecte', { id: fiche.id })}>
+                            <TouchableOpacity onPress={() => navigation.navigate('ListesCollecte', { num_fiche: fiche.num_fiche})}>
                                 <View style={styles.btn}>
                                     <Text style={{ color: '#fff' }}>Voir les données</Text>
                                 </View>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => navigation.navigate('Formulaire', { id: fiche.id })}>
+                            <TouchableOpacity onPress={() => navigation.navigate('Formulaire', { id: fiche.id ,num_fiche: fiche.num_fiche})}>
                                 <View style={styles.btn1}>
                                     <Text style={{ color: '#fff' }}>Nouvelle donnée </Text>
                                 </View>

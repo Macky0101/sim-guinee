@@ -8,6 +8,7 @@ import FicheConsommationService from '../../../services/serviceAgricultures/fich
 const ListesConso = () => {
   const route = useRoute();
   const { id } = route.params;
+  const { num_fiche } = route.params;
   const [loading, setLoading] = useState(false);
   const [filteredCollects, setFilteredCollects] = useState([]);
 

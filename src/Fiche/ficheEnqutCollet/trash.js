@@ -1,35 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity,Alert ,Modal} from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity,Modal,Alert } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRoute } from '@react-navigation/native';
-import FormGrossiste from '../../../services/serviceAgricultures/ficheGrossiste/formGrossiste';
+import FormCollect from '../../../services/serviceAgricultures/ficheCollect/serviceFormulaire';
+import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
 import { Dropdown } from 'react-native-element-dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import * as SQLite from 'expo-sqlite';
+import { createTables, insertCollecte,checkTableStructure ,updateCollecte} from '../../../database/db';
 
-const FormGrossistes = () => {
+const FormCollecte = () => {
   const route = useRoute();
-  const { id } = route.params;
- 
-  const [uniteStock, setUniteStock] = useState(0);
-  const [poidsMoyenUniteStock, setPoidsMoyenUniteStock] = useState('');
-  const [poidsStock, setPoidsStock] = useState('');
-  const [uniteAchat, setUniteAchat] = useState('');
-  const [nombreUniteAchat, setNombreUniteAchat] = useState('');
-  const [poidsMoyenUniteAchat, setPoidsMoyenUniteAchat] = useState('');
-  const [poidsTotalAchat, setPoidsTotalAchat] = useState('');
-  const [localiteAchat, setLocaliteAchat] = useState('');
-  const [fournisseurAchat, setFournisseurAchat] = useState('');
-  const [uniteVente, setUniteVente] = useState('');
-  const [nombreUniteVente, setNombreUniteVente] = useState('');
-  const [poidsMoyenUniteVente, setPoidsMoyenUniteVente] = useState('');
-  const [poidsTotalUniteVente, setPoidsTotalUniteVente] = useState('');
-  const [prixUnitaireVente, setPrixUnitaireVente] = useState('');
-  const [clientVente, setClientVente] = useState('');
+  const { id , num_fiche } = route.params;
+  const { collecte } = route.params;
+  const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
+  const [unite, setUnite] = useState(0);
+  const [poidsUnitaire, setPoidsUnitaire] = useState('');
+  const [montantAchat, setMontantAchat] = useState('');
+  const [prixFgKg, setPrixFgKg] = useState('');
+  const [distanceOrigineMarche, setDistanceOrigineMarche] = useState('');
+  const [montantTransport, setMontantTransport] = useState('');
+  const [etatRoute, setEtatRoute] = useState('');
+  const [quantiteCollecte, setQuantiteCollecte] = useState('');
   const [clientPrincipal, setClientPrincipal] = useState('');
   const [fournisseurPrincipal, setFournisseurPrincipal] = useState('');
   const [niveauApprovisionement, setNiveauApprovisionement] = useState('');
@@ -43,18 +39,24 @@ const FormGrossistes = () => {
   const [search, setSearch] = useState('');
   // const [selectedCategory, setSelectedCategory] = useState(null);
   // const [groupedProduits, setGroupedProduits] = useState({});
-  const [communes, setcommunes] = useState([]);
-  const [commune, setCommune] = useState([]);
-  const [searchCommune, setSearchCommune] = useState('');
+  const [prefectures, setPrefectures] = useState([]);
+  const [prefecture, setPrefecture] = useState([]);
+  const [searchPrefecture, setSearchPrefecture] = useState('');
 
   const [UniteMesures, setUniteMesures] = useState([]);
   const [UniteMesure, setUniteMesure] = useState([]);
   const [searchUniteMesure, setSearchUniteMesure] = useState('');
 
+  
   const [produit, setProduit] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [groupedProduits, setGroupedProduits] = useState({});
   const [searchProduit, setSearchProduit] = useState('');
+  
+  useEffect(() => {
+    createTables(); // Créer la table lorsque le composant est monté
+    // checkTableStructure();
+  }, []);
 
   const [isConnected, setIsConnected] = useState(true);
 
@@ -64,7 +66,6 @@ const FormGrossistes = () => {
     });
     return () => unsubscribe();
   }, []);
-
 
 
   useEffect(() => {
@@ -106,10 +107,12 @@ useEffect(() => {
   }
 }, [isConnected]);
 
+
   // useEffect(() => {
   //   // getProduit();
-  //   getCommune();
+  //   getPrefecture();
   //   getUniteMesure();
+  //   getCommune();
   //   fetchProduits();
   // }, []);
 
@@ -127,7 +130,7 @@ useEffect(() => {
           value: item.code_produit,
           image: item.image || 'https://via.placeholder.com/150',
         });
-        // console.log(acc[category])
+        // console.log('liste des produits',acc[category])
         return acc;
       }, {});
       setGroupedProduits(grouped);
@@ -142,7 +145,6 @@ useEffect(() => {
       setLoading(false);
     }
   };
-
     /**
    * Rendu du dropdown des produits
    */
@@ -154,7 +156,8 @@ useEffect(() => {
         <Dropdown
           style={styles.dropdown}
           data={products.filter((product) =>
-            product.label.toLowerCase().includes(searchProduit.toLowerCase())
+          product.label && product.label.toLowerCase().includes(searchProduit.toLowerCase())
+
           )}
           search
           searchPlaceholder="Rechercher un produit..."
@@ -177,9 +180,11 @@ useEffect(() => {
       );
     };
 
+
+
   const getUniteMesure = async () => {
     try {
-      const response = await FormGrossiste.getUniteMesure();
+      const response = await FormCollect.getUniteMesure();
       const UniteMesures = response.map((UniteMesure) => ({
         label: UniteMesure.nom_unite,
         value: UniteMesure.id_unite.toString(), // Assurez-vous que la valeur est bien l'ID correct
@@ -191,19 +196,20 @@ useEffect(() => {
     }
   };
 
+
+
   const renderUniteMesure = () => (
     <Dropdown
       style={styles.dropdown}
-      data={UniteMesures.filter(item =>
-        item.label.toLowerCase().includes(searchUniteMesure.toLowerCase())
-      )}
+      data={UniteMesures.filter(item => item.label?.toLowerCase().includes(searchUniteMesure.toLowerCase()))}
+
       labelField="label"
       valueField="value"
       placeholder="Sélectionnez une unite de mésure"
       value={UniteMesure}
       onChange={item => setUniteMesure(item.value)}
       search
-      searchPlaceholder="Rechercher une unité de mésure..."
+      searchPlaceholder="Rechercher une unite de mésure..."
       onSearch={setSearchUniteMesure}
       renderLeftIcon={() => (
         <AntDesign style={styles.icon} color="black" name="barschart" size={20} />
@@ -211,9 +217,12 @@ useEffect(() => {
     />
   );
 
+  const [communes, setcommunes] = useState([]);
+  const [commune, setCommune] = useState([]);
+  const [searchCommune, setSearchCommune] = useState('');
   const getCommune = async () => {
     try {
-      const response = await FormGrossiste.getCommune();
+      const response = await FormConso.getCommune();
       // console.log('commune data response', response); // Log the full response
       // console.log('commune data', response.data); // Log response.data
   
@@ -238,23 +247,59 @@ useEffect(() => {
   const renderCommunes = () => (
     <Dropdown
       style={styles.dropdown}
-      data={communes.filter(item =>
-        item.nom.toLowerCase().includes(searchCommune.toLowerCase())
-      )}
+      data={communes.filter(item => item.nom && item.nom.toLowerCase().includes(searchCommune.toLowerCase()))}
+
       labelField="nom"
       valueField="id"
-      placeholder="Sélectionnez une commune"
+      placeholder="Sélectionnez une localité"
       value={commune.id}
       onChange={item => setCommune(item)}
       search
-      searchPlaceholder="Rechercher une commune..."
+      searchPlaceholder="Rechercher..."
       onSearch={setSearchCommune}
       renderLeftIcon={() => (
-        <AntDesign name="enviromento" size={20} color="black" style={styles.icon} />
+        <AntDesign style={styles.icon} color="black" name="enviromento" size={20} />
       )}
     />
   );
 
+
+
+
+
+  const getPrefecture = async () => {
+    try {
+      const response = await FormCollect.getPrefecture();
+      const prefectures = response.map((prefecture) => ({
+        label: prefecture.nom_prefecture,
+        value: prefecture.id_prefecture.toString(),
+      }));
+      // console.log('liste des prefectures', response);
+      // console.log('liste des prefecturessss', prefectures);
+      setPrefectures(prefectures);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des préfectures:', error);
+    }
+  };
+  const renderPrefectures = () => (
+    <Dropdown
+      style={styles.input}
+      data={prefectures.filter(item =>
+        item.label.toLowerCase().includes(searchPrefecture.toLowerCase())
+      )}
+      labelField="label"
+      valueField="value"
+      placeholder="Sélectionnez une localité"
+      value={prefecture}
+      onChange={item => setPrefecture(item.value)}
+      search
+      searchPlaceholder="Rechercher..."
+      onSearch={setSearchPrefecture}
+      renderLeftIcon={() => (
+        <AntDesign style={styles.icon} color="black" name="Safety" size={20} />
+      )}
+    />
+  );
 
   const storeData = async (key, value) => {
     try {
@@ -272,91 +317,217 @@ useEffect(() => {
       console.error('Erreur lors du chargement des données locales:', error);
     }
   };
+  
+// Pré-remplissage des champs avec les données de la collecte
+useEffect(() => {
+  if (collecte) {
+    setQuantiteCollecte(collecte.quantite_collecte.toString());
+    setMontantAchat(collecte.montant_achat.toString());
+    setClientPrincipal(collecte.client_principal);
+    setFournisseurPrincipal(collecte.fournisseur_principal);
+    setDistanceOrigineMarche(collecte.distance_origine_marche.toString());
+    setNiveauApprovisionement(collecte.niveau_approvisionement);
+    setStatut(collecte.statut);
+    setObservation(collecte.observation);
+    setEnquete(collecte.enquete);
+    setProduit(collecte.produit ? { value: collecte.produit } : null);
+    setLocaliteOrigine(collecte.localite_origine ? { id: collecte.localite_origine } : null);
+  }
+}, [collecte]);
+
+
+// Fonction pour gérer la mise à jour
+ const handleUpdate = async () => {
+    if (!id) return; // Ensure ID exists for update
+
+    try {
+      await updateCollecte(
+        id,
+        parseInt(UniteMesure, 10),
+        parseFloat(poidsUnitaire) || 0,
+        parseFloat(montantAchat) || 0,
+        parseFloat(prixFgKg) || 0,
+        parseFloat(distanceOrigineMarche) || 0,
+        parseFloat(montantTransport) || 0,
+        etatRoute || '',
+        parseFloat(quantiteCollecte) || 0,
+        clientPrincipal || '',
+        fournisseurPrincipal || '',
+        niveauApprovisionement || '',
+        statut || '',
+        observation || '',
+        parseInt(enquete, 10) || 0,
+        produit?.value || '',
+        parseInt(localiteOrigine?.id, 10) || 0,
+        numFiche
+      );
+      Toast.show({
+        type: 'success',
+        text1: 'Succès',
+        text2: 'Collecte mise à jour avec succès!',
+      });
+      navigation.goBack();
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors de la mise à jour.');
+    }
+  };
+
 
 
   const postForm = async () => {
     const ficheData = {
-      unite_stock: parseInt(UniteMesure, 10), 
-      poids_moyen_unite_stock: parseFloat(poidsMoyenUniteStock) || 0,
-      poids_stock: parseFloat(poidsStock) || 0,
-      unite_achat: uniteAchat || '',
-      nombre_unite_achat: parseFloat(nombreUniteAchat) || 0,
-      poids_moyen_unite_achat: parseFloat(poidsMoyenUniteAchat) || 0,
-      poids_total_achat: parseFloat(poidsTotalAchat) || 0,
-      localite_achat: localiteAchat || '',
-      fournisseur_achat: fournisseurAchat || '',
-      unite_vente: uniteVente || '',
-      nombre_unite_vente: parseFloat(nombreUniteVente) || 0,
-      poids_moyen_unite_vente: parseFloat(poidsMoyenUniteVente) || 0,
-      poids_total_unite_vente: parseFloat(poidsTotalUniteVente) || 0,
-      prix_unitaire_vente: parseFloat(prixUnitaireVente) || 0,
-      client_vente: parseFloat(clientVente) || 0,
+      unite: parseInt(UniteMesure, 10),
+      poids_unitaire: parseFloat(poidsUnitaire) || 0,
+      montant_achat: parseFloat(montantAchat) || 0,
+      prix_fg_kg: parseFloat(prixFgKg) || 0,
+      distance_origine_marche: parseFloat(distanceOrigineMarche) || 0,
+      montant_transport: parseFloat(montantTransport) || 0,
+      etat_route: etatRoute || '',
+      quantite_collecte: parseFloat(quantiteCollecte) || 0,
       client_principal: clientPrincipal || '',
       fournisseur_principal: fournisseurPrincipal || '',
-      niveau_approvisionement: niveauApprovisionement || '',
+      niveau_approvisionnement: niveauApprovisionement || '',
       statut: statut || '',
       observation: observation || '',
       enquete: parseInt(enquete, 10) || 0,
       produit: produit.value, 
-      localite_origine: parseInt(commune.id, 10) || 0,
+      localite_origine: parseInt(commune.id, 10) || 0, 
+      num_fiche: numFiche
     };
-    console.log('Données envoyées:', JSON.stringify(ficheData, null, 2));
-
+  
     try {
       setLoading(true);
-      await FormGrossiste.postFormGrossiste(ficheData);
-      Toast.show({
-        type: 'success',
-        text1: 'Succès',
-        text2: 'Formulaire soumis avec succès.',
-      });
+      if (id) {
+        // Si l'ID existe, on fait une mise à jour
+        await updateCollecte(
+          id,
+          ficheData.unite,
+          ficheData.poids_unitaire,
+          ficheData.montant_achat,
+          ficheData.prix_fg_kg,
+          ficheData.distance_origine_marche,
+          ficheData.montant_transport,
+          ficheData.etat_route,
+          ficheData.quantite_collecte,
+          ficheData.client_principal,
+          ficheData.fournisseur_principal,
+          ficheData.niveau_approvisionnement,
+          ficheData.statut,
+          ficheData.observation,
+          ficheData.enquete,
+          ficheData.produit,
+          ficheData.localite_origine,
+          ficheData.num_fiche
+        );
+        Toast.show({
+          type: 'success',
+          text1: 'Succès',
+          text2: 'Collecte mise à jour avec succès!',
+        });
+      } else {
+        // Sinon, on crée une nouvelle collecte
+        insertCollecte(
+          ficheData.unite,
+          ficheData.poids_unitaire,
+          ficheData.montant_achat,
+          ficheData.prix_fg_kg,
+          ficheData.distance_origine_marche,
+          ficheData.montant_transport,
+          ficheData.etat_route,
+          ficheData.quantite_collecte,
+          ficheData.client_principal,
+          ficheData.fournisseur_principal,
+          ficheData.niveau_approvisionnement,
+          ficheData.statut,
+          ficheData.observation,
+          ficheData.enquete,
+          ficheData.produit,
+          ficheData.localite_origine,
+          ficheData.num_fiche
+        );
+        Toast.show({
+          type: 'success',
+          text1: 'Succès',
+          text2: 'Formulaire enregistré avec succès!',
+        });
+      }
       resetFields();
     } catch (error) {
+      console.error('Erreur lors de la soumission du formulaire:', error);
       Toast.show({
         type: 'error',
         text1: 'Erreur',
-        text2: 'Impossible de soumettre le formulaire. Veuillez réessayer.',
+        text2: 'Une erreur est survenue. Veuillez réessayer.',
       });
-      console.error('Erreur lors de la création de la fiche:', error);
     } finally {
       setLoading(false);
     }
   };
   
+  
+
   const resetFields = () => {
-    setUniteStock(0);
-    setPoidsMoyenUniteStock(0);
-    setPoidsStock(0);
-    setUniteAchat('');
-    setNombreUniteAchat(0);
-    setPoidsMoyenUniteAchat(0);
-    setPoidsTotalAchat(0);
-    setLocaliteAchat('');
-    setFournisseurAchat('');
-    setUniteVente('');
-    setNombreUniteVente(0);
-    setPoidsMoyenUniteVente(0);
-    setPoidsTotalUniteVente(0);
-    setPrixUnitaireVente(0);
-    setClientVente(0);
+    setUnite(0);
+    setPoidsUnitaire(0);
+    setMontantAchat(0);
+    setPrixFgKg(0);
+    setDistanceOrigineMarche(0);
+    setMontantTransport(0);
+    setEtatRoute('');
+    setQuantiteCollecte(0);
     setClientPrincipal('');
     setFournisseurPrincipal('');
     setNiveauApprovisionement('');
     setStatut('');
     setObservation('');
-    setEnquete(parseInt(id, 10) || 0);
+    setEnquete(parseInt(id, 10));
     setProduit(null);
     setLocaliteOrigine('');
+    setSearch('');
+    setSelectedCategory(null);
   };
+
+
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
     setProduit(null); // Reset selected product when category changes
   };
- 
+
+  const renderProducts = () => {
+    if (!selectedCategory) return null;
+
+    const products = groupedProduits[selectedCategory];
+
+    return (
+      <Dropdown
+        style={styles.input}
+        data={products.filter(product => product.label.toLowerCase().includes(search.toLowerCase()))}
+        labelField="label"
+        valueField="value"
+        placeholder="Sélectionnez un produit"
+        value={produit}
+        onChange={item => setProduit(item)}
+        search
+        searchPlaceholder="Rechercher..."
+        onSearch={setSearch}
+        renderLeftIcon={() => (
+          <AntDesign style={styles.icon} color="black" name="Safety" size={20} />
+        )}
+        renderItem={(item) => (
+          <View style={styles.itemContainer}>
+            <Image source={{ uri: item.image }} style={styles.image} />
+            <Text>{item.label}</Text>
+          </View>
+        )}
+      />
+    );
+  };
+
 
   return (
-    <KeyboardAwareScrollView>
-      <View style={styles.container}>
+    <View style={styles.container}>
+
       <Modal
         transparent={true}
         animationType="none"
@@ -370,6 +541,7 @@ useEffect(() => {
         </View>
       </Modal>
 
+      <KeyboardAwareScrollView contentContainerStyle={styles.inner}>
       <Text style={styles.sectionTitle}>Produit</Text>
       <Dropdown
         style={styles.dropdown}
@@ -391,177 +563,109 @@ useEffect(() => {
       />
 
       {renderProductsDropdown()}
-     
-        <Text style={styles.categoryHeader}>Localité d'origine</Text>
-        {renderCommunes()}
-        <Text style={styles.categoryHeader}>Unité de mesure</Text>
-        {renderUniteMesure()}
-
-
+       {/* {renderPrefectures()} */}
+       {renderCommunes()}
+      {renderUniteMesure()}
         <TextInput
-          label="Poids moyen par unité de stock"
-          value={poidsMoyenUniteStock.toString()}
-          onChangeText={setPoidsMoyenUniteStock}
-          style={styles.input}
+          label="Poids Unitaire"
+          value={poidsUnitaire.toString()}
+          onChangeText={text => setPoidsUnitaire(parseFloat(text))}
           keyboardType="numeric"
+          style={styles.input}
         />
         <TextInput
-          label="Poids total du stock"
-          value={poidsStock.toString()}
-          onChangeText={setPoidsStock}
-          style={styles.input}
+          label="Montant Achat"
+          value={montantAchat.toString()}
+          onChangeText={text => setMontantAchat(parseFloat(text))}
           keyboardType="numeric"
-        />
-        <TextInput
-          label="Unité d'achat"
-          value={uniteAchat}
-          onChangeText={setUniteAchat}
           style={styles.input}
         />
         <TextInput
-          label="Nombre d'unités d'achat"
-          value={nombreUniteAchat.toString()}
-          onChangeText={setNombreUniteAchat}
-          style={styles.input}
+          label="Prix FG/kg"
+          value={prixFgKg.toString()}
+          onChangeText={text => setPrixFgKg(parseFloat(text))}
           keyboardType="numeric"
+          style={styles.input}
         />
         <TextInput
-          label="Poids moyen par unité d'achat"
-          value={poidsMoyenUniteAchat.toString()}
-          onChangeText={setPoidsMoyenUniteAchat}
-          style={styles.input}
+          label="Distance Origine Marché"
+          value={distanceOrigineMarche.toString()}
+          onChangeText={text => setDistanceOrigineMarche(parseFloat(text))}
           keyboardType="numeric"
+          style={styles.input}
         />
         <TextInput
-          label="Poids total d'achat"
-          value={poidsTotalAchat.toString()}
-          onChangeText={setPoidsTotalAchat}
-          style={styles.input}
+          label="Montant Transport"
+          value={montantTransport.toString()}
+          onChangeText={text => setMontantTransport(parseFloat(text))}
           keyboardType="numeric"
-        />
-        <TextInput
-          label="Localité d'achat"
-          value={localiteAchat}
-          onChangeText={setLocaliteAchat}
           style={styles.input}
         />
         <TextInput
-          label="Fournisseur d'achat"
-          value={fournisseurAchat}
-          onChangeText={setFournisseurAchat}
+          label="État Route"
+          value={etatRoute}
+          onChangeText={text => setEtatRoute(text)}
           style={styles.input}
         />
         <TextInput
-          label="Unité de vente"
-          value={uniteVente}
-          onChangeText={setUniteVente}
-          style={styles.input}
-        />
-        <TextInput
-          label="Nombre d'unités de vente"
-          value={nombreUniteVente.toString()}
-          onChangeText={setNombreUniteVente}
-          style={styles.input}
+          label="Quantité Collectée"
+          value={quantiteCollecte.toString()}
+          onChangeText={text => setQuantiteCollecte(parseFloat(text))}
           keyboardType="numeric"
-        />
-        <TextInput
-          label="Poids moyen par unité de vente"
-          value={poidsMoyenUniteVente.toString()}
-          onChangeText={setPoidsMoyenUniteVente}
           style={styles.input}
-          keyboardType="numeric"
         />
         <TextInput
-          label="Poids total des unités de vente"
-          value={poidsTotalUniteVente.toString()}
-          onChangeText={setPoidsTotalUniteVente}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-        <TextInput
-          label="Prix unitaire de vente"
-          value={prixUnitaireVente.toString()}
-          onChangeText={setPrixUnitaireVente}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-        <TextInput
-          label="Nombre de clients vente"
-          value={clientVente.toString()}
-          onChangeText={setClientVente}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-        <TextInput
-          label="Client principal"
+          label="Client Principal"
           value={clientPrincipal}
-          onChangeText={setClientPrincipal}
+          onChangeText={text => setClientPrincipal(text)}
           style={styles.input}
         />
         <TextInput
-          label="Fournisseur principal"
+          label="Fournisseur Principal"
           value={fournisseurPrincipal}
-          onChangeText={setFournisseurPrincipal}
+          onChangeText={text => setFournisseurPrincipal(text)}
           style={styles.input}
         />
         <TextInput
-          label="Niveau d'approvisionnement"
+          label="Niveau Approvisionnement"
           value={niveauApprovisionement}
-          onChangeText={setNiveauApprovisionement}
+          onChangeText={text => setNiveauApprovisionement(text)}
           style={styles.input}
         />
         <TextInput
           label="Statut"
           value={statut}
-          onChangeText={setStatut}
+          onChangeText={text => setStatut(text)}
           style={styles.input}
         />
         <TextInput
           label="Observation"
           value={observation}
-          onChangeText={setObservation}
+          onChangeText={text => setObservation(text)}
           style={styles.input}
         />
-        {/* <TextInput
-          label="Enquête"
-          value={enquete.toString()}
-          onChangeText={setEnquete}
-          style={styles.input}
-          keyboardType="numeric"
-        /> */}
-       
-        <Button
-          mode="contained"
-          onPress={postForm}
-          style={styles.button}
-          loading={loading}
-        >
-          Envoyer
-        </Button>
-      </View>
-      <Toast/>
-    </KeyboardAwareScrollView>
+
+
+<Button mode="contained" onPress={postForm} style={styles.button}>
+  {id ? 'Modifier' : 'Enregistrer'}
+</Button>
+
+      </KeyboardAwareScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-  },
-  input: {
-    marginBottom: 15,
-    backgroundColor: '#fff',
-  },
-  button: {
-    marginTop: 20,
-  },
-  itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flex: 1,
     padding: 10,
-    backgroundColor: '#f9f9f9',
-    marginBottom: 5,
-    borderRadius: 5,
+  },
+  inner: {
+    padding: 10,
+  },
+input: {
+  marginBottom: 15,
+  backgroundColor: '#fff',
   },
   dropdown: {
     marginBottom: 10,
@@ -572,25 +676,20 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: 'center',
   },
-  selectedItem: {
-    backgroundColor: '#cce5ff',
-  },
-  image: {
-    width: 50,
-    height: 50,
-    marginRight: 10,
-  },
-  itemLabel: {
-    fontSize: 16,
-  },
-  categoryHeader: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    marginTop: 20,
-  },
   icon: {
     marginRight: 10,
+  },
+  itemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  image: {
+    width: 40,
+    height: 40,
+    marginRight: 10,
+  },
+  button: {
+    marginTop: 20,
   },
   modalBackground: {
     flex: 1,
@@ -607,4 +706,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FormGrossistes;
+export default FormCollecte;
