@@ -209,7 +209,7 @@ const FicheConsommation = () => {
     
                             {/* Buttons */}
                             <View style={styles.btnContainer}>
-                                <TouchableOpacity onPress={() => navigation.navigate('ListesConso', { id: fiche.id })}>
+                                <TouchableOpacity onPress={() => navigation.navigate('ListesConso', { num_fiche: fiche.num_fiche})}>
                                     <View style={styles.btn}>
                                         <Text style={{ color: '#fff' }}>Voir les données</Text>
                                     </View>

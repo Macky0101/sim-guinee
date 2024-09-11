@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView,Alert } from 'react-native';
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import styles from './styles'
 import { Appbar, Divider, Avatar, Card, Button, IconButton } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import AuthService from '../../services/authService';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const Home = () => {
     const navigation = useNavigation();
     const [userName, setUserName] = useState('');
@@ -29,8 +29,11 @@ const Home = () => {
     const navigateToCollecte = () => {
         navigation.navigate('Collecte')
     };
-    const logins = () => {
-        navigation.navigate('Login')
+    // const logins = () => {
+    //     navigation.navigate('Login')
+    // };
+    const Setting = () => {
+        navigation.navigate('Setting')
     };
     
    const navigationToFicheCollect= async ()=>{
@@ -270,7 +273,8 @@ const Home = () => {
                     </TouchableOpacity>
                 </View> */}
                 <TouchableOpacity
-                    onPress={logins}
+                    // onPress={logins}
+                    onPress={Setting}
                 >
                     <View style={styles.supportSection}>
                         <FontAwesome name="cog" size={40} color="#004d40" />

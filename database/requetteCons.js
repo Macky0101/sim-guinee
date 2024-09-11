@@ -78,3 +78,31 @@ export const insertCollecte = async (
         console.log('Error during data insertion: ', error);
     }
 };
+
+// Fonction pour récupérer les données de la table consommation
+export const getConsommationData = async () => {
+    try {
+      console.log('Fetching data from table "consommation"...');
+      const db = await openDatabase();
+      const results = await db.getAllAsync('SELECT * FROM consommation');
+      console.log('consommation data', results)
+      return results;
+    } catch (error) {
+      console.log('Error fetching data: ', error);
+      throw error;
+    }
+  };
+  
+  export const deleteConsommation = async (id) => {
+    try {
+      console.log('Deleting data from table "consommation"...');
+      const db = await openDatabase();
+      await db.runAsync(
+        `DELETE FROM consommation WHERE id = ?`,
+        [id]
+      );
+      console.log('Data deleted successfully.');
+    } catch (error) {
+      console.log('Error during data deletion: ', error);
+    }
+  };

@@ -57,7 +57,7 @@ const FicheConsommationService = {
           'Authorization': `Bearer ${userToken}`,
         },
       });
-      console.log('Liste des données:', response.data);
+      // console.log('Liste des données:', response.data);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des données:', error.response ? error.response.data : error.message);

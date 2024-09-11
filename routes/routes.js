@@ -17,6 +17,7 @@ import ListesConso from '../src/Fiche/ficheEnqutCons/listeCons';
 import FicheGrossiste from '../src/Fiche/ficheEnqutGrossiste/ficheGrossiste';
 import ListesGrossistesCollect from '../src/Fiche/ficheEnqutGrossiste/listeGrossiste';
 import FormGrossistes from '../src/Fiche/ficheEnqutGrossiste/formListGrossiste';
+import Setting from '../src/parametre/setting';
 
 const Stack = createStackNavigator();
 
@@ -119,6 +120,12 @@ const Routes = () => {
           name="FormGrossistes"
           component={FormGrossistes}
           options={{ title: 'listes des collectes' }}
+        />
+          <Stack.Screen
+          name="Setting"
+          component={Setting}
+          options={{ headerShown: false }}
+          // options={{ title: 'listes des collectes' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

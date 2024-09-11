@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, Text, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { getCollecteData, getData, deleteCollecte , updateCollecte } from '../../../database/db';
 import { Searchbar, FAB, Dialog, Button } from 'react-native-paper'; // Importer Dialog et Button
@@ -106,8 +106,13 @@ const ListesCollecte = () => {
   };
 
   if (loading) {
-    return <Text>Chargement...</Text>;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
   }
+
 
   return (
     <View style={styles.container}>
@@ -135,17 +140,17 @@ const ListesCollecte = () => {
                   <Image source={{ uri: produitInfo.image }} style={styles.produitImage} />
                   <View style={styles.infoContainer}>
                     <Text style={styles.produitLabel}>{produitInfo.label}</Text>
-                    <Text>Unité : {uniteInfo}</Text>
-                    <Text>Localité : {localiteInfo}</Text>
-                    <Text>Quantité : {collecte.quantite_collecte}</Text>
-                    <Text>Montant : {collecte.montant_achat} FG</Text>
-                    <Text>Client Principal: {collecte.client_principal}</Text>
-                    <Text>Fournisseur Principal: {collecte.fournisseur_principal}</Text>
-                    <Text>Distance à l'Origine du Marché: {collecte.distance_origine_marche} km</Text>
-                    <Text>Niveau d'Approvisionnement: {collecte.niveau_approvisionement}</Text>
-                    <Text>Statut: {collecte.statut}</Text>
-                    <Text>prix fg kg: {collecte.prix_fg_kg}</Text>
-                    <Text>Observation: {collecte.observation}</Text>
+                    <Text>Unité :<Text style={styles.label}> {uniteInfo}</Text></Text>
+                    <Text>Localité : <Text style={styles.label}>{localiteInfo}</Text></Text>
+                    <Text>Quantité : <Text style={styles.label}>{collecte.quantite_collecte}</Text></Text>
+                    <Text>Montant : <Text style={styles.label}>{collecte.montant_achat}</Text> FG</Text>
+                    <Text>Client Principal: <Text style={styles.label}>{collecte.client_principal}</Text></Text>
+                    <Text>Fournisseur Principal: <Text style={styles.label}>{collecte.fournisseur_principal}</Text></Text>
+                    <Text>Distance à l'Origine du Marché: <Text style={styles.label}>{collecte.distance_origine_marche}</Text> km</Text>
+                    <Text>Niveau d'Approvisionnement: <Text style={styles.label}>{collecte.niveau_approvisionement}</Text></Text>
+                    <Text>Statut: <Text style={styles.label}>{collecte.statut}</Text></Text>
+                    <Text>prix fg kg: <Text style={styles.label}>{collecte.prix_fg_kg}</Text></Text>
+                    <Text>Observation: <Text style={styles.label}>{collecte.observation}</Text></Text>
                   </View>
                 </>
               )}
@@ -180,6 +185,11 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   card: {
     flexDirection: 'column',
     backgroundColor: '#f9f9f9',
@@ -193,7 +203,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   searchbar: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   produitImage: {
     width: '100%',
@@ -219,6 +229,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: 50,
   },
+  label:{
+    fontWeight:'600',
+    color:'#009C57'
+  }
 });
 
 export default ListesCollecte;
