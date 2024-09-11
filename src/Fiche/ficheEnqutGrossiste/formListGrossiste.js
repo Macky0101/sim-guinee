@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity,Alert ,Modal} from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity, Alert, Modal } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRoute } from '@react-navigation/native';
@@ -10,11 +10,13 @@ import FormConso from '../../../services/serviceAgricultures/ficheConsommation/s
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import { createTables, insertgrossistes } from '../../../database/requeteGros';
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 
 const FormGrossistes = () => {
   const route = useRoute();
-  const { id } = route.params;
- 
+  const { id, num_fiche } = route.params;
+  const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
   const [uniteStock, setUniteStock] = useState(0);
   const [poidsMoyenUniteStock, setPoidsMoyenUniteStock] = useState('');
   const [poidsStock, setPoidsStock] = useState('');
@@ -59,6 +61,12 @@ const FormGrossistes = () => {
   const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
+    // recreateCollecteTable();
+    createTables(); // Créer la table lorsque le composant est monté
+    // checkTableStructure();
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsConnected(state.isConnected);
     });
@@ -72,39 +80,39 @@ const FormGrossistes = () => {
       const produitsLocaux = await loadDataFromStorage('produits');
       const communesLocales = await loadDataFromStorage('communes');
       const uniteMesuresLocales = await loadDataFromStorage('uniteMesures');
-      
+
       if (produitsLocaux) setGroupedProduits(produitsLocaux);
       if (communesLocales) setcommunes(communesLocales);
       if (uniteMesuresLocales) setUniteMesures(uniteMesuresLocales);
-  
+
       // Si les données ne sont pas présentes, on les charge depuis l'API
       if (!produitsLocaux) fetchProduits();
       if (!communesLocales) getCommune();
       if (!uniteMesuresLocales) getUniteMesure();
     };
-  
+
     loadData();
   }, []);
 
   useEffect(() => {
-  if (!isConnected) {
-    loadDataFromStorage('produits');
-    loadDataFromStorage('communes');
-    loadDataFromStorage('uniteMesures');
-  } else {
-    fetchProduits();
-    getCommune();
-    getUniteMesure();
-  }
-}, [isConnected]);
+    if (!isConnected) {
+      loadDataFromStorage('produits');
+      loadDataFromStorage('communes');
+      loadDataFromStorage('uniteMesures');
+    } else {
+      fetchProduits();
+      getCommune();
+      getUniteMesure();
+    }
+  }, [isConnected]);
 
-useEffect(() => {
-  if (isConnected) {
-    fetchProduits();
-    getCommune();
-    getUniteMesure();
-  }
-}, [isConnected]);
+  useEffect(() => {
+    if (isConnected) {
+      fetchProduits();
+      getCommune();
+      getUniteMesure();
+    }
+  }, [isConnected]);
 
   // useEffect(() => {
   //   // getProduit();
@@ -143,39 +151,39 @@ useEffect(() => {
     }
   };
 
-    /**
-   * Rendu du dropdown des produits
-   */
-    const renderProductsDropdown = () => {
-      if (!selectedCategory) return null;
-      const products = groupedProduits[selectedCategory] || [];
-  
-      return (
-        <Dropdown
-          style={styles.dropdown}
-          data={products.filter((product) =>
-            product.label.toLowerCase().includes(searchProduit.toLowerCase())
-          )}
-          search
-          searchPlaceholder="Rechercher un produit..."
-          labelField="label"
-          valueField="value"
-          placeholder="Sélectionnez un produit"
-          value={produit}
-          onChange={(item) => setProduit(item)}
-          onChangeText={(text) => setSearchProduit(text)}
-          renderLeftIcon={() => (
-            <AntDesign name="shoppingcart" size={20} color="black" style={styles.icon} />
-          )}
-          renderItem={(item) => (
-            <View style={styles.itemContainer}>
-              <Image source={{ uri: item.image }} style={styles.image} />
-              <Text>{item.label}</Text>
-            </View>
-          )}
-        />
-      );
-    };
+  /**
+ * Rendu du dropdown des produits
+ */
+  const renderProductsDropdown = () => {
+    if (!selectedCategory) return null;
+    const products = groupedProduits[selectedCategory] || [];
+
+    return (
+      <Dropdown
+        style={styles.dropdown}
+        data={products.filter((product) =>
+          product.label.toLowerCase().includes(searchProduit.toLowerCase())
+        )}
+        search
+        searchPlaceholder="Rechercher un produit..."
+        labelField="label"
+        valueField="value"
+        placeholder="Sélectionnez un produit"
+        value={produit}
+        onChange={(item) => setProduit(item)}
+        onChangeText={(text) => setSearchProduit(text)}
+        renderLeftIcon={() => (
+          <AntDesign name="shoppingcart" size={20} color="black" style={styles.icon} />
+        )}
+        renderItem={(item) => (
+          <View style={styles.itemContainer}>
+            <Image source={{ uri: item.image }} style={styles.image} />
+            <Text>{item.label}</Text>
+          </View>
+        )}
+      />
+    );
+  };
 
   const getUniteMesure = async () => {
     try {
@@ -216,12 +224,12 @@ useEffect(() => {
       const response = await FormGrossiste.getCommune();
       // console.log('commune data response', response); // Log the full response
       // console.log('commune data', response.data); // Log response.data
-  
+
       if (!response || !response) {
         console.error('No data found in the response');
         return;
       }
-      const data = response ;
+      const data = response;
       const communes = data.map(commune => ({
         id: commune.id_commune,
         nom: commune.nom_commune ? commune.nom_commune.toLowerCase() : '',
@@ -233,7 +241,7 @@ useEffect(() => {
       console.error('Erreur lors de la récupération des communes:', error);
     }
   };
-  
+
 
   const renderCommunes = () => (
     <Dropdown
@@ -263,7 +271,7 @@ useEffect(() => {
       console.error('Erreur lors de la sauvegarde des données:', error);
     }
   };
-  
+
   const loadDataFromStorage = async (key) => {
     try {
       const jsonValue = await AsyncStorage.getItem(key);
@@ -276,7 +284,7 @@ useEffect(() => {
 
   const postForm = async () => {
     const ficheData = {
-      unite_stock: parseInt(UniteMesure, 10), 
+      unite_stock: parseInt(UniteMesure, 10),
       poids_moyen_unite_stock: parseFloat(poidsMoyenUniteStock) || 0,
       poids_stock: parseFloat(poidsStock) || 0,
       unite_achat: uniteAchat || '',
@@ -297,14 +305,44 @@ useEffect(() => {
       statut: statut || '',
       observation: observation || '',
       enquete: parseInt(enquete, 10) || 0,
-      produit: produit.value, 
+      produit: produit.value,
       localite_origine: parseInt(commune.id, 10) || 0,
+      num_fiche: numFiche
     };
     console.log('Données envoyées:', JSON.stringify(ficheData, null, 2));
+    // Insérer les données dans la base de données
+    insertgrossistes(
+      ficheData.unite_stock,
+      ficheData.poids_moyen_unite_stock,
+      ficheData.poids_stock,
+      ficheData.unite_achat,
+      ficheData.nombre_unite_achat,
+      ficheData.poids_moyen_unite_achat,
+      ficheData.poids_total_achat,
+      ficheData.localite_achat,
+      ficheData.fournisseur_achat,
+      ficheData.unite_vente,
+      ficheData.nombre_unite_vente,
+      ficheData.poids_moyen_unite_vente,
+      ficheData.poids_total_unite_vente,
+      ficheData.prix_unitaire_vente,
+      ficheData.client_vente,
+      ficheData.client_principal,
+      ficheData.fournisseur_principal,
+      ficheData.niveau_approvisionement,
+      ficheData.statut,
+      ficheData.observation,
+      ficheData.enquete,
+      ficheData.produit,
+      ficheData.localite_origine,
+      ficheData.num_fiche
+    );
+    console.log('donne envoyer', JSON.stringify(ficheData, null, 2));
+    Alert.alert('Succès', 'Les données ont été insérées dans la base de données.');
 
     try {
       setLoading(true);
-      await FormGrossiste.postFormGrossiste(ficheData);
+      // await FormGrossiste.postFormGrossiste(ficheData);
       Toast.show({
         type: 'success',
         text1: 'Succès',
@@ -322,7 +360,7 @@ useEffect(() => {
       setLoading(false);
     }
   };
-  
+
   const resetFields = () => {
     setUniteStock(0);
     setPoidsMoyenUniteStock(0);
@@ -352,46 +390,56 @@ useEffect(() => {
     setSelectedCategory(category);
     setProduit(null); // Reset selected product when category changes
   };
- 
+  const niveauApprovisionementOptions = [
+    { label: 'Haut', value: 'Haut' },
+    { label: 'Moyen', value: 'Moyen' },
+    { label: 'Faible', value: 'Faible' },
+  ];
+
+  const statutOptions = [
+    { label: 'En cours', value: 'En cours' },
+    { label: 'Terminé', value: 'Terminé' },
+    { label: 'Annulé', value: 'Annulé' },
+  ];
 
   return (
     <KeyboardAwareScrollView>
       <View style={styles.container}>
-      <Modal
-        transparent={true}
-        animationType="none"
-        visible={loading}
-        onRequestClose={() => {}}
-      >
-        <View style={styles.modalBackground}>
-          <View style={styles.activityIndicatorWrapper}>
-            <ActivityIndicator size="large" color="#0000ff" />
+        <Modal
+          transparent={true}
+          animationType="none"
+          visible={loading}
+          onRequestClose={() => { }}
+        >
+          <View style={styles.modalBackground}>
+            <View style={styles.activityIndicatorWrapper}>
+              <ActivityIndicator size="large" color="#0000ff" />
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      <Text style={styles.sectionTitle}>Produit</Text>
-      <Dropdown
-        style={styles.dropdown}
-        data={Object.keys(groupedProduits).map((category) => ({
-          label: category,
-          value: category,
-        }))}
-        search
-        searchPlaceholder="Rechercher une catégorie..."
-        labelField="label"
-        valueField="value"
-        placeholder="Sélectionnez une catégorie"
-        value={selectedCategory}
-        onChange={(item) => handleCategoryChange(item.value)}
-        onChangeText={(text) => setSearchProduit(text)}
-        renderLeftIcon={() => (
-          <AntDesign name="appstore-o" size={20} color="black" style={styles.icon} />
-        )}
-      />
+        <Text style={styles.sectionTitle}>Produit</Text>
+        <Dropdown
+          style={styles.dropdown}
+          data={Object.keys(groupedProduits).map((category) => ({
+            label: category,
+            value: category,
+          }))}
+          search
+          searchPlaceholder="Rechercher une catégorie..."
+          labelField="label"
+          valueField="value"
+          placeholder="Sélectionnez une catégorie"
+          value={selectedCategory}
+          onChange={(item) => handleCategoryChange(item.value)}
+          onChangeText={(text) => setSearchProduit(text)}
+          renderLeftIcon={() => (
+            <AntDesign name="appstore-o" size={20} color="black" style={styles.icon} />
+          )}
+        />
 
-      {renderProductsDropdown()}
-     
+        {renderProductsDropdown()}
+
         <Text style={styles.categoryHeader}>Localité d'origine</Text>
         {renderCommunes()}
         <Text style={styles.categoryHeader}>Unité de mesure</Text>
@@ -504,17 +552,42 @@ useEffect(() => {
           onChangeText={setFournisseurPrincipal}
           style={styles.input}
         />
-        <TextInput
+        <Dropdown
+          style={styles.dropdown}
+          data={niveauApprovisionementOptions}
+          labelField="label"
+          valueField="value"
+          placeholder="Niveau d'approvisionnement"
+          value={niveauApprovisionement}
+          onChange={item => setNiveauApprovisionement(item.value)}
+          renderLeftIcon={() => (
+            <AntDesign name="barschart" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
+          )}
+        />
+        {/* <TextInput
           label="Niveau d'approvisionnement"
           value={niveauApprovisionement}
           onChangeText={setNiveauApprovisionement}
           style={styles.input}
-        />
-        <TextInput
+        /> */}
+        {/* <TextInput
           label="Statut"
           value={statut}
           onChangeText={setStatut}
           style={styles.input}
+        /> */}
+
+        <Dropdown
+          style={styles.dropdown}
+          data={statutOptions}
+          labelField="label"
+          valueField="value"
+          placeholder="Sélectionnez le statut"
+          value={statut}
+          onChange={item => setStatut(item.value)}
+          renderLeftIcon={() => (
+            <MaterialIcons name="info" size={20} color="black" style={styles.icon} />  // Utilise MaterialIcons pour le statut
+          )}
         />
         <TextInput
           label="Observation"
@@ -529,17 +602,17 @@ useEffect(() => {
           style={styles.input}
           keyboardType="numeric"
         /> */}
-       
+
         <Button
           mode="contained"
           onPress={postForm}
           style={styles.button}
           loading={loading}
         >
-          Envoyer
+          Enregistrer
         </Button>
       </View>
-      <Toast/>
+      <Toast />
     </KeyboardAwareScrollView>
   );
 };

@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { getCollecteData, getData, deleteCollecte , updateCollecte } from '../../../database/db';
-import { Searchbar, FAB, Dialog, Button } from 'react-native-paper'; // Importer Dialog et Button
+import { Searchbar, FAB, Dialog, Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import FormCollect from '../../../services/serviceAgricultures/ficheCollect/serviceFormulaire';
+import { Ionicons } from '@expo/vector-icons'; 
+
 const ListesCollecte = () => {
   const route = useRoute();
   const { num_fiche } = route.params;
@@ -13,10 +16,14 @@ const ListesCollecte = () => {
   const [communes, setCommunes] = useState([]);
   const [uniteMesures, setUniteMesures] = useState([]);
   const [collectes, setCollectes] = useState([]);
+  const [expandedCollecte, setExpandedCollecte] = useState(null); 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCollecte, setSelectedCollecte] = useState(null); // Etat pour la collecte sélectionnée
-  const [dialogVisible, setDialogVisible] = useState(false); // Etat pour la visibilité du dialogue de confirmation
+  const [selectedCollecte, setSelectedCollecte] = useState(null); 
+  const [dialogVisible, setDialogVisible] = useState(false); 
+  const [uploadProgress, setUploadProgress] = useState(0); // État pour suivre le pourcentage d'envoi
+const [isUploading, setIsUploading] = useState(false);   // État pour suivre si l'envoi est en cours
 
+  
   useEffect(() => {
     const loadProduits = async () => {
       const produitsData = await getData('produits');
@@ -49,6 +56,7 @@ const ListesCollecte = () => {
           (collecte) => collecte.num_fiche === num_fiche
         );
         setCollectes(filteredCollectes);
+        console.log('Collectes', filteredCollectes)
         setLoading(false);
       } catch (error) {
         console.error('Erreur lors de la récupération des collectes:', error);
@@ -84,11 +92,7 @@ const ListesCollecte = () => {
     return produitInfo && produitInfo.label.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  // const handlePress = (collecte) => {
-  //   Alert.alert('ID de la collecte', `ID: ${collecte.id}`);
-  // };
   const handlePress = (collecte) => {
-    console.log('Navigating to FormCollecte with params:', collecte);
     navigation.navigate('Formulaire', { collecte });
   };
 
@@ -104,6 +108,77 @@ const ListesCollecte = () => {
       setDialogVisible(false);
     }
   };
+  const postForm = async () => {
+    try {
+      setIsUploading(true);
+    setUploadProgress(0); // Reset the progress bar
+    let allSent = true;
+    const totalCollectes = collectes.length; // Nombre total de collectes
+
+    for (let i = 0; i < totalCollectes; i++) {
+      const collecte = collectes[i];
+        const ficheData = {
+          unite: collecte.unite, 
+          poids_unitaire: parseFloat(collecte.poids_unitaire),
+          montant_achat: parseFloat(collecte.montant_achat),
+          prix_fg_kg: parseFloat(collecte.prix_fg_kg) || 0,
+          distance_origine_marche: parseFloat(collecte.distance_origine_marche) || 0,
+          montant_transport: parseFloat(collecte.montant_transport) || 0,
+          etat_route: collecte.etat_route || '',
+          quantite_collecte: parseFloat(collecte.quantite_collecte) || 0,
+          client_principal: collecte.client_principal || '',
+          fournisseur_principal: collecte.fournisseur_principal || '',
+          niveau_approvisionement: collecte.niveau_approvisionement || '',
+          statut: collecte.statut || '',
+          observation: collecte.observation || '',
+          enquete: parseInt(collecte.enquete, 10) || 0,
+          produit: collecte.produit, 
+          localite_origine: parseInt(collecte.localite_origine, 10) || 0,
+        };
+  
+        try {
+          await FormCollect.postFormCollect(ficheData);  // Envoi de la collecte
+          console.log(`Enregistrement ${collecte.id} envoyé avec succès.`);
+          console.log('Fiche envoyée', ficheData);
+  
+          // Suppression locale après envoi réussi
+          await deleteCollecte(collecte.id);
+          console.log('suppression locale', collecte.id);
+          setCollectes((prevCollectes) => prevCollectes.filter((c) => c.id !== collecte.id));
+           // Mise à jour de la progression
+        const newProgress = Math.round(((i + 1) / totalCollectes) * 100);
+        setUploadProgress(newProgress);
+
+        } catch (error) {
+          console.error(`Erreur lors de l'envoi de l'enregistrement ${collecte.id}:`, error);
+          Alert.alert(
+            'Erreur',
+            `Impossible d'envoyer l'enregistrement "${getProduitInfo(collecte.produit)?.label}". Veuillez vérifier votre connexion et réessayer.`
+          );
+          allSent = false;
+          break;
+        }
+      }
+  
+      if (allSent) {
+        Alert.alert('Succès', 'Tous les enregistrements ont été envoyés avec succès.');
+      } else {
+        Alert.alert(
+          'Envoi interrompu',
+          'L\'envoi a été interrompu en raison d\'une erreur. Les enregistrements non envoyés sont conservés.'
+        );
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'envoi des données:", error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi des enregistrements.');
+    } finally {
+      setLoading(false);
+      setIsUploading(false); // Arrêter le suivi d'envoi après la fin
+      setUploadProgress(0); // Réinitialiser la progression
+    }
+  };
+  
+  
 
   if (loading) {
     return (
@@ -113,6 +188,9 @@ const ListesCollecte = () => {
     );
   }
 
+  const toggleExpand = (collecteId) => {
+    setExpandedCollecte(expandedCollecte === collecteId ? null : collecteId);
+  };
 
   return (
     <View style={styles.container}>
@@ -122,6 +200,16 @@ const ListesCollecte = () => {
         value={searchQuery}
         style={styles.searchbar}
       />
+    {isUploading && (
+  <View style={styles.progressContainer}>
+    <Text style={styles.progressText}>Envoi en cours : {uploadProgress}%</Text>
+    <View style={styles.progressBar}>
+      <View style={[styles.progress, { width: `${uploadProgress}%` }]} />
+    </View>
+  </View>
+)}
+
+
       <ScrollView>
         {filteredCollectes.map((collecte, index) => {
           const produitInfo = getProduitInfo(collecte.produit);
@@ -132,15 +220,30 @@ const ListesCollecte = () => {
             <TouchableOpacity
               key={index}
               style={styles.card}
-              onPress={() => handlePress(collecte)} // Détection du clic
-              onLongPress={() => handleLongPress(collecte)} // Détection du long clic
+              // onPress={() => handlePress(collecte)} 
+              onPress={() => toggleExpand(collecte.id)}
+              onLongPress={() => handleLongPress(collecte)} 
             >
               {produitInfo && (
                 <>
+                    <View style={styles.infoContainer}>
+
                   <Image source={{ uri: produitInfo.image }} style={styles.produitImage} />
-                  <View style={styles.infoContainer}>
                     <Text style={styles.produitLabel}>{produitInfo.label}</Text>
-                    <Text>Unité :<Text style={styles.label}> {uniteInfo}</Text></Text>
+
+
+                    <View style={styles.chevronContainer}>
+                      <Text>Unité de Stock :<Text style={styles.label}> {getUniteInfo(collecte.unite)}</Text></Text>
+                      <Ionicons
+                        name={expandedCollecte === collecte.id ? "chevron-up-outline" : "chevron-down-outline"}
+                        size={24}
+                        color="black"
+                        style={styles.chevronIcon}
+                      />
+                    </View>
+
+                    {expandedCollecte === collecte.id && (
+                      <>
                     <Text>Localité : <Text style={styles.label}>{localiteInfo}</Text></Text>
                     <Text>Quantité : <Text style={styles.label}>{collecte.quantite_collecte}</Text></Text>
                     <Text>Montant : <Text style={styles.label}>{collecte.montant_achat}</Text> FG</Text>
@@ -148,10 +251,14 @@ const ListesCollecte = () => {
                     <Text>Fournisseur Principal: <Text style={styles.label}>{collecte.fournisseur_principal}</Text></Text>
                     <Text>Distance à l'Origine du Marché: <Text style={styles.label}>{collecte.distance_origine_marche}</Text> km</Text>
                     <Text>Niveau d'Approvisionnement: <Text style={styles.label}>{collecte.niveau_approvisionement}</Text></Text>
+                    <Text>Etat Route: <Text style={styles.label}>{collecte.etat_route}</Text></Text>
                     <Text>Statut: <Text style={styles.label}>{collecte.statut}</Text></Text>
-                    <Text>prix fg kg: <Text style={styles.label}>{collecte.prix_fg_kg}</Text></Text>
-                    <Text>Observation: <Text style={styles.label}>{collecte.observation}</Text></Text>
+                    <Text>prix fg kg: <Text style={styles.label}>{collecte.prix_fg_kg}</Text> FG</Text>
+                      </>
+                    )}
+                  
                   </View>
+                    
                 </>
               )}
             </TouchableOpacity>
@@ -159,16 +266,15 @@ const ListesCollecte = () => {
         })}
       </ScrollView>
       <FAB
-        style={[styles.fab, { backgroundColor: filteredCollectes.length > 0 ? '#006951' : '#d3d3d3' }]} // Couleur change selon la disponibilité des données
+        style={[styles.fab, { backgroundColor: filteredCollectes.length > 0 ? '#006951' : '#d3d3d3' }]}
         icon="send"
-        onPress={() => console.log('Données envoyées')}
+        onPress={filteredCollectes.length > 0 ? postForm : null}
+        disabled={filteredCollectes.length === 0}
       />
-
-      {/* Modal de confirmation de suppression */}
       <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-        <Dialog.Title>Confirmer la suppression</Dialog.Title>
+        <Dialog.Title>Supprimer la collecte</Dialog.Title>
         <Dialog.Content>
-          <Text>Êtes-vous sûr de vouloir supprimer cet enregistrement ?</Text>
+          <Text>Voulez-vous vraiment supprimer cette collecte ?</Text>
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
@@ -185,11 +291,6 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   card: {
     flexDirection: 'column',
     backgroundColor: '#f9f9f9',
@@ -201,6 +302,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   searchbar: {
     marginBottom: 14,
@@ -221,6 +327,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 8,
+    marginTop: 8,
+  },
+  chevronContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  chevronIcon: {
+    paddingLeft: 8,
   },
   fab: {
     position: 'absolute',
@@ -229,10 +344,47 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: 50,
   },
-  label:{
-    fontWeight:'600',
-    color:'#009C57'
-  }
+  label: {
+    fontWeight: '600',
+    color: '#009C57'
+  },
+  modalBackground: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  activityIndicatorWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressContainer: {
+    marginVertical: 10,
+    alignItems: 'center',
+  },
+  progressText: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  progressBar: {
+    width: '100%',
+    height: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  progress: {
+    height: '100%',
+    backgroundColor: '#4caf50',
+  },
 });
 
 export default ListesCollecte;

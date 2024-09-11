@@ -21,7 +21,7 @@ import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { createTables, insertCollecte, } from '../../../database/requetteCons';
-
+import {  FontAwesome, MaterialIcons } from '@expo/vector-icons'; 
 
 const FormCons = () => {
   const route = useRoute();
@@ -422,6 +422,17 @@ const FormCons = () => {
     );
   };
 
+  const niveauApprovisionementOptions = [
+    { label: 'Haut', value: 'Haut' },
+    { label: 'Moyen', value: 'Moyen' },
+    { label: 'Faible', value: 'Faible' },
+  ];
+  
+  const statutOptions = [
+    { label: 'En cours', value: 'En cours' },
+    { label: 'Terminé', value: 'Terminé' },
+    { label: 'Annulé', value: 'Annulé' },
+  ];
   return (
     <KeyboardAwareScrollView contentContainerStyle={styles.container}>
         <Modal
@@ -545,21 +556,43 @@ const FormCons = () => {
         keyboardType="numeric"
         style={styles.input}
       />
-
-      <TextInput
+<Dropdown
+  style={styles.dropdown}
+  data={niveauApprovisionementOptions}
+  labelField="label"
+  valueField="value"
+  placeholder="Niveau d'approvisionnement"
+  value={niveauApprovisionnement}
+  onChange={item => setNiveauApprovisionnement(item.value)}
+  renderLeftIcon={() => (
+    <AntDesign name="barschart" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
+  )}
+/>
+      {/* <TextInput
         label="Niveau d'approvisionnement"
         value={niveauApprovisionnement}
         onChangeText={setNiveauApprovisionnement}
         style={styles.input}
-      />
+      /> */}
 
-      <TextInput
+      {/* <TextInput
         label="Statut"
         value={statut}
         onChangeText={setStatut}
         style={styles.input}
-      />
-
+      /> */}
+<Dropdown
+  style={styles.dropdown}
+  data={statutOptions}
+  labelField="label"
+  valueField="value"
+  placeholder="Sélectionnez le statut"
+  value={statut}
+  onChange={item => setStatut(item.value)}
+  renderLeftIcon={() => (
+    <MaterialIcons name="info" size={20} color="black" style={styles.icon} />  // Utilise MaterialIcons pour le statut
+  )}
+/>
       <TextInput
         label="Observation"
         value={observation}

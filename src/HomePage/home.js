@@ -4,12 +4,49 @@ import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import styles from './styles'
 import { Appbar, Divider, Avatar, Card, Button, IconButton } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation,useFocusEffect } from '@react-navigation/native';
 import AuthService from '../../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const Home = () => {
     const navigation = useNavigation();
     const [userName, setUserName] = useState('');
+ // Fonction pour vérifier le token et la session
+ const checkToken = async () => {
+    try {
+        const token = await AsyncStorage.getItem('userToken'); // Récupération du token
+        if (!token) {
+            // Si pas de token, afficher une alerte et rediriger
+            Alert.alert(
+                "Session expirée",
+                "Pour des raisons de sécurité, votre session a expiré. Veuillez vous reconnecter.",
+                [
+                    {
+                        text: "OK",
+                        onPress: () => navigation.replace('Login'), // Redirection vers la page de login
+                    }
+                ],
+                { cancelable: false }
+            );
+        }
+    } catch (error) {
+        console.error("Erreur lors de la vérification du token :", error);
+    }
+};
+    // Vérifier le token à chaque fois que l'utilisateur interagit avec le composant
+    useFocusEffect(
+        React.useCallback(() => {
+            checkToken(); // Appel de la fonction à chaque fois que le composant est focus
+        }, [])
+    );
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            checkToken(); // Vérifier toutes les 5 minutes
+        }, 5 * 60 * 1000);
+    
+        return () => clearInterval(interval); // Nettoyer l'intervalle à la fin du composant
+    }, []);
+    
 
     useEffect(() => {
         const getUserInfo = async () => {
@@ -27,22 +64,27 @@ const Home = () => {
     }, []);
 
     const navigateToCollecte = () => {
+        checkToken();
         navigation.navigate('Collecte')
     };
     // const logins = () => {
     //     navigation.navigate('Login')
     // };
     const Setting = () => {
+        checkToken();
         navigation.navigate('Setting')
     };
     
    const navigationToFicheCollect= async ()=>{
+    checkToken();
     navigation.navigate('Collectes')
    }
    const navigationToFicheConsommation= async ()=>{
+    checkToken();
     navigation.navigate('FicheConsommation')
    }
    const navigationToFicheGrossistes= async ()=>{
+    checkToken();
     navigation.navigate('FicheGrossiste')
    }
     return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity,Modal,Alert } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity, Modal, Alert } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRoute } from '@react-navigation/native';
@@ -11,11 +11,11 @@ import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import * as SQLite from 'expo-sqlite';
-import { createTables, insertCollecte,checkTableStructure } from '../../../database/db';
-
+import { createTables, insertCollecte, checkTableStructure, recreateCollecteTable } from '../../../database/db';
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 const FormCollecte = () => {
   const route = useRoute();
-  const { id , num_fiche } = route.params;
+  const { id, num_fiche } = route.params;
   const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
   const [unite, setUnite] = useState(0);
   const [poidsUnitaire, setPoidsUnitaire] = useState('');
@@ -46,13 +46,14 @@ const FormCollecte = () => {
   const [UniteMesure, setUniteMesure] = useState([]);
   const [searchUniteMesure, setSearchUniteMesure] = useState('');
 
-  
+
   const [produit, setProduit] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [groupedProduits, setGroupedProduits] = useState({});
   const [searchProduit, setSearchProduit] = useState('');
-  
+
   useEffect(() => {
+    // recreateCollecteTable();
     createTables(); // Créer la table lorsque le composant est monté
     checkTableStructure();
   }, []);
@@ -72,39 +73,39 @@ const FormCollecte = () => {
       const produitsLocaux = await loadDataFromStorage('produits');
       const communesLocales = await loadDataFromStorage('communes');
       const uniteMesuresLocales = await loadDataFromStorage('uniteMesures');
-      
+
       if (produitsLocaux) setGroupedProduits(produitsLocaux);
       if (communesLocales) setcommunes(communesLocales);
       if (uniteMesuresLocales) setUniteMesures(uniteMesuresLocales);
-  
+
       // Si les données ne sont pas présentes, on les charge depuis l'API
       if (!produitsLocaux) fetchProduits();
       if (!communesLocales) getCommune();
       if (!uniteMesuresLocales) getUniteMesure();
     };
-  
+
     loadData();
   }, []);
 
   useEffect(() => {
-  if (!isConnected) {
-    loadDataFromStorage('produits');
-    loadDataFromStorage('communes');
-    loadDataFromStorage('uniteMesures');
-  } else {
-    fetchProduits();
-    getCommune();
-    getUniteMesure();
-  }
-}, [isConnected]);
+    if (!isConnected) {
+      loadDataFromStorage('produits');
+      loadDataFromStorage('communes');
+      loadDataFromStorage('uniteMesures');
+    } else {
+      fetchProduits();
+      getCommune();
+      getUniteMesure();
+    }
+  }, [isConnected]);
 
-useEffect(() => {
-  if (isConnected) {
-    fetchProduits();
-    getCommune();
-    getUniteMesure();
-  }
-}, [isConnected]);
+  useEffect(() => {
+    if (isConnected) {
+      fetchProduits();
+      getCommune();
+      getUniteMesure();
+    }
+  }, [isConnected]);
 
 
   // useEffect(() => {
@@ -144,40 +145,40 @@ useEffect(() => {
       setLoading(false);
     }
   };
-    /**
-   * Rendu du dropdown des produits
-   */
-    const renderProductsDropdown = () => {
-      if (!selectedCategory) return null;
-      const products = groupedProduits[selectedCategory] || [];
-  
-      return (
-        <Dropdown
-          style={styles.dropdown}
-          data={products.filter((product) =>
+  /**
+ * Rendu du dropdown des produits
+ */
+  const renderProductsDropdown = () => {
+    if (!selectedCategory) return null;
+    const products = groupedProduits[selectedCategory] || [];
+
+    return (
+      <Dropdown
+        style={styles.dropdown}
+        data={products.filter((product) =>
           product.label && product.label.toLowerCase().includes(searchProduit.toLowerCase())
 
-          )}
-          search
-          searchPlaceholder="Rechercher un produit..."
-          labelField="label"
-          valueField="value"
-          placeholder="Sélectionnez un produit"
-          value={produit}
-          onChange={(item) => setProduit(item)}
-          onChangeText={(text) => setSearchProduit(text)}
-          renderLeftIcon={() => (
-            <AntDesign name="shoppingcart" size={20} color="black" style={styles.icon} />
-          )}
-          renderItem={(item) => (
-            <View style={styles.itemContainer}>
-              <Image source={{ uri: item.image }} style={styles.image} />
-              <Text>{item.label}</Text>
-            </View>
-          )}
-        />
-      );
-    };
+        )}
+        search
+        searchPlaceholder="Rechercher un produit..."
+        labelField="label"
+        valueField="value"
+        placeholder="Sélectionnez un produit"
+        value={produit}
+        onChange={(item) => setProduit(item)}
+        onChangeText={(text) => setSearchProduit(text)}
+        renderLeftIcon={() => (
+          <AntDesign name="shoppingcart" size={20} color="black" style={styles.icon} />
+        )}
+        renderItem={(item) => (
+          <View style={styles.itemContainer}>
+            <Image source={{ uri: item.image }} style={styles.image} />
+            <Text>{item.label}</Text>
+          </View>
+        )}
+      />
+    );
+  };
 
 
 
@@ -224,12 +225,12 @@ useEffect(() => {
       const response = await FormConso.getCommune();
       // console.log('commune data response', response); // Log the full response
       // console.log('commune data', response.data); // Log response.data
-  
+
       if (!response || !response) {
         console.error('No data found in the response');
         return;
       }
-      const data = response ;
+      const data = response;
       const communes = data.map(commune => ({
         id: commune.id_commune,
         nom: commune.nom_commune ? commune.nom_commune.toLowerCase() : '',
@@ -241,7 +242,7 @@ useEffect(() => {
       console.error('Erreur lors de la récupération des communes:', error);
     }
   };
-  
+
 
   const renderCommunes = () => (
     <Dropdown
@@ -270,7 +271,7 @@ useEffect(() => {
       console.error('Erreur lors de la sauvegarde des données:', error);
     }
   };
-  
+
   const loadDataFromStorage = async (key) => {
     try {
       const jsonValue = await AsyncStorage.getItem(key);
@@ -279,11 +280,11 @@ useEffect(() => {
       console.error('Erreur lors du chargement des données locales:', error);
     }
   };
-  
+
 
   const postForm = async () => {
     const ficheData = {
-      unite: parseInt(UniteMesure, 10), 
+      unite: parseInt(UniteMesure, 10),
       poids_unitaire: parseFloat(poidsUnitaire) || 0,
       montant_achat: parseFloat(montantAchat) || 0,
       prix_fg_kg: parseFloat(prixFgKg) || 0,
@@ -297,12 +298,12 @@ useEffect(() => {
       statut: statut || '',
       observation: observation || '',
       enquete: parseInt(enquete, 10) || 0,
-      produit: produit.value, 
+      produit: produit.value,
       localite_origine: parseInt(commune.id, 10) || 0, // Conversion de la localité d'origine
-      num_fiche: numFiche 
+      num_fiche: numFiche
     };
-     // Insérer les données dans la base de données
-     insertCollecte(
+    // Insérer les données dans la base de données
+    insertCollecte(
       ficheData.unite,
       ficheData.poids_unitaire,
       ficheData.montant_achat,
@@ -321,9 +322,9 @@ useEffect(() => {
       ficheData.localite_origine,
       ficheData.num_fiche
     );
-    console.log('donne envoyer',ficheData);
+    console.log('donne envoyer', ficheData);
     Alert.alert('Succès', 'Les données ont été insérées dans la base de données.');
-  
+
     try {
       setLoading(true);
       // await FormCollect.postFormCollect(ficheData);
@@ -344,7 +345,7 @@ useEffect(() => {
       setLoading(false);
     }
   };
-  
+
 
   const resetFields = () => {
     setUnite(0);
@@ -403,6 +404,23 @@ useEffect(() => {
     );
   };
 
+  const etatRouteOptions = [
+    { label: 'Bon', value: 'Bon' },
+    { label: 'Moyen', value: 'Moyen' },
+    { label: 'Mauvais', value: 'Mauvais' },
+  ];
+
+  const niveauApprovisionementOptions = [
+    { label: 'Haut', value: 'Haut' },
+    { label: 'Moyen', value: 'Moyen' },
+    { label: 'Faible', value: 'Faible' },
+  ];
+
+  const statutOptions = [
+    { label: 'En cours', value: 'En cours' },
+    { label: 'Terminé', value: 'Terminé' },
+    { label: 'Annulé', value: 'Annulé' },
+  ];
 
   return (
     <View style={styles.container}>
@@ -411,7 +429,7 @@ useEffect(() => {
         transparent={true}
         animationType="none"
         visible={loading}
-        onRequestClose={() => {}}
+        onRequestClose={() => { }}
       >
         <View style={styles.modalBackground}>
           <View style={styles.activityIndicatorWrapper}>
@@ -421,29 +439,29 @@ useEffect(() => {
       </Modal>
 
       <KeyboardAwareScrollView contentContainerStyle={styles.inner}>
-      <Text style={styles.sectionTitle}>Produit</Text>
-      <Dropdown
-        style={styles.dropdown}
-        data={Object.keys(groupedProduits).map((category) => ({
-          label: category,
-          value: category,
-        }))}
-        search
-        searchPlaceholder="Rechercher une catégorie..."
-        labelField="label"
-        valueField="value"
-        placeholder="Sélectionnez une catégorie"
-        value={selectedCategory}
-        onChange={(item) => handleCategoryChange(item.value)}
-        onChangeText={(text) => setSearchProduit(text)}
-        renderLeftIcon={() => (
-          <AntDesign name="appstore-o" size={20} color="black" style={styles.icon} />
-        )}
-      />
+        <Text style={styles.sectionTitle}>Produit</Text>
+        <Dropdown
+          style={styles.dropdown}
+          data={Object.keys(groupedProduits).map((category) => ({
+            label: category,
+            value: category,
+          }))}
+          search
+          searchPlaceholder="Rechercher une catégorie..."
+          labelField="label"
+          valueField="value"
+          placeholder="Sélectionnez une catégorie"
+          value={selectedCategory}
+          onChange={(item) => handleCategoryChange(item.value)}
+          onChangeText={(text) => setSearchProduit(text)}
+          renderLeftIcon={() => (
+            <AntDesign name="appstore-o" size={20} color="black" style={styles.icon} />
+          )}
+        />
 
-      {renderProductsDropdown()}
-       {renderCommunes()}
-      {renderUniteMesure()}
+        {renderProductsDropdown()}
+        {renderCommunes()}
+        {renderUniteMesure()}
         <TextInput
           label="Poids Unitaire"
           value={poidsUnitaire.toString()}
@@ -479,11 +497,17 @@ useEffect(() => {
           keyboardType="numeric"
           style={styles.input}
         />
-        <TextInput
-          label="État Route"
+        <Dropdown
+          style={styles.dropdown}
+          data={etatRouteOptions}
+          labelField="label"
+          valueField="value"
+          placeholder="Sélectionnez l'état de la route"
           value={etatRoute}
-          onChangeText={text => setEtatRoute(text)}
-          style={styles.input}
+          onChange={item => setEtatRoute(item.value)}
+          renderLeftIcon={() => (
+            <FontAwesome name="road" size={20} color="black" style={styles.icon} />  // Utilise FontAwesome pour l'icône de route
+          )}
         />
         <TextInput
           label="Quantité Collectée"
@@ -504,17 +528,29 @@ useEffect(() => {
           onChangeText={text => setFournisseurPrincipal(text)}
           style={styles.input}
         />
-        <TextInput
-          label="Niveau Approvisionnement"
+        <Dropdown
+          style={styles.dropdown}
+          data={niveauApprovisionementOptions}
+          labelField="label"
+          valueField="value"
+          placeholder=" niveau d'approvisionnement"
           value={niveauApprovisionement}
-          onChangeText={text => setNiveauApprovisionement(text)}
-          style={styles.input}
+          onChange={item => setNiveauApprovisionement(item.value)}
+          renderLeftIcon={() => (
+            <AntDesign name="barschart" size={20} color="black" style={styles.icon} />  // Icône pour le niveau d'approvisionnement
+          )}
         />
-        <TextInput
-          label="Statut"
+        <Dropdown
+          style={styles.dropdown}
+          data={statutOptions}
+          labelField="label"
+          valueField="value"
+          placeholder="Sélectionnez le statut"
           value={statut}
-          onChangeText={text => setStatut(text)}
-          style={styles.input}
+          onChange={item => setStatut(item.value)}
+          renderLeftIcon={() => (
+            <AntDesign name="infocirlce" size={20} color="black" style={styles.icon} />  // Icône pour le statut
+          )}
         />
         <TextInput
           label="Observation"
@@ -525,7 +561,7 @@ useEffect(() => {
 
 
         <Button mode="contained" onPress={postForm} style={styles.button}>
-        Enregistrer
+          Enregistrer
         </Button>
       </KeyboardAwareScrollView>
     </View>
@@ -540,9 +576,9 @@ const styles = StyleSheet.create({
   inner: {
     padding: 10,
   },
-input: {
-  marginBottom: 15,
-  backgroundColor: '#fff',
+  input: {
+    marginBottom: 15,
+    backgroundColor: '#fff',
   },
   dropdown: {
     marginBottom: 10,

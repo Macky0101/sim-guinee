@@ -207,12 +207,12 @@ const FicheGrossiste = () => {
     
                             {/* Buttons */}
                             <View style={styles.btnContainer}>
-                                <TouchableOpacity onPress={() => navigation.navigate('ListesGrossistesCollect', { id: fiche.id })}>
+                                <TouchableOpacity onPress={() => navigation.navigate('ListesGrossistesCollect', { num_fiche: fiche.num_fiche  })}>
                                     <View style={styles.btn}>
                                         <Text style={{ color: '#fff' }}>Voir les données</Text>
                                     </View>
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => navigation.navigate('FormGrossistes', { id: fiche.id })}>
+                                <TouchableOpacity onPress={() => navigation.navigate('FormGrossistes', { id: fiche.id, num_fiche: fiche.num_fiche })}>
                                     <View style={styles.btn1}>
                                         <Text style={{ color: '#fff' }}>Nouvelle donnée </Text>
                                     </View>

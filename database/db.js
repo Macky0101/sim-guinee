@@ -27,7 +27,7 @@ export const createTables = async () => {
         quantite_collecte REAL,
         client_principal TEXT,
         fournisseur_principal TEXT,
-        niveau_approvisionnement TEXT,
+        niveau_approvisionement TEXT,
         statut TEXT,
         observation TEXT,
         enquete INTEGER,
@@ -54,7 +54,7 @@ export const insertCollecte = async (
   quantiteCollecte,
   clientPrincipal,
   fournisseurPrincipal,
-  niveauApprovisionnement,
+  niveauApprovisionement,
   statut,
   observation,
   enquete,
@@ -70,13 +70,13 @@ export const insertCollecte = async (
         unite, poids_unitaire, montant_achat, prix_fg_kg, 
         distance_origine_marche, montant_transport, etat_route, 
         quantite_collecte, client_principal, fournisseur_principal, 
-        niveau_approvisionnement, statut, observation, enquete, produit, localite_origine, num_fiche
+        niveau_approvisionement, statut, observation, enquete, produit, localite_origine, num_fiche
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         unite, poidsUnitaire, montantAchat, prixFgKg, 
         distanceOrigineMarche, montantTransport, etatRoute, 
         quantiteCollecte, clientPrincipal, fournisseurPrincipal, 
-        niveauApprovisionnement, statut, observation, enquete, produit, localiteOrigine, num_fiche
+        niveauApprovisionement, statut, observation, enquete, produit, localiteOrigine, num_fiche
       ]
     );
     console.log('Data inserted successfully.');
@@ -96,7 +96,7 @@ export const updateCollecte = async (
   quantiteCollecte,
   clientPrincipal,
   fournisseurPrincipal,
-  niveauApprovisionnement,
+  niveauApprovisionement,
   statut,
   observation,
   enquete,
@@ -112,14 +112,14 @@ export const updateCollecte = async (
         unite = ?, poids_unitaire = ?, montant_achat = ?, prix_fg_kg = ?, 
         distance_origine_marche = ?, montant_transport = ?, etat_route = ?, 
         quantite_collecte = ?, client_principal = ?, fournisseur_principal = ?, 
-        niveau_approvisionnement = ?, statut = ?, observation = ?, enquete = ?, 
+        niveau_approvisionement = ?, statut = ?, observation = ?, enquete = ?, 
         produit = ?, localite_origine = ?, num_fiche = ?
       WHERE id = ?`,
       [
         unite, poidsUnitaire, montantAchat, prixFgKg, 
         distanceOrigineMarche, montantTransport, etatRoute, 
         quantiteCollecte, clientPrincipal, fournisseurPrincipal, 
-        niveauApprovisionnement, statut, observation, enquete, produit, localiteOrigine, num_fiche, id
+        niveauApprovisionement, statut, observation, enquete, produit, localiteOrigine, num_fiche, id
       ]
     );
     console.log('Data updated successfully.');
@@ -193,3 +193,33 @@ export const addColumnToCollecteTable = async () => {
       return null;
     }
   };
+
+
+  // Fonction pour supprimer la table collecte
+export const dropCollecteTable = async () => {
+  try {
+    console.log('Dropping table "collecte"...');
+    const db = await openDatabase();
+    await db.execAsync(`
+      DROP TABLE IF EXISTS collecte;
+    `);
+    console.log('Table "collecte" deleted successfully.');
+  } catch (error) {
+    console.log('Error during table deletion: ', error);
+  }
+};
+
+// Fonction pour recréer la table collecte
+export const recreateCollecteTable = async () => {
+  try {
+    // Supprimer la table
+    await dropCollecteTable();
+
+    // Recréer la table
+    await createTables();
+
+    console.log('Table "collecte" recreated successfully.');
+  } catch (error) {
+    console.log('Error during table recreation: ', error);
+  }
+};

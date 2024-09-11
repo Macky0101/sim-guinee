@@ -119,7 +119,7 @@ const Routes = () => {
          <Stack.Screen
           name="FormGrossistes"
           component={FormGrossistes}
-          options={{ title: 'listes des collectes' }}
+          options={{ title: 'Nouvelle collecte' }}
         />
           <Stack.Screen
           name="Setting"

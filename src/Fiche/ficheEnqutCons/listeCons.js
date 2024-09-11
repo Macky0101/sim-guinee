@@ -9,6 +9,7 @@ import { getData } from '../../../database/db';
 import { Searchbar, FAB, Dialog, Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
+import { Ionicons } from '@expo/vector-icons';
 
 const ListesConso = () => {
   const navigation = useNavigation();
@@ -20,10 +21,13 @@ const ListesConso = () => {
   const [communes, setCommunes] = useState([]);
   const [uniteMesures, setUniteMesures] = useState([]);
   const [collectes, setCollectes] = useState([]);
+  const [expandedCollecte, setExpandedCollecte] = useState(null);  // État pour savoir quelle collecte est développée
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCollecte, setSelectedCollecte] = useState(null); // Collecte sélectionnée
   const [dialogVisible, setDialogVisible] = useState(false); // Visibilité du dialog
-
+  const [uploadProgress, setUploadProgress] = useState(0); // État pour suivre le pourcentage d'envoi
+  const [isUploading, setIsUploading] = useState(false);   // État pour suivre si l'envoi est en cours
+  
   useEffect(() => {
     const loadProduits = async () => {
       const produitsData = await getData('produits');
@@ -99,11 +103,13 @@ const ListesConso = () => {
   });
   const postFormConso = async () => {
     try {
-      setLoading(true);
-      let allSent = true; // Indicateur pour vérifier si tous les enregistrements ont été envoyés
+      setIsUploading(true);
+      setUploadProgress(0); // Reset the progress bar
+      let allSent = true;
+      const totalCollectes = collectes.length; // Nombre total de collectes
   
-      // Parcourir chaque collecte à envoyer
-      for (const collecte of collectes) {
+      for (let i = 0; i < totalCollectes; i++) {
+        const collecte = collectes[i];
         const ficheData = {
           unite: collecte.unite,
           poids_unitaire: String(collecte.poids_unitaire), // Convertir en chaîne de caractères
@@ -127,6 +133,11 @@ const ListesConso = () => {
           // Suppression de l'enregistrement local si l'envoi a réussi
           await deleteConsommation(collecte.id);
           setCollectes((prevCollectes) => prevCollectes.filter((c) => c.id !== collecte.id));
+
+           // Mise à jour de la progression
+        const newProgress = Math.round(((i + 1) / totalCollectes) * 100);
+        setUploadProgress(newProgress);
+
         } catch (error) {
           console.error(`Erreur lors de l'envoi de l'enregistrement ${collecte.id}:`, error);
           Alert.alert(
@@ -153,63 +164,15 @@ const ListesConso = () => {
       Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi des enregistrements.');
     } finally {
       setLoading(false);
+      setIsUploading(false); // Arrêter le suivi d'envoi après la fin
+      setUploadProgress(0); // Réinitialiser la progression
     }
   };
   
-  // const postFormConso = async () => {
-  //   try {
-  //     setLoading(true);
 
-  //     // Parcourir chaque collecte à envoyer
-  //     for (const collecte of collectes) {
-  //       const ficheData = {
-  //         unite: collecte.unite,
-  //         poids_unitaire: String(collecte.poids_unitaire), // Convertir en chaîne de caractères
-  //         prix_mesure: parseFloat(collecte.prix_mesure),
-  //         prix_fg_kg: parseFloat(collecte.prix_fg_kg),
-  //         prix_kg_litre: parseFloat(collecte.prix_kg_litre),
-  //         niveau_approvisionement: collecte.niveau_approvisionnement,
-  //         document: collecte.document || '', // Assurez-vous que document est une chaîne vide s'il est non défini
-  //         statut: collecte.statut,
-  //         observation: collecte.observation,
-  //         enquete: collecte.enquete,
-  //         produit: collecte.produit,
-  //       };
-  //       console.log('ficheData', ficheData);
-
-  //       try {
-  //         // Envoi de l'enregistrement à l'API
-  //         await FormConso.postFormConso(ficheData);
-  //         console.log(`Enregistrement ${collecte.id} envoyé avec succès.`);
-
-  //         // Suppression de l'enregistrement local si l'envoi a réussi
-  //         await deleteConsommation(collecte.id);
-  //         setCollectes(prevCollectes => prevCollectes.filter(c => c.id !== collecte.id));
-
-  //       } catch (error) {
-  //         console.error(`Erreur lors de l'envoi de l'enregistrement ${collecte.id}:`, error);
-  //         Alert.alert(
-  //           'Erreur',
-  //           `Impossible d'envoyer l'enregistrement ${getProduitInfo(collecte.produit)?.label}. Veuillez réessayer.`
-
-  //         );
-  //       }
-  //     }
-
-  //     // Tous les enregistrements ont été envoyés
-  //     Alert.alert('Succès', 'Tous les enregistrements ont été envoyés avec succès.');
-
-  //   } catch (error) {
-  //     console.error('Erreur lors de l\'envoi des données:', error);
-  //     Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi des enregistrements.');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
-
-
+  const toggleExpand = (collecteId) => {
+    setExpandedCollecte(expandedCollecte === collecteId ? null : collecteId);
+  };
 
   if (loading) {
     return (
@@ -221,24 +184,22 @@ const ListesConso = () => {
 
   return (
     <View style={styles.container}>
-      <Modal
-        transparent={true}
-        animationType="none"
-        visible={loading}
-        onRequestClose={() => { }}
-      >
-        <View style={styles.modalBackground}>
-          <View style={styles.activityIndicatorWrapper}>
-            <ActivityIndicator size="large" color="#0000ff" />
-          </View>
-        </View>
-      </Modal>
+      
       <Searchbar
         placeholder="Rechercher un produit"
         onChangeText={query => setSearchQuery(query)}
         value={searchQuery}
         style={styles.searchbar}
       />
+      {isUploading && (
+  <View style={styles.progressContainer}>
+    <Text style={styles.progressText}>Envoi en cours : {uploadProgress}%</Text>
+    <View style={styles.progressBar}>
+      <View style={[styles.progress, { width: `${uploadProgress}%` }]} />
+    </View>
+  </View>
+)}
+
       <ScrollView>
         {filteredCollectes.map((collecte, index) => {
           const produitInfo = getProduitInfo(collecte.produit);
@@ -248,22 +209,37 @@ const ListesConso = () => {
             <TouchableOpacity
               key={index}
               style={styles.card}
-              onPress={() => handlePress(collecte)}
+              onPress={() => toggleExpand(collecte.id)} 
               onLongPress={() => handleLongPress(collecte)}
             >
               {produitInfo && (
                 <>
-                  <Image source={{ uri: produitInfo.image }} style={styles.produitImage} />
                   <View style={styles.infoContainer}>
+
+                  <Image source={{ uri: produitInfo.image }} style={styles.produitImage} />
                     <Text style={styles.produitLabel}>{produitInfo.label}</Text>
-                    <Text>Unité : <Text style={styles.label}>{uniteInfo}</Text></Text>
-                    <Text>Niveau d'Approvisionnement: <Text style={styles.label}>{collecte.niveau_approvisionnement}</Text></Text>
+
+                    <View style={styles.chevronContainer}>
+                      <Text>Unité de Stock :<Text style={styles.label}> {getUniteInfo(collecte.unite)}</Text></Text>
+                      <Ionicons
+                        name={expandedCollecte === collecte.id ? "chevron-up-outline" : "chevron-down-outline"}
+                        size={24}
+                        color="black"
+                        style={styles.chevronIcon}
+                      />
+                    </View>
+                    
+                    {expandedCollecte === collecte.id && (
+                      <>
+                       <Text>Niveau d'Approvisionnement: <Text style={styles.label}>{collecte.niveau_approvisionnement}</Text></Text>
                     <Text>Statut: <Text style={styles.label}>{collecte.statut}</Text></Text>
                     <Text>Poids Unitaire: <Text style={styles.label}>{collecte.poids_unitaire}</Text></Text>
                     <Text>Prix Mesure: <Text style={styles.label}>{collecte.prix_mesure}</Text> GNF</Text>
                     <Text>Prix FG/KG: <Text style={styles.label}>{collecte.prix_fg_kg}</Text> GNF</Text>
                     <Text>Prix KG/Litre: <Text style={styles.label}>{collecte.prix_kg_litre}</Text> GNF</Text>
                     <Text>Observation: <Text style={styles.label}>{collecte.observation}</Text></Text>
+                      </>
+                    )}
                   </View>
                 </>
               )}
@@ -337,6 +313,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 8,
+    marginTop: 8,
+  },
+  chevronContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  chevronIcon: {
+    paddingLeft: 8,
   },
   fab: {
     position: 'absolute',
@@ -361,6 +346,30 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressContainer: {
+    marginVertical: 10,
+    alignItems: 'center',
+  },
+  progressText: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  progressBar: {
+    width: '100%',
+    height: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  progress: {
+    height: '100%',
+    backgroundColor: '#4caf50',
   },
 });
 
