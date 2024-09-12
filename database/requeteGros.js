@@ -217,3 +217,27 @@ export const getGrossistesData = async () => {
   };
 
 
+  export const getTotalRecordsGros = async () => {
+    try {
+      console.log('Counting total records in table "grossistes"...');
+      const db = await openDatabase();
+      const result = await db.getFirstAsync(
+        `SELECT COUNT(*) as totalRecords FROM grossistes`
+      );
+      const totalRecords = result.totalRecords;
+      // console.log('Total records in table "grossistes":', totalRecords);
+      return totalRecords;
+    } catch (error) {
+      console.log('Error during record count: ', error);
+    }
+  };
+  export const deleteAllGros = async () => {
+    try {
+      console.log('Deleting all data from table "grossistes"...');
+      const db = await openDatabase();
+      await db.execAsync(`DELETE FROM grossistes`);
+      console.log('All data deleted successfully.');
+    } catch (error) {
+      console.log('Error during data deletion: ', error);
+    }
+  };

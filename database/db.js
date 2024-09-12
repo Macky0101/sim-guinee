@@ -13,7 +13,8 @@ export const createTables = async () => {
   try {
     console.log('Creating tables...');
     const db = await openDatabase();
-    await db.execAsync(`
+    await db.
+    execAsync(`
       PRAGMA journal_mode = WAL;
       CREATE TABLE IF NOT EXISTS collecte (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -221,5 +222,31 @@ export const recreateCollecteTable = async () => {
     console.log('Table "collecte" recreated successfully.');
   } catch (error) {
     console.log('Error during table recreation: ', error);
+  }
+};
+
+export const getTotalRecords = async () => {
+  try {
+    console.log('Counting total records in table "collecte"...');
+    const db = await openDatabase();
+    const result = await db.getFirstAsync(
+      `SELECT COUNT(*) as totalRecords FROM collecte`
+    );
+    const totalRecords = result.totalRecords;
+    // console.log('Total records in table "collecte":', totalRecords);
+    return totalRecords;
+  } catch (error) {
+    console.log('Error during record count: ', error);
+  }
+};
+// Fonction pour supprimer tous les contenus de la table collecte
+export const deleteAllCollecte = async () => {
+  try {
+    console.log('Deleting all data from table "collecte"...');
+    const db = await openDatabase();
+    await db.execAsync(`DELETE FROM collecte`);
+    console.log('All data deleted successfully.');
+  } catch (error) {
+    console.log('Error during data deletion: ', error);
   }
 };

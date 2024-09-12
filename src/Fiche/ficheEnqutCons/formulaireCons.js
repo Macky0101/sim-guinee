@@ -20,7 +20,7 @@ import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { createTables, insertCollecte, } from '../../../database/requetteCons';
+import { createTables, insertCollecte,deleteAllCons,updateConsommation } from '../../../database/requetteCons';
 import {  FontAwesome, MaterialIcons } from '@expo/vector-icons'; 
 
 const FormCons = () => {
@@ -57,6 +57,7 @@ const FormCons = () => {
 
   useEffect(() => {
     createTables(); // Créer la table lorsque le composant est monté
+    // deleteAllCons();
   }, []);
 
 
@@ -634,7 +635,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 20,
     marginBottom: 10,
     color: '#333',
   },
@@ -690,6 +690,8 @@ const styles = StyleSheet.create({
     // borderRadius: 5,
     // backgroundColor: '#28a745',
     marginBottom: 10,
+    backgroundColor:'#009C57'
+
   },
   resetButton: {
     // paddingVertical: 10,

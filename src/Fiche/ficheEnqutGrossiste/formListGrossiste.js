@@ -10,7 +10,7 @@ import FormConso from '../../../services/serviceAgricultures/ficheConsommation/s
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { createTables, insertgrossistes } from '../../../database/requeteGros';
+import { createTables, insertgrossistes,deleteAllGros } from '../../../database/requeteGros';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 
 const FormGrossistes = () => {
@@ -64,7 +64,8 @@ const FormGrossistes = () => {
     // recreateCollecteTable();
     createTables(); // Créer la table lorsque le composant est monté
     // checkTableStructure();
-  }, []);
+    // deleteAllGros();
+    }, []);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -593,6 +594,8 @@ const FormGrossistes = () => {
           label="Observation"
           value={observation}
           onChangeText={setObservation}
+          multiline
+          numberOfLines={4}
           style={styles.input}
         />
         {/* <TextInput
@@ -627,6 +630,8 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 20,
+    backgroundColor:'#009C57'
+
   },
   itemContainer: {
     flexDirection: 'row',
@@ -660,7 +665,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    marginTop: 20,
   },
   icon: {
     marginRight: 10,

@@ -210,7 +210,10 @@ const [isUploading, setIsUploading] = useState(false);   // État pour suivre si
 )}
 
 
-      <ScrollView>
+      <ScrollView
+        showsVerticalScrollIndicator={false} 
+        showsHorizontalScrollIndicator={false}
+      >
         {filteredCollectes.map((collecte, index) => {
           const produitInfo = getProduitInfo(collecte.produit);
           const uniteInfo = getUniteInfo(collecte.unite);
@@ -254,6 +257,7 @@ const [isUploading, setIsUploading] = useState(false);   // État pour suivre si
                     <Text>Etat Route: <Text style={styles.label}>{collecte.etat_route}</Text></Text>
                     <Text>Statut: <Text style={styles.label}>{collecte.statut}</Text></Text>
                     <Text>prix fg kg: <Text style={styles.label}>{collecte.prix_fg_kg}</Text> FG</Text>
+                    <Text>Observation: <Text style={styles.label}>{collecte.observation}</Text></Text>
                       </>
                     )}
                   

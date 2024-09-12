@@ -27,6 +27,39 @@ const FicheGrossiste = () => {
     const [marches, setMarches] = useState([]);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [collecteur, setCollecteur] = useState(null);
+    const [ficheError, setFicheError] = useState('');
+    const [marcheError, setMarcheError] = useState('');
+    const [dateError, setDateError] = useState('');
+    const validateForm = () => {
+        let isValid = true;
+
+        // Validation pour le champ fiche
+        if (!fiche) {
+            setFicheError('Le numéro de fiche est requis.');
+            isValid = false;
+        } else {
+            setFicheError(''); // Réinitialiser l'erreur si le champ est valide
+        }
+
+        // Validation pour le champ marché
+        if (!marche) {
+            setMarcheError('Le marché est requis.');
+            isValid = false;
+        } else {
+            setMarcheError('');
+        }
+
+        // Validation pour la date
+        if (!date) {
+            setDateError('La date est requise.');
+            isValid = false;
+        } else {
+            setDateError('');
+        }
+
+        return isValid;
+    };
+
     useEffect(() => {
         if (!isConnected) {
             setShowWarning(true);
@@ -39,7 +72,7 @@ const FicheGrossiste = () => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(state.isConnected);
         });
-    
+
         return () => unsubscribe();
     }, []);
     useEffect(() => {
@@ -54,38 +87,55 @@ const FicheGrossiste = () => {
     }, [collecteur]);
 
     useEffect(() => {
-        getFiche();
-    }, []);
+        if (collecteur) {
+            getFiche();
+        }
+
+    }, [collecteur]);
 
     const fetchCollecteur = async () => {
         try {
-          const userInfoString = await AsyncStorage.getItem('userInfo');
-          if (userInfoString) {
-            const userInfo = JSON.parse(userInfoString);
-            setCollecteur(userInfo.collecteur);
-          }
+            const userInfoString = await AsyncStorage.getItem('userInfo');
+            if (userInfoString) {
+                const userInfo = JSON.parse(userInfoString);
+                setCollecteur(userInfo.collecteur);
+            }
         } catch (error) {
-          console.error('Erreur lors de la récupération du collecteur:', error);
+            console.error('Erreur lors de la récupération du collecteur:', error);
         }
-      };
+    };
+    const dayIconsAndColors = {
+        Lundi: { icon: 'calendar', color: '#2E8B57' }, // Vert séquoia
+        Mardi: { icon: 'calendar', color: '#3CB371' }, // Vert moyen
+        Mercredi: { icon: 'calendar', color: '#66CDAA' }, // Vert aquatique
+        Jeudi: { icon: 'calendar', color: '#8FBC8F' }, // Vert foncé
+        Vendredi: { icon: 'calendar', color: '#20B2AA' }, // Vert clair
+        Samedi: { icon: 'calendar', color: '#00FA9A' }, // Vert menthe
+        Dimanche: { icon: 'calendar', color: '#98FB98' }, // Vert pâle
+    };
 
     const getFiche = async () => {
         setLoading(true);
         try {
+            if (!collecteur) {
+                throw new Error("Collecteur non défini");
+            }
             const response = await FicheGrossisteservices.getFicheCollect();
-            setFiches(response);
-            setFilteredFiches(response);
-            // console.log('fiche', response);
-        await AsyncStorage.setItem('ficheCollectData', JSON.stringify(response));
+            const fichesFilteredByCollecteur = response.filter(fiche => fiche.collecteur === collecteur);
+            setFiches(fichesFilteredByCollecteur);
+            setFilteredFiches(fichesFilteredByCollecteur);
+            // console.log('Fiches filtrées par collecteur', fichesFilteredByCollecteur);
 
+            // Sauvegarde des données localement
+            await AsyncStorage.setItem('ficheCollectData', JSON.stringify(fichesFilteredByCollecteur));
         } catch (error) {
             const savedData = await AsyncStorage.getItem('ficheCollectData');
             if (savedData) {
                 const parsedData = JSON.parse(savedData);
-                setFiches(parsedData);
-                setFilteredFiches(parsedData);
+                const fichesFilteredByCollecteur = parsedData.filter(fiche => fiche.collecteur === collecteur);
+                setFiches(fichesFilteredByCollecteur);
+                setFilteredFiches(fichesFilteredByCollecteur);
             }
-            console.log('fiche', savedData);
             console.error('Erreur lors de la récupération des fiches:', error);
         } finally {
             setLoading(false);
@@ -97,24 +147,24 @@ const FicheGrossiste = () => {
             const response = await FicheCollect.getListeMarche();
             // Assurez-vous que `collecteur` est bien défini et que `response` contient les marchés
             console.log('Collecteur:', collecteur);
-            console.log('Marchés:', response);
-    
+            // console.log('Marchés:', response);
+
             // Filtrer les marchés en fonction du collecteur
             const filteredMarches = response.filter((marche) => marche.id_collecteur === collecteur);
-    
+
             const formattedMarches = filteredMarches.map((marche) => ({
                 label: marche.nom_marche,
                 value: marche.id_marche.toString(),
             }));
-    
+
             console.log('Marchés filtrés pour le collecteur:', filteredMarches);
             setMarches(formattedMarches);
         } catch (error) {
             console.error('Erreur lors de la récupération des marchés:', error);
         }
     };
-    
-    
+
+
 
 
 
@@ -131,8 +181,8 @@ const FicheGrossiste = () => {
             setFilteredFiches(fiches);
         }
     };
-    
-    
+
+
 
     const showModal = () => setVisible(true);
     const hideModal = () => {
@@ -142,8 +192,11 @@ const FicheGrossiste = () => {
         setDate(new Date());
         setVisible(false);
     };
-    
+
     const postFiche = async () => {
+        if (!validateForm()) {
+            return;
+        }
         const ficheData = {
             num_fiche: fiche,
             date_enquete: date.toISOString().split('T')[0], // Extraire uniquement la date
@@ -163,15 +216,15 @@ const FicheGrossiste = () => {
             console.error('Erreur lors de la création de la fiche:', error);
         }
     };
-    
-    
+
+
     return (
         <View style={styles.container}>
-             {showWarning && (
-            <View style={styles.warningContainer}>
-                <Text style={styles.warningText}>Connexion perdue. Affichage des données en cache.</Text>
-            </View>
-        )}
+            {showWarning && (
+                <View style={styles.warningContainer}>
+                    <Text style={styles.warningText}>Connexion perdue. Affichage des données en cache.</Text>
+                </View>
+            )}
             <Searchbar
                 placeholder="Rechercher"
                 onChangeText={onSearch}
@@ -181,52 +234,63 @@ const FicheGrossiste = () => {
             <View style={styles.header}>
                 <Text style={styles.headerText}>Liste des enquêtes de collecte</Text>
             </View>
-    
+
             {loading ? (
                 <ActivityIndicator size="large" color="#0000ff" />
             ) : (
                 <KeyboardAwareScrollView contentContainerStyle={styles.inner}>
-                {filteredFiches.length > 0 ? (
-                    filteredFiches.map((fiche, index) => (
-                        <View key={index} style={styles.ficheContainer}>
-                            <View style={styles.fiche}>
-                                <Text style={{ color: '#fff' }}>N° Fiche: {fiche.num_fiche}</Text>
+                    {filteredFiches.length > 0 ? (
+                        filteredFiches.map((fiche, index) => (
+                            <View key={index} style={styles.ficheContainer}>
+                                <View style={styles.fiche}>
+                                    <Text style={{ color: '#fff' }}>N° Fiche: {fiche.num_fiche}</Text>
+                                </View>
+
+                                {/* Marché Section */}
+                                <View style={styles.infoContainer}>
+                                    <AntDesign name="shoppingcart" size={20} color="#4A90E2" style={styles.icon} />
+                                    <Text style={styles.text}>Marché: {fiche.marche_relation?.nom_marche || 'Marché inconnu'}</Text>
+                                </View>
+                                {/* Affichage des jours de marché */}
+                               
+                                 
+                                <View style={styles.infoContainer}>
+                                    <AntDesign name="shoppingcart" size={20} color="#4A90E2" style={styles.icon} />
+                                    <Text style={styles.text}>jour du marche: {fiche.marche_relation?.jour_du_marche || 'jour du marcher ...'}</Text>
+                                </View>
+                                {/* desctription Section */}
+                                <View style={styles.infoContainer}>
+                                    <AntDesign name="infocirlceo" size={20} color="#4A90E2" style={styles.icon} />
+                                    <Text style={styles.text}>Description: {fiche.marche_relation?.description || 'description ...'}</Text>
+                                </View>
+                                {/* Date Enquête Section */}
+                                <View style={styles.infoContainer}>
+                                    <AntDesign name="calendar" size={20} color="#4A90E2" style={styles.icon} />
+                                    <Text style={styles.text}>Date Enquête: {fiche.date_enquete}</Text>
+                                </View>
+
+                                {/* Buttons */}
+                                <View style={styles.btnContainer}>
+                                    <TouchableOpacity onPress={() => navigation.navigate('ListesGrossistesCollect', { num_fiche: fiche.num_fiche })}>
+                                        <View style={styles.btn}>
+                                            <Text style={{ color: '#fff' }}>Voir les données</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => navigation.navigate('FormGrossistes', { id: fiche.id, num_fiche: fiche.num_fiche })}>
+                                        <View style={styles.btn1}>
+                                            <Text style={{ color: '#fff' }}>Nouvelle donnée </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-    
-                            {/* Marché Section */}
-                            <View style={styles.infoContainer}>
-                                <AntDesign name="shoppingcart" size={20} color="#4A90E2" style={styles.icon} />
-                                <Text style={styles.text}>Marché: {fiche.marche_relation?.nom_marche || 'Marché inconnu'}</Text>
-                            </View>
-    
-                            {/* Date Enquête Section */}
-                            <View style={styles.infoContainer}>
-                                <AntDesign name="calendar" size={20} color="#4A90E2" style={styles.icon} />
-                                <Text style={styles.text}>Date Enquête: {fiche.date_enquete}</Text>
-                            </View>
-    
-                            {/* Buttons */}
-                            <View style={styles.btnContainer}>
-                                <TouchableOpacity onPress={() => navigation.navigate('ListesGrossistesCollect', { num_fiche: fiche.num_fiche  })}>
-                                    <View style={styles.btn}>
-                                        <Text style={{ color: '#fff' }}>Voir les données</Text>
-                                    </View>
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => navigation.navigate('FormGrossistes', { id: fiche.id, num_fiche: fiche.num_fiche })}>
-                                    <View style={styles.btn1}>
-                                        <Text style={{ color: '#fff' }}>Nouvelle donnée </Text>
-                                    </View>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    ))
-                ) : (
-                    <Text>Aucune fiche d'enquête trouvée.</Text>
-                )}
-            </KeyboardAwareScrollView>
-            
+                        ))
+                    ) : (
+                        <Text>Aucune fiche d'enquête trouvée.</Text>
+                    )}
+                </KeyboardAwareScrollView>
+
             )}
-    
+
             <Portal>
                 <Modal visible={visible} onDismiss={hideModal} contentContainerStyle={styles.modalContainer}>
                     <Text>Créer une fiche d’enquête</Text>
@@ -236,6 +300,7 @@ const FicheGrossiste = () => {
                         onChangeText={text => setFiche(text)}
                         style={styles.input}
                     />
+                    {ficheError ? <Text style={styles.errorText}>{ficheError}</Text> : null}
                     <Dropdown
                         style={styles.dropdown}
                         data={marches}
@@ -250,10 +315,11 @@ const FicheGrossiste = () => {
                             <AntDesign style={styles.icon} color="black" name="shoppingcart" size={20} />
                         )}
                     />
+                    {marcheError ? <Text style={styles.errorText}>{marcheError}</Text> : null}
                     <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateButton}>
                         <Text style={styles.dateText}>{date ? `Date Enquête: ${date.toLocaleDateString('fr-FR')}` : "Sélectionner la date"}</Text>
                     </TouchableOpacity>
-    
+                    {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
                     {showDatePicker && (
                         <DateTimePicker
                             value={date}
@@ -268,13 +334,13 @@ const FicheGrossiste = () => {
                             locale="fr-FR"
                         />
                     )}
-    
+
                     <Button mode="contained" onPress={postFiche} style={styles.button}>
                         Enregistrer
                     </Button>
                 </Modal>
             </Portal>
-    
+
             <FAB
                 icon="plus"
                 style={styles.fab}
@@ -282,7 +348,7 @@ const FicheGrossiste = () => {
             />
         </View>
     );
-    
+
 };
 
 const styles = StyleSheet.create({
@@ -298,7 +364,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         height: 50,
         justifyContent: 'center',
-      },
+    },
     searchbar: {
         marginBottom: 16,
     },
@@ -343,7 +409,7 @@ const styles = StyleSheet.create({
         margin: 16,
         right: 0,
         bottom: 0,
-        backgroundColor:'#006951',
+        backgroundColor: '#006951',
     },
     modalContainer: {
         backgroundColor: 'white',
@@ -359,7 +425,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         padding: 10,
         marginBottom: 10,
-        alignSelf:'flex-start'
+        alignSelf: 'flex-start'
     },
     ficheContainer: {
         marginBottom: 7,
@@ -374,7 +440,7 @@ const styles = StyleSheet.create({
     },
     infoContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
+        // alignItems: 'center',
         marginVertical: 5,
     },
     input: {
@@ -382,6 +448,8 @@ const styles = StyleSheet.create({
     },
     button: {
         marginTop: 16,
+        backgroundColor: '#009C57'
+
     },
     icon: {
         marginRight: 5,
@@ -397,19 +465,46 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
     },
-    warningContainer: {    
-        position: 'absolute',    
-        top: 0,    
-        left: 0,    
-        right: 0,    
-        backgroundColor: 'orange',    
-        padding: 10,    
-        zIndex: 1,    
+    warningContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'orange',
+        padding: 10,
+        zIndex: 1,
         alignItems: 'center',
     },
-    warningText: {    
-        color: 'white', 
-        fontWeight: 'bold',  
+    warningText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    joursContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-evenly',
+        marginTop: 10,
+    },
+    jourItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 3,
+        borderRadius: 5,
+        marginBottom: 5,
+        // width: '45%', // deux éléments par ligne
+    },
+    icon: {
+        marginRight: 5,
+    },
+    jourText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    errorText: {
+        color: 'red',
+        fontSize: 12,
+        marginBottom: 8,
     },
 });
 

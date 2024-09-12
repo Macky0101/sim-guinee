@@ -99,7 +99,7 @@ const Routes = () => {
          <Stack.Screen
           name="FormCons"
           component={FormCons}
-          options={{ title: 'Fiche de consommation' }}
+          options={{ title: 'Nouvelle collecte' }}
         />
          <Stack.Screen
           name="ListesConso"

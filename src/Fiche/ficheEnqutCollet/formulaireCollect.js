@@ -11,7 +11,7 @@ import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import * as SQLite from 'expo-sqlite';
-import { createTables, insertCollecte, checkTableStructure, recreateCollecteTable } from '../../../database/db';
+import { createTables, insertCollecte, checkTableStructure, recreateCollecteTable,deleteAllCollecte } from '../../../database/db';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 const FormCollecte = () => {
   const route = useRoute();
@@ -55,7 +55,8 @@ const FormCollecte = () => {
   useEffect(() => {
     // recreateCollecteTable();
     createTables(); // Créer la table lorsque le composant est monté
-    checkTableStructure();
+    // checkTableStructure();
+    // deleteAllCollecte();
   }, []);
 
   const [isConnected, setIsConnected] = useState(true);
@@ -556,6 +557,8 @@ const FormCollecte = () => {
           label="Observation"
           value={observation}
           onChangeText={text => setObservation(text)}
+          multiline
+          numberOfLines={4}
           style={styles.input}
         />
 
@@ -603,6 +606,8 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 20,
+    backgroundColor:'#009C57'
+
   },
   modalBackground: {
     flex: 1,

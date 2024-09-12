@@ -215,7 +215,10 @@ const ListesGrossistesCollect = () => {
   </View>
 )}
 
-      <ScrollView>
+      <ScrollView
+        showsVerticalScrollIndicator={false} 
+        showsHorizontalScrollIndicator={false}
+      >
         {filteredCollectes.map((collecte, index) => {
           const produitInfo = getProduitInfo(collecte.produit);
           const uniteInfo = getUniteInfo(collecte.unite_stock);

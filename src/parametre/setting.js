@@ -36,7 +36,7 @@ const Setting = () => {
           text: "Oui",
           onPress: async () => {
             await AsyncStorage.removeItem('userToken');
-            navigation.navigate('');
+            navigation.replace('Login');
           }
         }
       ]
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#005849',
+    backgroundColor:'#009C57',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   RetourButton: {
     alignContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#005849',
+    backgroundColor:'#009C57',
     alignSelf: 'center',
     borderRadius: 100,
     padding: 20

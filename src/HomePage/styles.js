@@ -11,24 +11,25 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 10,
+        // padding: 10,
+        marginBottom:30,
         borderBottomWidth: 1,
         borderBottomColor: '#E0E0E0',
     },
     profileSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        // flexDirection: 'row',
+        // alignItems: 'center',
         flex: 1,  // Prendre tout l'espace disponible à gauche
     },
     notificationSection: {
         alignItems: 'flex-end',  // Aligner l'icône à droite
     },
     profileImage: {
-        width: 50,
+        width: '50%',
         height: 50,
-        borderRadius: 25,
-        backgroundColor: 'rgba(0, 0, 0, 0.1)',
-        marginRight: 10,
+        // borderRadius: 25,
+        // backgroundColor: 'rgba(0, 0, 0, 0.1)',
+        // marginRight: 10,
     },
     welcomeText: {
         fontSize: 16,
@@ -111,7 +112,7 @@ fontSize:12,
   cardImage:{
     position:'absolute',
     top: -35,
-    left: 10,
+    left: 0,
     right: 0,
     bottom: 0,
     
