@@ -7,7 +7,7 @@ import { Appbar, Divider, Avatar, Card, Button, IconButton } from 'react-native-
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AuthService from '../../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getTotalRecords } from '../../database/db';
+import { createTables,getTotalRecords } from '../../database/db';
 import { getTotalRecordsGros } from '../../database/requeteGros';
 import { getTotalRecordsCons } from '../../database/requetteCons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -17,6 +17,20 @@ const Home = () => {
     const [totalRecords, setTotalRecords] = useState(0); // Ajouter un état pour stocker le nombre total de fiches
     const [totalRecordsGros, setTotalRecordsGro] = useState(0); // Ajouter un état pour stocker le nombre total de fiches
     const [totalRecordsCons, setTotalRecordsCons] = useState(0); // Ajouter un état pour stocker le nombre total de fiches
+
+    useEffect(() => {
+        const initializeDatabase = async () => {
+          try {
+            await createTables(); // Crée les tables si elles n'existent pas déjà
+            console.log('Database initialized successfully.');
+          } catch (error) {
+            console.error('Error initializing database:', error);
+          }
+        };
+    
+        initializeDatabase(); // Appel de la fonction d'initialisation
+      }, []);
+
 
     const countTotalRecords = async () => {
         try {
@@ -110,6 +124,10 @@ const Home = () => {
     // const logins = () => {
     //     navigation.navigate('Login')
     // };
+    const ListeData = () => {
+        checkToken();
+        navigation.navigate('ListData')
+    };
     const Setting = () => {
         checkToken();
         navigation.navigate('Setting')
@@ -132,13 +150,13 @@ const Home = () => {
             <Appbar.Header style={{ backgroundColor: '#fff' }}>
                 <View style={styles.header}>
                     <View style={styles.profileSection}>
-                        <Image
+                        {/* <Image
                             source={require('./../../assets/images/logo.png')}
                             style={styles.profileImage}
-                        />
+                        /> */}
                         <View style={{ flexDirection: 'column', paddingTop: 5 }}>
-                            <Text style={styles.welcomeText}>Bienvenue, <Text style={styles.usernameText}>{userName}</Text></Text>
-                            {/* <Text style={styles.usernameText}>{userName}</Text> */}
+                            <Text style={styles.welcomeText}>Bienvenue,</Text>
+                            <Text style={styles.usernameText}>{userName}</Text>
                         </View>
                     </View>
                     {/* <View style={styles.notificationSection}>
@@ -153,12 +171,15 @@ const Home = () => {
                         <View style={styles.dataIconsRow}>
                             <View>
                                 <View style={styles.dataHeader}>
-
-                                    <IconButton
+                                    <Image
+                                        source={require('./../../assets/images/logo.png')}
+                                        style={styles.dataImage}
+                                    />
+                                    {/* <IconButton
                                         icon={() => <MaterialCommunityIcons name="database" size={32} color="white" />}
                                         size={32}
                                         onPress={() => console.log('Base de données')}
-                                    />
+                                    /> */}
                                     <Text style={styles.dataTitle}>Données collectée</Text>
 
                                 </View>
@@ -169,14 +190,15 @@ const Home = () => {
                                         <IconButton
                                             icon={() => <MaterialCommunityIcons name="fish" size={32} color="white" />}
                                             size={32}
-                                            onPress={() => console.log('Pêche')}
+                                            onPress={() => ListeData()}
                                         />
                                     </View>
                                     <View style={styles.iconbtn}>
                                         <IconButton
                                             icon={() => <MaterialCommunityIcons name="cow" size={32} color="white" />}
                                             size={32}
-                                            onPress={() => console.log('Élevage')}
+                                            onPress={() => ListeData()}
+
                                         />
                                     </View>
                                 </View>
@@ -185,14 +207,16 @@ const Home = () => {
                                         <IconButton
                                             icon={() => <MaterialCommunityIcons name="map-marker" size={32} color="white" />}
                                             size={32}
-                                            onPress={() => console.log('Poste Frontalier')}
+                                            onPress={() => ListeData()}
+
                                         />
                                     </View>
                                     <View style={styles.iconbtn}>
                                         <IconButton
                                             icon={() => <MaterialCommunityIcons name="tractor" size={32} color="white" />}
                                             size={32}
-                                            onPress={() => console.log('Agriculture')}
+                                            onPress={() => ListeData()}
+
                                         />
                                     </View>
                                 </View>
@@ -266,7 +290,7 @@ const Home = () => {
                 {/*section peche frontalier */}
                 <View style={styles.buttonRow}>
                     <TouchableOpacity style={styles.button}
-                        // onPress={navigateToCollecte}
+                    // onPress={navigateToCollecte}
                     >
                         <Image
                             source={require('./../../assets/images/file.png')}
@@ -284,7 +308,7 @@ const Home = () => {
                         </View>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.button}
-                        // onPress={navigateToCollecte}
+                    // onPress={navigateToCollecte}
                     >
                         <Image
                             source={require('./../../assets/images/file.png')}

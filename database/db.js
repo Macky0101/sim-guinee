@@ -38,6 +38,56 @@ export const createTables = async () => {
       );
     `);
     console.log('Table "collecte" created successfully.');
+    await db.execAsync(`
+      PRAGMA journal_mode = WAL;
+      CREATE TABLE IF NOT EXISTS grossistes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        unite_stock INTEGER,
+    poids_moyen_unite_stock INTEGER,
+      poids_stock INTEGER,
+      unite_achat TEXT,
+      nombre_unite_achat INTEGER,
+      poids_moyen_unite_achat INTEGER,
+      poids_total_achat INTEGER,
+      localite_achat TEXT,
+      fournisseur_achat TEXT,
+      unite_vente TEXT,
+      nombre_unite_vente INTEGER,
+      poids_moyen_unite_vente INTEGER,
+      poids_total_unite_vente INTEGER,
+      prix_unitaire_vente INTEGER,
+      client_vente INTEGER,
+      client_principal TEXT,
+      fournisseur_principal TEXT,
+      niveau_approvisionement TEXT,
+      statut TEXT,
+      observation TEXT,
+      enquete INTEGER,
+      produit TEXT,
+      localite_origine INTEGER,
+     num_fiche TEXT
+      );
+    `);
+    console.log('Table "grossistes" created successfully.');
+    await db.execAsync(`
+      PRAGMA journal_mode = WAL;
+      CREATE TABLE IF NOT EXISTS consommation (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        unite INTEGER,
+        poids_unitaire REAL,
+        prix_mesure REAL,
+        prix_fg_kg REAL,
+        prix_kg_litre REAL,
+        niveau_approvisionnement TEXT,
+        statut TEXT,
+        observation TEXT,
+        enquete INTEGER,
+        produit TEXT,
+        num_fiche TEXT
+
+      );
+    `);
+        console.log('Table "consommation" created successfully.');
   } catch (error) {
     console.log('Error during table creation process: ', error);
   }

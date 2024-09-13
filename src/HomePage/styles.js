@@ -12,7 +12,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         // padding: 10,
-        marginBottom:30,
+        // marginBottom:30,
         borderBottomWidth: 1,
         borderBottomColor: '#E0E0E0',
     },
@@ -26,10 +26,15 @@ const styles = StyleSheet.create({
     },
     profileImage: {
         width: '50%',
-        height: 50,
+        height: 47,
         // borderRadius: 25,
         // backgroundColor: 'rgba(0, 0, 0, 0.1)',
         // marginRight: 10,
+    },
+    dataImage:{
+      width: '80%',
+      height: 47,
+      marginBottom:30
     },
     welcomeText: {
         fontSize: 16,
@@ -40,15 +45,17 @@ const styles = StyleSheet.create({
         color: '#004d40',
     },
     dataHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: 'colunm',
+      // alignItems: 'center',
+      justifyContent:'space-between'
+    
     },
     logo:{
       marginRight:10
     },
     dataTitle: {
       color: '#fff',
-      fontSize: 16,
+      fontSize: 24,
       fontWeight: 'bold',
     },
     dataIconsRow: {
