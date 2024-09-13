@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Animated,ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Searchbar, Chip, Card, Title, Paragraph } from 'react-native-paper';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -14,8 +14,12 @@ const ListData = () => {
   const [activeFilter, setActiveFilter] = useState('');
   const navigation = useNavigation();
   const scrollY = new Animated.Value(0);
+  const [loading, setLoading] = useState(false);
+
 
   useEffect(() => {
+    setLoading(true);
+
     const getFiches = async () => {
       try {
         const listConso = await FicheConsommationService.getListesConso();
@@ -33,7 +37,9 @@ const ListData = () => {
         setFilteredFiches(groupedByNumFiche);
       } catch (error) {
         console.error(error);
-      }
+      }finally {
+        setLoading(false);
+    }
     };
   
     getFiches();
@@ -171,6 +177,9 @@ const ListData = () => {
         </Chip>
       </View>
 
+      {loading ? (
+                <ActivityIndicator size="large" color="#0000ff" />
+            ) : (
       <Animated.FlatList
         data={filteredFiches}
         renderItem={renderAnimatedItem}
@@ -181,6 +190,7 @@ const ListData = () => {
         )}
         contentContainerStyle={styles.ficheList}
       />
+      )}
     </View>
   );
 };

@@ -18,48 +18,21 @@ const Home = () => {
     const [totalRecordsGros, setTotalRecordsGro] = useState(0); // Ajouter un état pour stocker le nombre total de fiches
     const [totalRecordsCons, setTotalRecordsCons] = useState(0); // Ajouter un état pour stocker le nombre total de fiches
 
+    const [isDatabaseReady, setIsDatabaseReady] = useState(false); // Pour savoir si la DB est prête
+
+    // Fonction pour créer les tables
     useEffect(() => {
         const initializeDatabase = async () => {
-          try {
-            await createTables(); // Crée les tables si elles n'existent pas déjà
-            console.log('Database initialized successfully.');
-          } catch (error) {
-            console.error('Error initializing database:', error);
-          }
+            try {
+                await createTables();
+                console.log('Tables created successfully.');
+                setIsDatabaseReady(true); // La base de données est prête
+            } catch (error) {
+                console.error('Error initializing database:', error);
+            }
         };
-    
-        initializeDatabase(); // Appel de la fonction d'initialisation
-      }, []);
-
-
-    const countTotalRecords = async () => {
-        try {
-            const total = await getTotalRecords();
-            setTotalRecords(total); // Mettre à jour l'état avec le total
-            // console.log('Total records in table "collecte":', total);
-        } catch (error) {
-            console.error('Erreur lors de la récupération des données :', error);
-        }
-    };
-    const countTotalRecordsGrossiste = async () => {
-        try {
-            const total = await getTotalRecordsGros();
-            setTotalRecordsGro(total); // Mettre à jour l'état avec le total
-            // console.log('Total records in table "grossiste":', total);
-        } catch (error) {
-            console.error('Erreur lors de la récupération des données :', error);
-        }
-    };
-    const countTotalRecordsCons = async () => {
-        try {
-            const total = await getTotalRecordsCons();
-            setTotalRecordsCons(total); // Mettre à jour l'état avec le total
-            // console.log('Total records in table "consommation":', total);
-        } catch (error) {
-            console.error('Erreur lors de la récupération des données :', error);
-        }
-    };
-
+        initializeDatabase();
+    }, []);
 
     // Fonction pour vérifier le token et la session
     const checkToken = async () => {
@@ -83,14 +56,36 @@ const Home = () => {
             console.error("Erreur lors de la vérification du token :", error);
         }
     };
+     // Fonction pour récupérer le nombre total d'enregistrements
+     const fetchData = async () => {
+        try {
+            const total = await getTotalRecords();
+            const totalGros = await getTotalRecordsGros();
+            const totalCons = await getTotalRecordsCons();
+            
+            setTotalRecords(total);
+            setTotalRecordsGro(totalGros);
+            setTotalRecordsCons(totalCons);
+        } catch (error) {
+            console.error('Erreur lors de la récupération des données :', error);
+        }
+    };
+
+      // Récupération des données seulement quand la base de données est prête
+      useEffect(() => {
+        if (isDatabaseReady) {
+            fetchData();
+        }
+    }, [isDatabaseReady]);
+
     // Vérifier le token à chaque fois que l'utilisateur interagit avec le composant
     useFocusEffect(
         React.useCallback(() => {
-            checkToken(); // Appel de la fonction à chaque fois que le composant est focus
-            countTotalRecords(); // Appel de la fonction à chaque fois que le composant est focus
-            countTotalRecordsGrossiste();
-            countTotalRecordsCons();
-        }, [])
+            if (isDatabaseReady) {
+                checkToken(); // Vérification du token uniquement si la base est prête
+                fetchData(); // Récupération des données seulement quand la base est prête
+            }
+        }, [isDatabaseReady])
     );
 
     useEffect(() => {

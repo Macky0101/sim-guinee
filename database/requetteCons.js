@@ -175,7 +175,7 @@ export const getConsommationData = async () => {
         `SELECT COUNT(*) as totalRecords FROM consommation`
       );
       const totalRecords = result.totalRecords;
-      // console.log('Total records in table "consommation":', totalRecords);
+      console.log('Total records in table "consommation":', totalRecords);
       return totalRecords;
     } catch (error) {
       console.log('Error during record count: ', error);

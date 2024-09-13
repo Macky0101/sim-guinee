@@ -258,14 +258,11 @@ const FicheCollecte = () => {
                                     <Text style={styles.text}>Marché: {fiche.marche_relation?.nom_marche || 'Marché inconnu'}</Text>
                                 </View>
                                 {/* Affichage des jours de marché */}
-                                <View style={styles.infoContainer}>
-                                    <AntDesign name="shoppingcart" size={20} color="#4A90E2" style={styles.icon} />
-                                    <Text style={styles.text}>Jour du Marché:</Text>
-                                </View>
+                                
 
                                 <View style={styles.infoContainer}>
                                     <AntDesign name="shoppingcart" size={20} color="#4A90E2" style={styles.icon} />
-                                    <Text style={styles.text}>jour du marche: {fiche.marche_relation?.jour_du_marche || 'jour du marcher ...'}</Text>
+                                    <Text style={styles.text}>Jour du Marché: {fiche.marche_relation?.jour_du_marche || 'jour du marcher ...'}</Text>
                                 </View>
                                 {/* desctription Section */}
                                 <View style={styles.infoContainer}>
