@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Image, Alert, ActivityIndicator } from 'react-native';
 import { TextInput, Button, IconButton } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import SyncService from '../../database/services/SyncService';
+import database from '../../database/database'
+import { Q } from '@nozbe/watermelondb';
+import Toast from 'react-native-toast-message';
 
 const Setting = () => {
   const navigation = useNavigation();
@@ -11,7 +15,143 @@ const Setting = () => {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [syncProgress, setSyncProgress] = useState(0); // État pour le pourcentage de synchronisation
+  const [isSyncing, setIsSyncing] = useState(false); // Pour désactiver le bouton pendant la synchronisation
+  const [isSyncingfiche, setIsSyncingfiche] = useState(false); // Pour la synchronisation des fiches
+  const [localFichesCount, setLocalFichesCount] = useState(0);
+  const [isSyncFicheButtonEnabled, setIsSyncFicheButtonEnabled] = useState(false);
+  // Vérifier s'il existe des fiches locales
+  const checkLocalFiches = async () => {
+    try {
+      const localFiches = await database.collections.get('fiches')
+        .query(Q.where('source', 'local')) // Requête pour les fiches locales
+        .fetch();
+      console.log('local', localFiches);
+      setLocalFichesCount(localFiches.length); // Compter le nombre de fiches locales
+      setIsSyncFicheButtonEnabled(localFiches.length > 0); // Activer le bouton si au moins une fiche locale existe
+    } catch (error) {
+      console.error('Erreur lors de la vérification des fiches locales:', error);
+    }
+  };
 
+  // Exécuter la vérification au montage du composant
+  useEffect(() => {
+    checkLocalFiches();
+  }, []);
+
+
+  // Fonction de synchronisation des fiches avec calcul de pourcentage
+  const handleSyncFiche = async () => {
+    if (!isSyncFicheButtonEnabled) return; // Empêcher la synchronisation si aucune fiche locale
+
+    setIsSyncingfiche(true);
+    setSyncProgress(0);
+    let syncedFichesCount = 0;
+
+    try {
+      const localFiches = await database.collections.get('fiches')
+        .query(Q.where('source', 'local'))
+        .fetch();
+
+      const totalFiches = localFiches.length;
+
+      for (const fiche of localFiches) {
+        // Synchroniser chaque fiche ici
+        await SyncService.syncFiches(fiche);
+        syncedFichesCount++;
+
+        // Mettre à jour le pourcentage basé sur le nombre de fiches synchronisées
+        setSyncProgress(Math.round((syncedFichesCount / totalFiches) * 100));
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: 'Synchronisation terminée',
+        text2: 'Toutes les fiches ont été synchronisées avec succès.',
+      });
+    } catch (error) {
+      console.error('Erreur lors de la synchronisation des fiches:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur de synchronisation',
+        text2: error.message,
+      });
+    } finally {
+      setIsSyncingfiche(false);
+      checkLocalFiches(); // Re-vérifier s'il reste des fiches locales après la sync
+    }
+  };
+
+  // Fonction de synchronisation des fiches avec ActivityIndicator
+  // const handleSyncFiche = async () => {
+  //   setIsSyncingfiche(true);
+  //   setSyncProgress(0);
+  //   console.log('Synchronisation des fiches démarrée');
+
+  //   try {
+  //     await SyncService.syncFiches();
+  //     console.log('Synchronisation des fiches réussie');
+  //     Toast.show({
+  //       type: 'success',
+  //       text1: 'Synchronisation terminée',
+  //       text2: 'Toutes les fiches ont été synchronisées avec succès.',
+  //     });
+  //       } catch (error) {
+  //     console.error('Erreur lors de la synchronisation des fiches:', error);
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Erreur de synchronisation',
+  //       text2: error.message,
+  //     });
+  //       } finally {
+  //     setIsSyncingfiche(false);
+  //   }
+  // };
+
+  // Fonction de synchronisation avec mise à jour du pourcentage
+  const handleSync = async () => {
+    try {
+      setIsSyncing(true);
+      setSyncProgress(0);
+
+      // Synchronisation TypeMarche (25%)
+      await SyncService.syncTypeMarche();
+      setSyncProgress(25);
+
+      // Synchronisation des Marchés (50%)
+      await SyncService.syncAllMarches();
+      setSyncProgress(50);
+
+      // Synchronisation des Fiches (75%)
+      // Vous pouvez ajouter une autre synchronisation ici
+      // await SyncService.syncFiche();
+      setSyncProgress(75);
+
+      // Fin de la synchronisation (100%)
+      setSyncProgress(100);
+
+      Alert.alert('Succès', 'La synchronisation est terminée avec succès.');
+    } catch (error) {
+      Alert.alert('Erreur', 'Erreur lors de la synchronisation.');
+    } finally {
+      setIsSyncing(false);
+      setSyncProgress(0);
+    }
+  };
+
+
+  //   const handleSync = async () => {
+  //     try {
+  //         await SyncService.syncTypeMarche(); // Démarre la synchronisation manuelle
+  //         // await SyncService.syncMarche(); // Démarre la synchronisation manuelle
+  //         await SyncService.syncAllMarches(); // Démarre la synchronisation manuelle
+  //     //    await SyncService.syncFiche();
+
+  //         Alert.alert('Succès', 'La synchronisation est terminée avec succès.');
+  //     } catch (error) {
+  //         Alert.alert('Erreur', 'Erreur lors de la synchronisation.');
+  //     }
+  // };
 
   const changePassword = () => {
     if (newPassword !== confirmPassword) {
@@ -48,6 +188,7 @@ const Setting = () => {
   };
   return (
     <View style={styles.container}>
+      <Toast />
 
       {/* Image de l'utilisateur */}
       <Image
@@ -55,6 +196,38 @@ const Setting = () => {
         style={styles.logo}
       />
       <Text style={styles.title}>Paramètres</Text>
+
+
+      {/* Bouton de synchronisation */}
+      <TouchableOpacity
+        style={[
+          styles.button,
+          (!isSyncFicheButtonEnabled || isSyncingfiche) ? styles.disabledButton : styles.enabledButton
+        ]}
+        onPress={handleSyncFiche}
+        disabled={!isSyncFicheButtonEnabled || isSyncingfiche}
+      >
+        {isSyncingfiche ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>
+            {isSyncingfiche ? `Synchronisation... ${syncProgress}%` : 'Synchroniser les fiches'}
+          </Text>
+        )}
+      </TouchableOpacity>
+
+ {/* Bouton de synchronisation */}
+ <TouchableOpacity
+        style={styles.button}
+        onPress={handleSync}
+        disabled={isSyncing} // Désactiver pendant la synchronisation
+      >
+        {/* Afficher le pourcentage pendant la synchronisation */}
+        <Text style={styles.buttonText}>
+          {isSyncing ? `Synchronisation... ${syncProgress}%` : 'Synchroniser les données'}
+        </Text>
+      </TouchableOpacity>
+
 
       <TouchableOpacity
         style={styles.button}
@@ -134,7 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor:'#009C57',
+    backgroundColor: '#009C57',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -144,6 +317,12 @@ const styles = StyleSheet.create({
   logoutButton: {
     backgroundColor: '#e53935',
   },
+  disabledButton: {
+    backgroundColor: '#B0B0B0', // Couleur grise pour bouton désactivé
+  },
+  enabledButton: {
+    backgroundColor: '#009C57', // Default button color
+  },
   buttonText: {
     color: '#fff',
     fontSize: 16,
@@ -152,7 +331,7 @@ const styles = StyleSheet.create({
   RetourButton: {
     alignContent: 'center',
     alignItems: 'center',
-    backgroundColor:'#009C57',
+    backgroundColor: '#009C57',
     alignSelf: 'center',
     borderRadius: 100,
     padding: 20

@@ -30,6 +30,13 @@ const FicheGrossiste = () => {
     const [ficheError, setFicheError] = useState('');
     const [marcheError, setMarcheError] = useState('');
     const [dateError, setDateError] = useState('');
+    const [numeroPointCollecte, setNumeroPointCollecte] = useState('');
+    const [nomPersonneEnquete, setNomPersonneEnquete] = useState('');
+    const [contactPersonneEnquete, setContactPersonneEnquete] = useState('');
+    const [numeroPointCollecteError, setNumeroPointCollecteError] = useState('');
+    const [nomPersonneEnqueteError, setNomPersonneEnqueteError] = useState('');
+    const [contactPersonneEnqueteError, setContactPersonneEnqueteError] = useState('');
+
     const validateForm = () => {
         let isValid = true;
 
@@ -56,6 +63,31 @@ const FicheGrossiste = () => {
         } else {
             setDateError('');
         }
+
+        // Validation pour le champ "Numéro du point de collecte"
+        if (!numeroPointCollecte) {
+            setNumeroPointCollecteError('Le numéro du point de collecte est requis.');
+            isValid = false;
+        } else {
+            setNumeroPointCollecteError(''); // Réinitialiser l'erreur si le champ est valide
+        }
+
+        // Validation pour le champ "Nom de la personne enquêtée"
+        if (!nomPersonneEnquete) {
+            setNomPersonneEnqueteError('Le nom de la personne enquêtée est requis.');
+            isValid = false;
+        } else {
+            setNomPersonneEnqueteError('');
+        }
+
+        // Validation pour le champ "Contact de la personne enquêtée"
+        if (!contactPersonneEnquete) {
+            setContactPersonneEnqueteError('Le contact de la personne enquêtée est requis.');
+            isValid = false;
+        } else {
+            setContactPersonneEnqueteError('');
+        }
+
 
         return isValid;
     };
@@ -126,6 +158,21 @@ const FicheGrossiste = () => {
             setFilteredFiches(fichesFilteredByCollecteur);
             // console.log('Fiches filtrées par collecteur', fichesFilteredByCollecteur);
 
+            const fichesWithTypeMarche = fichesFilteredByCollecteur.map(fiche => ({
+                ...fiche,
+                type_marche: fiche.marche_relation ? fiche.marche_relation.type_marche : null
+            }));
+
+            // Stockez les fiches avec type_marche
+            setFiches(fichesWithTypeMarche);
+            setFilteredFiches(fichesWithTypeMarche);
+
+            // Sauvegarde des données localement
+            await AsyncStorage.setItem('ficheCollectData', JSON.stringify(fichesWithTypeMarche));
+
+            // console.log('Fiches avec type_marche:', fichesWithTypeMarche);
+
+
             // Sauvegarde des données localement
             await AsyncStorage.setItem('ficheCollectData', JSON.stringify(fichesFilteredByCollecteur));
         } catch (error) {
@@ -157,7 +204,7 @@ const FicheGrossiste = () => {
                 value: marche.id_marche.toString(),
             }));
 
-            console.log('Marchés filtrés pour le collecteur:', filteredMarches);
+            // console.log('Marchés filtrés pour le collecteur:', filteredMarches);
             setMarches(formattedMarches);
         } catch (error) {
             console.error('Erreur lors de la récupération des marchés:', error);
@@ -166,6 +213,17 @@ const FicheGrossiste = () => {
 
 
 
+    const generateFicheNumber = async () => {
+        try {
+            const generatedFiche = await FicheCollect.getNumeroFiche();
+            console.log('Numéro de fiche généré:', generatedFiche);
+            setFiche(generatedFiche); // Stocker le numéro de fiche dans l'état
+            console.log('Numéro de fiche généré:', setFiche);
+
+        } catch (error) {
+            console.error("Erreur lors de la génération du numéro de fiche:", error);
+        }
+    };
 
 
     const onSearch = (query) => {
@@ -184,7 +242,10 @@ const FicheGrossiste = () => {
 
 
 
-    const showModal = () => setVisible(true);
+    const showModal = async () => {
+        await generateFicheNumber(); // Génére le numéro de fiche avant d'ouvrir le modal
+        setVisible(true);
+    };
     const hideModal = () => {
         // Réinitialiser les champs
         setFiche('');
@@ -201,8 +262,12 @@ const FicheGrossiste = () => {
             num_fiche: fiche,
             date_enquete: date.toISOString().split('T')[0], // Extraire uniquement la date
             marche: marche,
-            collecteur: collecteur
+            collecteur: collecteur,
+            numero_point_collecte: numeroPointCollecte,  // Ajout du champ "Numéro du point de collecte"
+            nom_personne_enquete: nomPersonneEnquete,    // Ajout du champ "Nom de la personne enquêtée"
+            contact_personne_enquete: contactPersonneEnquete // Ajout du champ "Contact de la personne enquêtée"
         };
+
         // console.log('donne', ficheData);
         try {
             await FicheGrossisteservices.postFicheGrossiste(ficheData);
@@ -211,12 +276,42 @@ const FicheGrossiste = () => {
             setFiche('');
             setMarche('');
             setDate(new Date());
+            setNumeroPointCollecte('');
+            setNomPersonneEnquete('');
+            setContactPersonneEnquete('');
+
             hideModal();
         } catch (error) {
             console.error('Erreur lors de la création de la fiche:', error);
         }
     };
+    const [collecteurs, setCollecteurs] = useState([]);
+    const [selectedCollecteur, setSelectedCollecteur] = useState(null);
+    const [searchCollecteur, setSearchCollecteur] = useState('');
 
+    const fetchCollecteurs = async () => {
+        try {
+            const collecteurs = await FicheGrossisteservices.getCollecteur();
+            const formattedCollecteurs = collecteurs.map(collecteur => ({
+                label: `${collecteur.nom_collecteur} ${collecteur.prenom_collecteur}`,
+                value: collecteur.id_collecteur.toString(),
+            }));
+            setCollecteurs(formattedCollecteurs);
+        } catch (error) {
+            console.error('Erreur lors de la récupération des collecteurs:', error);
+        }
+    };
+    useEffect(() => {
+        fetchCollecteurs();
+    }, []);
+
+
+    useEffect(() => {
+        if (selectedCollecteur) {
+          console.log('Collecteur sélectionné ID:', selectedCollecteur);
+        }
+      }, [selectedCollecteur]);
+      
 
     return (
         <View style={styles.container}>
@@ -232,7 +327,7 @@ const FicheGrossiste = () => {
                 style={styles.searchbar}
             />
             <View style={styles.header}>
-                <Text style={styles.headerText}>Liste des enquêtes de collecte</Text>
+                <Text style={styles.headerText}>Liste des enquêtes de grossistes</Text>
             </View>
 
             {loading ? (
@@ -252,8 +347,8 @@ const FicheGrossiste = () => {
                                     <Text style={styles.text}>Marché: {fiche.marche_relation?.nom_marche || 'Marché inconnu'}</Text>
                                 </View>
                                 {/* Affichage des jours de marché */}
-                               
-                                 
+
+
                                 <View style={styles.infoContainer}>
                                     <AntDesign name="shoppingcart" size={20} color="#4A90E2" style={styles.icon} />
                                     <Text style={styles.text}>jour du marche: {fiche.marche_relation?.jour_du_marche || 'jour du marcher ...'}</Text>
@@ -276,7 +371,7 @@ const FicheGrossiste = () => {
                                             <Text style={{ color: '#fff' }}>Voir les données</Text>
                                         </View>
                                     </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => navigation.navigate('FormGrossistes', { id: fiche.id, num_fiche: fiche.num_fiche })}>
+                                    <TouchableOpacity onPress={() => navigation.navigate('FormGrossistes', { id: fiche.id, num_fiche: fiche.num_fiche, type_marche: fiche.type_marche, })}>
                                         <View style={styles.btn1}>
                                             <Text style={{ color: '#fff' }}>Nouvelle donnée </Text>
                                         </View>
@@ -294,12 +389,7 @@ const FicheGrossiste = () => {
             <Portal>
                 <Modal visible={visible} onDismiss={hideModal} contentContainerStyle={styles.modalContainer}>
                     <Text>Créer une fiche d’enquête</Text>
-                    <TextInput
-                        label="N° fiche:"
-                        value={fiche}
-                        onChangeText={text => setFiche(text)}
-                        style={styles.input}
-                    />
+                    <Text>N° fiche: {fiche || 'Generating...'}</Text>
                     {ficheError ? <Text style={styles.errorText}>{ficheError}</Text> : null}
                     <Dropdown
                         style={styles.dropdown}
@@ -334,9 +424,46 @@ const FicheGrossiste = () => {
                             locale="fr-FR"
                         />
                     )}
+                    {/* <Dropdown
+                        style={styles.dropdown}
+                        data={collecteurs}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Sélectionnez un collecteur"
+                        value={selectedCollecteur}
+                        search
+                        searchPlaceholder="Rechercher un collecteur..."
+                        onSearch={setSearchCollecteur}
+                        onChange={item => setSelectedCollecteur(item.value)}
+                        renderLeftIcon={() => (
+                            <AntDesign style={styles.icon} color="black" name="user" size={20} />
+                        )}
+                    /> */}
 
-                    <Button mode="contained" onPress={postFiche} style={styles.button}>
-                        Enregistrer
+                    <TextInput
+                        label="Numéro du point de collecte"
+                        value={numeroPointCollecte}
+                        onChangeText={setNumeroPointCollecte}
+                        style={styles.input}
+                    />
+                    {numeroPointCollecteError ? <Text style={styles.errorText}>{numeroPointCollecteError}</Text> : null}
+                    <TextInput
+                        label="Nom de la personne enquêtée"
+                        value={nomPersonneEnquete}
+                        onChangeText={setNomPersonneEnquete}
+                        style={styles.input}
+                    />
+                    {nomPersonneEnqueteError ? <Text style={styles.errorText}>{nomPersonneEnqueteError}</Text> : null}
+                    <TextInput
+                        label="Contact de la personne enquêtée"
+                        value={contactPersonneEnquete}
+                        onChangeText={setContactPersonneEnquete}
+                        style={styles.input}
+                    />
+                    {contactPersonneEnqueteError ? <Text style={styles.errorText}>{contactPersonneEnqueteError}</Text> : null}
+
+                    <Button mode="contained" onPress={postFiche} style={styles.button} disabled={loading}>
+                        {loading ? <ActivityIndicator color="#fff" /> : "Enregistrer"}
                     </Button>
                 </Modal>
             </Portal>
@@ -364,6 +491,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         height: 50,
         justifyContent: 'center',
+    },
+    icon: {
+        marginRight: 10,
     },
     searchbar: {
         marginBottom: 16,
@@ -444,7 +574,8 @@ const styles = StyleSheet.create({
         marginVertical: 5,
     },
     input: {
-        marginBottom: 16,
+        marginBottom: 15,
+        backgroundColor: '#fff',
     },
     button: {
         marginTop: 16,
@@ -505,6 +636,15 @@ const styles = StyleSheet.create({
         color: 'red',
         fontSize: 12,
         marginBottom: 8,
+    },
+    dropdown: {
+        marginBottom: 10,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 5,
+        paddingHorizontal: 10,
+        height: 50,
+        justifyContent: 'center',
     },
 });
 

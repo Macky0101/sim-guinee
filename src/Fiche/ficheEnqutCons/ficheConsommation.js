@@ -159,8 +159,10 @@ const FicheConsommation = () => {
     };
 
 
-
-    const showModal = () => setVisible(true);
+    const showModal = async () => {
+        await generateFicheNumber(); // Génére le numéro de fiche avant d'ouvrir le modal
+        setVisible(true);
+    };
     const hideModal = () => {
         // Réinitialiser les champs
         setFiche('');
@@ -221,7 +223,17 @@ const FicheConsommation = () => {
             console.error('Erreur lors de la création de la fiche:', error);
         }
     };
+    const generateFicheNumber = async () => {
+        try {
+            const generatedFiche = await FicheCollect.getNumeroFiche();
+            console.log('Numéro de fiche généré:', generatedFiche);
+            setFiche(generatedFiche); // Stocker le numéro de fiche dans l'état
+            console.log('Numéro de fiche généré:', setFiche);
 
+        } catch (error) {
+            console.error("Erreur lors de la génération du numéro de fiche:", error);
+        }
+    };
 
 
     return (
@@ -259,13 +271,13 @@ const FicheConsommation = () => {
                                 </View>
 
                                 {/* Affichage des jours de marché */}
-                              
-                                
+
+
                                 <View style={styles.infoContainer}>
                                     <AntDesign name="shoppingcart" size={20} color="#4A90E2" style={styles.icon} />
                                     <Text style={styles.text}>jour du marche: {fiche.marche_relation?.jour_du_marche || 'jour du marcher ...'}</Text>
                                 </View>
-                                
+
                                 {/* desctription Section */}
                                 <View style={styles.infoContainer}>
                                     <AntDesign name="infocirlceo" size={20} color="#4A90E2" style={styles.icon} />
@@ -303,12 +315,7 @@ const FicheConsommation = () => {
             <Portal>
                 <Modal visible={visible} onDismiss={hideModal} contentContainerStyle={styles.modalContainer}>
                     <Text>Créer une fiche d’enquête</Text>
-                    <TextInput
-                        label="N° fiche:"
-                        value={fiche}
-                        onChangeText={text => setFiche(text)}
-                        style={styles.input}
-                    />
+                    <Text>N° fiche: {fiche || 'Generating...'}</Text>
                     {ficheError ? <Text style={styles.errorText}>{ficheError}</Text> : null}
                     <Dropdown
                         style={styles.dropdown}
@@ -344,8 +351,8 @@ const FicheConsommation = () => {
                         />
                     )}
 
-                    <Button mode="contained" onPress={postFiche} style={styles.button}>
-                        Enregistrer
+                    <Button mode="contained" onPress={postFiche} style={styles.button} disabled={loading}>
+                        {loading ? <ActivityIndicator color="#fff" /> : "Enregistrer"}
                     </Button>
                 </Modal>
             </Portal>

@@ -6,6 +6,8 @@ import { Searchbar, FAB, Dialog, Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import FormCollect from '../../../services/serviceAgricultures/ficheCollect/serviceFormulaire';
 import { Ionicons } from '@expo/vector-icons'; 
+import database from '../../../database/database';
+import {getAllCollects ,countCollects,deleteCollect} from '../../../database/collecteService';
 
 const ListesCollecte = () => {
   const route = useRoute();
@@ -48,22 +50,38 @@ const [isUploading, setIsUploading] = useState(false);   // État pour suivre si
     loadUniteMesures();
   }, []);
 
+ 
+
+
   useEffect(() => {
-    const fetchCollectes = async () => {
+    const fetchAndFilterCollects = async () => {
       try {
-        const allCollectes = await getCollecteData();
-        const filteredCollectes = allCollectes.filter(
+        // Récupérer toutes les collectes
+        const allCollects = await getAllCollects();
+
+        const allCollectsRaw = allCollects.map((collecte) => collecte._raw);
+        
+        // Filtrer les collectes selon le num_fiche
+        const filteredCollects = allCollectsRaw.filter(
           (collecte) => collecte.num_fiche === num_fiche
         );
-        setCollectes(filteredCollectes);
-        console.log('Collectes', filteredCollectes)
-        setLoading(false);
+      
+        // Mettre à jour l'état avec les collectes filtrées
+        setCollectes(filteredCollects);
+        console.log('Collectes', filteredCollects);
+        console.log('allCollects', allCollects);
       } catch (error) {
         console.error('Erreur lors de la récupération des collectes:', error);
+      } finally {
+        // Mettre à jour l'état de chargement
+        setLoading(false);
       }
     };
-    fetchCollectes();
-  }, [num_fiche]);
+  
+    fetchAndFilterCollects();
+  }, [num_fiche]); // Dépendance sur num_fiche pour ré-exécuter le useEffect lorsque num_fiche change
+  
+
 
   const getProduitInfo = (codeProduit) => {
     for (const category in produits) {
@@ -103,7 +121,7 @@ const [isUploading, setIsUploading] = useState(false);   // État pour suivre si
 
   const handleDelete = async () => {
     if (selectedCollecte) {
-      await deleteCollecte(selectedCollecte.id);
+      await deleteCollect(selectedCollecte.id);
       setCollectes(collectes.filter((c) => c.id !== selectedCollecte.id));
       setDialogVisible(false);
     }
@@ -111,44 +129,40 @@ const [isUploading, setIsUploading] = useState(false);   // État pour suivre si
   const postForm = async () => {
     try {
       setIsUploading(true);
-    setUploadProgress(0); // Reset the progress bar
-    let allSent = true;
-    const totalCollectes = collectes.length; // Nombre total de collectes
-
-    for (let i = 0; i < totalCollectes; i++) {
-      const collecte = collectes[i];
+      setUploadProgress(0); // Réinitialiser la barre de progression
+      let allSent = true;
+      const totalCollectes = filteredCollectes.length; // Nombre total de collectes filtrées
+  
+      for (let i = 0; i < totalCollectes; i++) {
+        const collecte = filteredCollectes[i];
         const ficheData = {
           unite: collecte.unite, 
           poids_unitaire: parseFloat(collecte.poids_unitaire),
           montant_achat: parseFloat(collecte.montant_achat),
           prix_fg_kg: parseFloat(collecte.prix_fg_kg) || 0,
-          distance_origine_marche: parseFloat(collecte.distance_origine_marche) || 0,
-          montant_transport: parseFloat(collecte.montant_transport) || 0,
           etat_route: collecte.etat_route || '',
           quantite_collecte: parseFloat(collecte.quantite_collecte) || 0,
-          client_principal: collecte.client_principal || '',
-          fournisseur_principal: collecte.fournisseur_principal || '',
           niveau_approvisionement: collecte.niveau_approvisionement || '',
-          statut: collecte.statut || '',
+          statut: collecte.statut || false, // Assuming statut is a boolean
           observation: collecte.observation || '',
+          etat: collecte.etat || '',
           enquete: parseInt(collecte.enquete, 10) || 0,
-          produit: collecte.produit, 
-          localite_origine: parseInt(collecte.localite_origine, 10) || 0,
+          produit: collecte.produit,
+          destination_finale: collecte.destination_finale || 0,
         };
   
         try {
           await FormCollect.postFormCollect(ficheData);  // Envoi de la collecte
           console.log(`Enregistrement ${collecte.id} envoyé avec succès.`);
-          console.log('Fiche envoyée', ficheData);
   
           // Suppression locale après envoi réussi
-          await deleteCollecte(collecte.id);
-          console.log('suppression locale', collecte.id);
+          await deleteCollect(collecte.id);
           setCollectes((prevCollectes) => prevCollectes.filter((c) => c.id !== collecte.id));
-           // Mise à jour de la progression
-        const newProgress = Math.round(((i + 1) / totalCollectes) * 100);
-        setUploadProgress(newProgress);
-
+  
+          // Mise à jour de la progression
+          const newProgress = Math.round(((i + 1) / totalCollectes) * 100);
+          setUploadProgress(newProgress);
+  
         } catch (error) {
           console.error(`Erreur lors de l'envoi de l'enregistrement ${collecte.id}:`, error);
           Alert.alert(
@@ -172,7 +186,6 @@ const [isUploading, setIsUploading] = useState(false);   // État pour suivre si
       console.error("Erreur lors de l'envoi des données:", error);
       Alert.alert('Erreur', 'Une erreur est survenue lors de l\'envoi des enregistrements.');
     } finally {
-      setLoading(false);
       setIsUploading(false); // Arrêter le suivi d'envoi après la fin
       setUploadProgress(0); // Réinitialiser la progression
     }
@@ -217,7 +230,7 @@ const [isUploading, setIsUploading] = useState(false);   // État pour suivre si
         {filteredCollectes.map((collecte, index) => {
           const produitInfo = getProduitInfo(collecte.produit);
           const uniteInfo = getUniteInfo(collecte.unite);
-          const localiteInfo = getLocaliteInfo(collecte.localite_origine);
+          const localiteInfo = getLocaliteInfo(collecte.destination_finale);
 
           return (
             <TouchableOpacity
@@ -248,13 +261,10 @@ const [isUploading, setIsUploading] = useState(false);   // État pour suivre si
                     {expandedCollecte === collecte.id && (
                       <>
                     <Text>Localité : <Text style={styles.label}>{localiteInfo}</Text></Text>
-                    <Text>Quantité : <Text style={styles.label}>{collecte.quantite_collecte}</Text></Text>
-                    <Text>Montant : <Text style={styles.label}>{collecte.montant_achat}</Text> FG</Text>
-                    <Text>Client Principal: <Text style={styles.label}>{collecte.client_principal}</Text></Text>
-                    <Text>Fournisseur Principal: <Text style={styles.label}>{collecte.fournisseur_principal}</Text></Text>
-                    <Text>Distance à l'Origine du Marché: <Text style={styles.label}>{collecte.distance_origine_marche}</Text> km</Text>
+                    <Text>Quantité Collecte: <Text style={styles.label}>{collecte.quantite_collecte}</Text></Text>
                     <Text>Niveau d'Approvisionnement: <Text style={styles.label}>{collecte.niveau_approvisionement}</Text></Text>
                     <Text>Etat Route: <Text style={styles.label}>{collecte.etat_route}</Text></Text>
+                    <Text>Etat : <Text style={styles.label}>{collecte.etat}</Text></Text>
                     <Text>Statut: <Text style={styles.label}>{collecte.statut}</Text></Text>
                     <Text>prix fg kg: <Text style={styles.label}>{collecte.prix_fg_kg}</Text> FG</Text>
                     <Text>Observation: <Text style={styles.label}>{collecte.observation}</Text></Text>

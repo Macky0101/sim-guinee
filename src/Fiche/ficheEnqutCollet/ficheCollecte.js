@@ -19,6 +19,7 @@ const FicheCollecte = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [visible, setVisible] = useState(false);
     const [fiche, setFiche] = useState('');
+    console.log('fiche',fiche);
     const [marche, setMarche] = useState('');
     const [date, setDate] = useState(new Date());
     const [loading, setLoading] = useState(false);
@@ -55,10 +56,8 @@ const FicheCollecte = () => {
 
     // Nouvel useEffect pour récupérer les marchés après avoir obtenu le collecteur
     useEffect(() => {
-        if (collecteur) {
             getMarches();
-        }
-    }, [collecteur]);
+    }, []);
 
     useEffect(() => {
         if (collecteur) {
@@ -100,6 +99,20 @@ const FicheCollecte = () => {
             setFilteredFiches(fichesFilteredByCollecteur);
             // console.log('Fiches filtrées par collecteur', fichesFilteredByCollecteur);
 
+            const fichesWithTypeMarche = fichesFilteredByCollecteur.map(fiche => ({
+                ...fiche,
+                type_marche: fiche.marche_relation ? fiche.marche_relation.type_marche : null
+            }));
+
+            // Stockez les fiches avec type_marche
+            setFiches(fichesWithTypeMarche);
+            setFilteredFiches(fichesWithTypeMarche);
+
+            // Sauvegarde des données localement
+            await AsyncStorage.setItem('ficheCollectData', JSON.stringify(fichesWithTypeMarche));
+
+            // console.log('Fiches avec type_marche:', fichesWithTypeMarche);
+
             // Sauvegarde des données localement
             await AsyncStorage.setItem('ficheCollectData', JSON.stringify(fichesFilteredByCollecteur));
         } catch (error) {
@@ -115,33 +128,38 @@ const FicheCollecte = () => {
             setLoading(false);
         }
     };
-
-
     const getMarches = async () => {
         try {
             const response = await FicheCollect.getListeMarche();
-            // Assurez-vous que `collecteur` est bien défini et que `response` contient les marchés
-            console.log('Collecteur:', collecteur);
-            // console.log('Marchés:', response);
-
-            // Filtrer les marchés en fonction du collecteur
-            const filteredMarches = response.filter((marche) => marche.id_collecteur === collecteur);
-
-            const formattedMarches = filteredMarches.map((marche) => ({
-                label: marche.nom_marche,
-                value: marche.id_marche.toString(),
-            }));
-
-            console.log('Marchés filtrés pour le collecteur:', filteredMarches);
+    
+            // Filter the markets where the `nom_type_marche` is "Collecte"
+            const filteredMarches = response.filter((marche) => 
+                marche.type_marche.nom_type_marche === "Collecte"
+            );
+    
+            // console.log('Listes marchés collecte:', filteredMarches);
+    
+            // Format the filtered markets for display, ensuring marche.marche exists
+            const formattedMarches = filteredMarches.flatMap((marche) =>
+                marche.marches
+                    .filter((m) => m.marche && m.marche.nom_marche && m.marche.id_marche) // Ensures marche exists
+                    .map((m) => ({
+                        label: m.marche.nom_marche,  // Use appropriate field for label
+                        value: m.marche.id_marche    // Use appropriate field for value
+                    }))
+            );
+    
+            console.log('Marchés filtrés pour le type "Collecte":', formattedMarches);
             setMarches(formattedMarches);
         } catch (error) {
             console.error('Erreur lors de la récupération des marchés:', error);
         }
     };
+    
+    
+  
 
-
-
-
+    // Dans le modal
 
     const onSearch = (query) => {
         setSearchQuery(query);
@@ -157,9 +175,23 @@ const FicheCollecte = () => {
         }
     };
 
+    const generateFicheNumber = async () => {
+        try {
+            const generatedFiche = await FicheCollect.getNumeroFiche();
+            console.log('Numéro de fiche généré:', generatedFiche);
+            setFiche(generatedFiche); // Stocker le numéro de fiche dans l'état
+            console.log('Numéro de fiche généré:', setFiche);
 
+        } catch (error) {
+            console.error("Erreur lors de la génération du numéro de fiche:", error);
+        }
+    };
 
-    const showModal = () => setVisible(true);
+    const showModal = async () => {
+        await generateFicheNumber(); // Génére le numéro de fiche avant d'ouvrir le modal
+        setVisible(true);
+    };
+
     const hideModal = () => {
         // Réinitialiser les champs
         setFiche('');
@@ -201,13 +233,14 @@ const FicheCollecte = () => {
         if (!validateForm()) {
             return;
         }
+        setLoading(true);
         const ficheData = {
             num_fiche: fiche,
             date_enquete: date.toISOString().split('T')[0], // Extraire uniquement la date
             marche: marche,
             collecteur: collecteur
         };
-        // console.log('donne', ficheData);
+        console.log('donne', ficheData);
         try {
             await FicheCollect.postFicheCollect(ficheData);
             getFiche();
@@ -218,6 +251,8 @@ const FicheCollecte = () => {
             hideModal();
         } catch (error) {
             console.error('Erreur lors de la création de la fiche:', error);
+        } finally {
+            setLoading(false); // Arrêter le chargement
         }
     };
 
@@ -246,7 +281,7 @@ const FicheCollecte = () => {
                 <KeyboardAwareScrollView contentContainerStyle={styles.inner}>
                     {filteredFiches.length > 0 ? (
                         filteredFiches.map((fiche, index) => (
-                            
+
                             <View key={index} style={styles.ficheContainer}>
                                 <View style={styles.fiche}>
                                     <Text style={{ color: '#fff' }}>N° Fiche: {fiche.num_fiche}</Text>
@@ -258,7 +293,7 @@ const FicheCollecte = () => {
                                     <Text style={styles.text}>Marché: {fiche.marche_relation?.nom_marche || 'Marché inconnu'}</Text>
                                 </View>
                                 {/* Affichage des jours de marché */}
-                                
+
 
                                 <View style={styles.infoContainer}>
                                     <AntDesign name="shoppingcart" size={20} color="#4A90E2" style={styles.icon} />
@@ -282,7 +317,7 @@ const FicheCollecte = () => {
                                             <Text style={{ color: '#fff' }}>Voir les données</Text>
                                         </View>
                                     </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => navigation.navigate('Formulaire', { id: fiche.id, num_fiche: fiche.num_fiche })}>
+                                    <TouchableOpacity onPress={() => navigation.navigate('Formulaire', { id: fiche.id, num_fiche: fiche.num_fiche, type_marche: fiche.type_marche, })}>
                                         <View style={styles.btn1}>
                                             <Text style={{ color: '#fff' }}>Nouvelle donnée </Text>
                                         </View>
@@ -300,12 +335,7 @@ const FicheCollecte = () => {
             <Portal>
                 <Modal visible={visible} onDismiss={hideModal} contentContainerStyle={styles.modalContainer}>
                     <Text>Créer une fiche d’enquête</Text>
-                    <TextInput
-                        label="N° fiche:"
-                        value={fiche}
-                        onChangeText={text => setFiche(text)}
-                        style={styles.input}
-                    />
+                    <Text>N° fiche: {fiche || 'Generating...'}</Text>
                     {ficheError ? <Text style={styles.errorText}>{ficheError}</Text> : null}
                     <Dropdown
                         style={styles.dropdown}
@@ -341,9 +371,10 @@ const FicheCollecte = () => {
                         />
                     )}
 
-                    <Button mode="contained" onPress={postFiche} style={styles.button}>
-                        Enregistrer
+                    <Button mode="contained" onPress={postFiche} style={styles.button} disabled={loading}>
+                        {loading ? <ActivityIndicator color="#fff" /> : "Enregistrer"}
                     </Button>
+
                 </Modal>
             </Portal>
 

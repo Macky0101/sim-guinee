@@ -1,5 +1,6 @@
 
-import { StyleSheet } from "react-native";
+import { StyleSheet ,Dimensions} from "react-native";
+const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
     container: {
@@ -7,6 +8,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         padding: 10,
     },
+    syncIcon: {
+      position: 'absolute',
+      right: 10,
+      top: 10,
+  },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -17,7 +23,7 @@ const styles = StyleSheet.create({
         borderBottomColor: '#E0E0E0',
     },
     profileSection: {
-        // flexDirection: 'row',
+        flexDirection: 'row',
         // alignItems: 'center',
         flex: 1,  // Prendre tout l'espace disponible à gauche
     },
@@ -87,13 +93,13 @@ const styles = StyleSheet.create({
       justifyContent: "space-around",
       margin: 10
   },
-  card: {
-    width: '30%',
-    backgroundColor: '#D8D8D8',
-    padding:12,
-    borderRadius:10,
-    // position: 'relative',
-  },
+  // card: {
+  //   width: '30%',
+  //   backgroundColor: '#D8D8D8',
+  //   padding:12,
+  //   borderRadius:10,
+  //   // position: 'relative',
+  // },
   cardValue: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -124,28 +130,11 @@ fontSize:12,
     bottom: 0,
     
   },
-  
-      // collectSection: {
-      //   backgroundColor: '#F0F0F0',
-      //   padding: 20,
-      //   marginTop: 10,
-      //   borderRadius: 5,
-      // },
-      // sectionTitle: {
-      //   fontSize: 20,
-      //   fontWeight: 'bold',
-      //   marginBottom: 10,
-      // },
-      // collectDetails: {
-      //   flexDirection: 'row',
-      //   justifyContent: 'space-between',
-      //   marginBottom: 10,
-      // },
+ 
       label:{
         fontSize:16,
       },
       buttonRow: {
-        flexDirection: 'row',
         justifyContent: 'space-between',
         marginTop: 5,
         marginBottom:5,
@@ -160,15 +149,7 @@ fontSize:12,
         flexDirection: 'column',
         position: 'relative',
       },
-      imagePeche:{
-        position: 'absolute',
-        top: 0,
-        left: 90,
-        right: 0,
-        bottom: 0,
-        resizeMode: 'cover', // Ajuster l'image pour couvrir le conteneur
-        // opacity: 0.9,
-      },
+  
       fichePecheFrontal:{
         width:40,
         height:40,
@@ -227,6 +208,74 @@ fontSize:12,
         fontWeight: 'bold',
         color: '#004d40',
       },
+      cardRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginVertical: 10,
+    },
+    // card: {
+    //     flex: 1,
+    //     marginHorizontal: 5,
+    //     padding: 0,
+    //     borderRadius: 10,
+    //     backgroundColor: '#f8f8f8',
+    //     position: 'relative',
+    // },
+    cardTitle: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#333',
+    },
+
+// Card
+
+    cardContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      // padding: 10,
+  },
+  card: {
+      width: (width / 2) - 20, // Adjust the width to fit two cards per row with padding
+      height: 100, // Set a fixed height for all cards
+      marginVertical: 10,
+      
+  },
+  cardContent: {
+      position: 'relative',
+      padding: 10,
+  },
+  leftContent: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      gap:10
+  },
+  marketIcon: {
+      width: 20,
+      height: 35,
+      // marginRight: 10,
+  },
+  marketName: {
+      fontSize: 16,
+      fontWeight: 'bold',
+  },
+  backgroundImage: {
+      position: 'absolute',
+      bottom: -14,
+      right: 1,
+      width: '100%',
+      height: '100%',
+      opacity: 0.5,
+  },
+  badge: {
+      position: 'absolute',
+      top: -10,
+      right: 0,
+      backgroundColor: '#0FA958',
+      color: 'white',
+  },
+
+
 });
 
 export default styles;

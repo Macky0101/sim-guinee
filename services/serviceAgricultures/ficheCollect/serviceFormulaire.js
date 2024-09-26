@@ -1,10 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// const SIMGUINEE_URL = 'http://92.112.194.154:8000/api/';
-const SIMGUINEE_URL = 'https://cors-proxy.fringe.zone/http://92.112.194.154:8000/api/';
-axios.defaults.headers.common['Content-Type'] = 'application/json';
-axios.defaults.headers.common['x-requested-with'] = 'XMLHttpRequest';
+const SIMGUINEE_URL = 'https://sim-guinee.org/api/';
 
 const FormCollect = {
   postFormCollect: async (ficheData) => {

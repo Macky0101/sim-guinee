@@ -300,3 +300,18 @@ export const deleteAllCollecte = async () => {
     console.log('Error during data deletion: ', error);
   }
 };
+// Fonction pour supprimer les tables
+export const dropTables = async () => {
+  try {
+    console.log('Dropping tables...');
+    const db = await openDatabase();
+    await db.execAsync('DROP TABLE IF EXISTS collecte;');
+    console.log('Table "collecte" dropped successfully.');
+    await db.execAsync('DROP TABLE IF EXISTS grossistes;');
+    console.log('Table "grossistes" dropped successfully.');
+    await db.execAsync('DROP TABLE IF EXISTS consommation;');
+    console.log('Table "consommation" dropped successfully.');
+  } catch (error) {
+    console.log('Error during table drop process: ', error);
+  }
+};

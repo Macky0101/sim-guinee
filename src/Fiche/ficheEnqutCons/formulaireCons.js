@@ -20,15 +20,16 @@ import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { createTables, insertCollecte,deleteAllCons,updateConsommation } from '../../../database/requetteCons';
-import {  FontAwesome, MaterialIcons } from '@expo/vector-icons'; 
+// import { createTables, insertCollecte,deleteAllCons,updateConsommation } from '../../../database/requetteCons';
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import ConsommationServices from '../../../database/ConsommationService';
 
 const FormCons = () => {
   const route = useRoute();
-  const { id , num_fiche } = route.params;
+  const { id, num_fiche } = route.params;
   const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
   // États pour gérer les valeurs du formulaire
-  const [niveauApprovisionnement, setNiveauApprovisionnement] = useState('');
+  const [niveau_approvisionement, setNiveauApprovisionnement] = useState('');
   const [statut, setStatut] = useState('');
   const [observation, setObservation] = useState('');
   const [enquete, setEnquete] = useState(parseInt(id, 10) || 0);
@@ -37,10 +38,10 @@ const FormCons = () => {
   const [commune, setCommune] = useState(null);
   const [uniteMesure, setUniteMesure] = useState(null);
   const [document, setDocument] = useState(null);
-  const [poidsUnitaire, setPoidsUnitaire] = useState('');
-  const [prixMesure, setPrixMesure] = useState('');
-  const [prixFgKg, setPrixFgKg] = useState('');
-  const [prixKgLitre, setPrixKgLitre] = useState('');
+  const [poids_unitaire, setPoidsUnitaire] = useState('');
+  const [prix_mesure, setPrixMesure] = useState('');
+  const [prix_fg_kg, setPrixFgKg] = useState('');
+  const [prix_kg_litre, setPrixKgLitre] = useState('');
 
   // États pour gérer les données récupérées de l'API
   const [groupedProduits, setGroupedProduits] = useState({});
@@ -55,10 +56,10 @@ const FormCons = () => {
 
   const [isConnected, setIsConnected] = useState(true);
 
-  useEffect(() => {
-    createTables(); // Créer la table lorsque le composant est monté
-    // deleteAllCons();
-  }, []);
+  // useEffect(() => {
+  //   createTables(); // Créer la table lorsque le composant est monté
+  //   // deleteAllCons();
+  // }, []);
 
 
   useEffect(() => {
@@ -72,17 +73,17 @@ const FormCons = () => {
       const produitsLocaux = await loadDataFromStorage('produits');
       // const communesLocales = await loadDataFromStorage('communes');
       const uniteMesuresLocales = await loadDataFromStorage('uniteMesures');
-      
+
       if (produitsLocaux) setGroupedProduits(produitsLocaux);
       // if (communesLocales) setCommunes(communesLocales);
       if (uniteMesuresLocales) setUniteMesures(uniteMesuresLocales);
-  
+
       // Si les données ne sont pas présentes, on les charge depuis l'API
       if (!produitsLocaux) fetchProduits();
       // if (!communesLocales) fetchCommunes();
       if (!uniteMesuresLocales) fetchUniteMesures();
     };
-  
+
     loadData();
   }, []);
   useEffect(() => {
@@ -97,9 +98,9 @@ const FormCons = () => {
     }
   }, [isConnected]);
 
-   /**
-   * Utilise un useEffect qui détecte le retour de la connexion et synchronise les données avec le serveur :
-   */
+  /**
+  * Utilise un useEffect qui détecte le retour de la connexion et synchronise les données avec le serveur :
+  */
   useEffect(() => {
     if (isConnected) {
       fetchProduits();
@@ -107,8 +108,8 @@ const FormCons = () => {
       fetchUniteMesures();
     }
   }, [isConnected]);
-    
-  
+
+
   // useEffect(() => {
   //   fetchProduits();
   //   fetchCommunes();
@@ -209,7 +210,7 @@ const FormCons = () => {
         copyToCacheDirectory: true, // Copier dans le cache pour éviter des problèmes
       });
       // console.log('Document sélectionné:', JSON.stringify(result, null, 2));
-      
+
       if (result && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
         const formData = new FormData();
@@ -218,7 +219,7 @@ const FormCons = () => {
           name: file.name,
           type: file.mimeType || 'application/octet-stream',
         });
-  
+
         // console.log('FormData:', JSON.stringify(formData, null, 2));
         const response = await axios.post(
           'https://cors-proxy.fringe.zone/http://92.112.194.154:8000/api/enquetes/marches-prix/upload/document',
@@ -229,23 +230,23 @@ const FormCons = () => {
             },
           }
         );
-        
-//         const response = await axios.post(
-//           // const SIMGUINEE_URL = 'https://cors-proxy.fringe.zone/http://92.112.194.154:8000/api/';
-// axios.defaults.headers.common['Content-Type'] = 'application/json',
-// axios.defaults.headers.common['x-requested-with'] = 'XMLHttpRequest',
-//           'https://cors-proxy.fringe.zone/http://92.112.194.154:8000/api/enquetes/marches-prix/upload/document',
-//           // 'http://92.112.194.154:8000/api/enquetes/marches-prix/upload/document',
-//           formData,
-//           {
-//             headers: {
-//               'Content-Type': 'multipart/form-data',
-//             },
-//           }
-//         );
-  
+
+        //         const response = await axios.post(
+        //           // const SIMGUINEE_URL = 'https://cors-proxy.fringe.zone/http://92.112.194.154:8000/api/';
+        // axios.defaults.headers.common['Content-Type'] = 'application/json',
+        // axios.defaults.headers.common['x-requested-with'] = 'XMLHttpRequest',
+        //           'https://cors-proxy.fringe.zone/http://92.112.194.154:8000/api/enquetes/marches-prix/upload/document',
+        //           // 'http://92.112.194.154:8000/api/enquetes/marches-prix/upload/document',
+        //           formData,
+        //           {
+        //             headers: {
+        //               'Content-Type': 'multipart/form-data',
+        //             },
+        //           }
+        //         );
+
         // console.log('Réponse du serveur:', JSON.stringify(response.data, null, 2));
-  
+
         // Utilisez directement la réponse du serveur comme URL du fichier téléchargé
         const fileUrl = response.data;
         // console.log('URL du fichier téléchargé:', fileUrl);
@@ -266,20 +267,20 @@ const FormCons = () => {
       );
     }
   };
-  
-   /**
-   * Fonction pour sauvegarder les donnees
-   */
-   const storeData = async (key, value) => {
+
+  /**
+  * Fonction pour sauvegarder les donnees
+  */
+  const storeData = async (key, value) => {
     try {
       await AsyncStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des données:', error);
     }
   };
-   /**
-   * Fonction pour récupérer les données stockées localement à partir de AsyncStorage :
-   */
+  /**
+  * Fonction pour récupérer les données stockées localement à partir de AsyncStorage :
+  */
   const loadDataFromStorage = async (key) => {
     try {
       const jsonValue = await AsyncStorage.getItem(key);
@@ -288,86 +289,112 @@ const FormCons = () => {
       console.error('Erreur lors du chargement des données locales:', error);
     }
   };
-    
 
-  /**
-   * Fonction pour soumettre le formulaire
-   */
-  const postForm = async () => {
-    if (
-      !produit ||
-      !uniteMesure ||
-      !poidsUnitaire ||
-      !prixMesure ||
-      !prixFgKg ||
-      !prixKgLitre ||
-      !niveauApprovisionnement ||
-      !statut 
-      // !document 
-    ) {
-      Alert.alert(
-        'Erreur',
-        'Veuillez remplir tous les champs requis avant de soumettre le formulaire.'
-      );
-      return;
-    }
-  
-    const ficheData = {
-      unite:  uniteMesure.value,  // Nombre attendu par l'API
-      poids_unitaire: poidsUnitaire,
-      prix_mesure: parseFloat(prixMesure),  // Conversion en nombre
-      prix_fg_kg: parseFloat(prixFgKg),     // Conversion en nombre
-      prix_kg_litre: parseFloat(prixKgLitre), // Conversion en nombre
-      niveau_approvisionement: niveauApprovisionnement,
-      document: document,  // URL du document
-      statut,
-      observation,
-      enquete: enquete, // Nombre attendu par l'API
-      produit: produit.value, // Nombre attendu par l'API
-      num_fiche: numFiche 
-    };
-     // Insérer les données dans la base de données
-     insertCollecte(
-      ficheData.unite,
-      ficheData.poids_unitaire,
-      ficheData.prix_mesure,
-      ficheData.prix_fg_kg,
-      ficheData.prix_kg_litre,
-      ficheData.niveau_approvisionement,
-      ficheData.statut,
-      ficheData.observation,
-      ficheData.enquete,
-      ficheData.produit,
-      ficheData.num_fiche
-    );
-    console.log('donne envoyer',ficheData);
-    Alert.alert('Succès', 'Les données ont été insérées dans la base de données.');
-  
-    console.log('ficheData', ficheData);
-  
-    try {
-      setLoading(true);
-      // await FormConso.postFormConso(ficheData);
-      Toast.show({
-        type: 'success',
-        text1: 'Succès',
-        text2: 'Formulaire soumis avec succès.',
-      });
-      // Alert.alert('Succès', 'Formulaire soumis avec succès.');
-      resetFields();
-    } catch (error) {
-      console.error('Erreur lors de la soumission du formulaire:', error);
+  const validateFields = () => {
+    if (!uniteMesure || !produit || !poids_unitaire || !prix_mesure) {
       Toast.show({
         type: 'error',
         text1: 'Erreur',
-        text2: 'Impossible de soumettre le formulaire. Veuillez réessayer.',
+        text2: 'Veuillez remplir tous les champs obligatoires.',
       });
+      return false;
+    }
+    return true;
+  };
+  /**
+   * Fonction pour soumettre le formulaire
+   */
+
+  const postForm = async () => {
+    if (!validateFields()) {
+      return;
+    }
+    try {
+      setLoading(true);
+      const ficheData = {
+        unite: uniteMesure.value,
+        poids_unitaire,
+        prix_mesure,
+        prix_fg_kg,
+        prix_kg_litre,
+        niveau_approvisionement,
+        statut,
+        observation,
+        enquete,
+        produit: produit.value,
+        // document,
+        numFiche,
+      };
+      console.log("Données envoyées à WatermelonDB:", ficheData);
+      await ConsommationServices.createConsommation(ficheData);
+      console.log("Envoi réussi",ficheData);
+      resetFields();
+    } catch (error) {
+      console.error('Erreur lors de la soumission du formulaire:', error);
     } finally {
       setLoading(false);
     }
   };
-  
-  
+
+
+  // const postForm = async () => {
+
+  //   const ficheData = {
+  //     unite:  uniteMesure.value,  // Nombre attendu par l'API
+  //     poids_unitaire: poids_unitaire,
+  //     prix_mesure: parseFloat(prix_mesure),  // Conversion en nombre
+  //     prix_fg_kg: parseFloat(prix_fg_kg),     // Conversion en nombre
+  //     prix_kg_litre: parseFloat(prix_kg_litre), // Conversion en nombre
+  //     niveau_approvisionement: niveau_approvisionement,
+  //     document: document,  // URL du document
+  //     statut,
+  //     observation,
+  //     enquete: enquete, // Nombre attendu par l'API
+  //     produit: produit.value, // Nombre attendu par l'API
+  //     num_fiche: numFiche 
+  //   };
+  //    // Insérer les données dans la base de données
+  //    insertCollecte(
+  //     ficheData.unite,
+  //     ficheData.poids_unitaire,
+  //     ficheData.prix_mesure,
+  //     ficheData.prix_fg_kg,
+  //     ficheData.prix_kg_litre,
+  //     ficheData.niveau_approvisionement,
+  //     ficheData.statut,
+  //     ficheData.observation,
+  //     ficheData.enquete,
+  //     ficheData.produit,
+  //     ficheData.num_fiche
+  //   );
+  //   console.log('donne envoyer',ficheData);
+  //   Alert.alert('Succès', 'Les données ont été insérées dans la base de données.');
+
+  //   console.log('ficheData', ficheData);
+
+  //   try {
+  //     setLoading(true);
+  //     // await FormConso.postFormConso(ficheData);
+  //     Toast.show({
+  //       type: 'success',
+  //       text1: 'Succès',
+  //       text2: 'Formulaire soumis avec succès.',
+  //     });
+  //     // Alert.alert('Succès', 'Formulaire soumis avec succès.');
+  //     resetFields();
+  //   } catch (error) {
+  //     console.error('Erreur lors de la soumission du formulaire:', error);
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Erreur',
+  //       text2: 'Impossible de soumettre le formulaire. Veuillez réessayer.',
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
 
 
   /**
@@ -401,7 +428,7 @@ const FormCons = () => {
         data={products.filter((product) =>
           product.label && product.label.toLowerCase().includes(searchProduit.toLowerCase())
         )}
-        
+
         search
         searchPlaceholder="Rechercher un produit..."
         labelField="label"
@@ -424,11 +451,11 @@ const FormCons = () => {
   };
 
   const niveauApprovisionementOptions = [
-    { label: 'Haut', value: 'Haut' },
-    { label: 'Moyen', value: 'Moyen' },
-    { label: 'Faible', value: 'Faible' },
+    { label: 'Abondant', value: 'Abondant' },
+    { label: 'Normal', value: 'Normal' },
+    { label: 'Rare', value: 'Rare' },
   ];
-  
+
   const statutOptions = [
     { label: 'En cours', value: 'En cours' },
     { label: 'Terminé', value: 'Terminé' },
@@ -436,11 +463,11 @@ const FormCons = () => {
   ];
   return (
     <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-        <Modal
+      <Modal
         transparent={true}
         animationType="none"
         visible={loading}
-        onRequestClose={() => {}}
+        onRequestClose={() => { }}
       >
         <View style={styles.modalBackground}>
           <View style={styles.activityIndicatorWrapper}>
@@ -501,7 +528,7 @@ const FormCons = () => {
         data={uniteMesures.filter((item) =>
           item.label && item.label.toLowerCase().includes(searchUniteMesure.toLowerCase())
         )}
-        
+
         search
         searchPlaceholder="Rechercher une unité..."
         labelField="label"
@@ -528,15 +555,14 @@ const FormCons = () => {
 
       <TextInput
         label="Poids Unitaire"
-        value={poidsUnitaire}
+        value={poids_unitaire}
         onChangeText={setPoidsUnitaire}
-        keyboardType="numeric"
         style={styles.input}
       />
 
       <TextInput
         label="Prix Mesure"
-        value={prixMesure}
+        value={prix_mesure}
         onChangeText={setPrixMesure}
         keyboardType="numeric"
         style={styles.input}
@@ -544,7 +570,7 @@ const FormCons = () => {
 
       <TextInput
         label="Prix FG/KG"
-        value={prixFgKg}
+        value={prix_fg_kg}
         onChangeText={setPrixFgKg}
         keyboardType="numeric"
         style={styles.input}
@@ -552,26 +578,26 @@ const FormCons = () => {
 
       <TextInput
         label="Prix KG/Litre"
-        value={prixKgLitre}
+        value={prix_kg_litre}
         onChangeText={setPrixKgLitre}
         keyboardType="numeric"
         style={styles.input}
       />
-<Dropdown
-  style={styles.dropdown}
-  data={niveauApprovisionementOptions}
-  labelField="label"
-  valueField="value"
-  placeholder="Niveau d'approvisionnement"
-  value={niveauApprovisionnement}
-  onChange={item => setNiveauApprovisionnement(item.value)}
-  renderLeftIcon={() => (
-    <AntDesign name="barschart" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
-  )}
-/>
+      <Dropdown
+        style={styles.dropdown}
+        data={niveauApprovisionementOptions}
+        labelField="label"
+        valueField="value"
+        placeholder="Niveau d'approvisionnement"
+        value={niveau_approvisionement}
+        onChange={item => setNiveauApprovisionnement(item.value)}
+        renderLeftIcon={() => (
+          <AntDesign name="barschart" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
+        )}
+      />
       {/* <TextInput
         label="Niveau d'approvisionnement"
-        value={niveauApprovisionnement}
+        value={niveau_approvisionement}
         onChangeText={setNiveauApprovisionnement}
         style={styles.input}
       /> */}
@@ -582,18 +608,18 @@ const FormCons = () => {
         onChangeText={setStatut}
         style={styles.input}
       /> */}
-<Dropdown
-  style={styles.dropdown}
-  data={statutOptions}
-  labelField="label"
-  valueField="value"
-  placeholder="Sélectionnez le statut"
-  value={statut}
-  onChange={item => setStatut(item.value)}
-  renderLeftIcon={() => (
-    <MaterialIcons name="info" size={20} color="black" style={styles.icon} />  // Utilise MaterialIcons pour le statut
-  )}
-/>
+      <Dropdown
+        style={styles.dropdown}
+        data={statutOptions}
+        labelField="label"
+        valueField="value"
+        placeholder="Sélectionnez le statut"
+        value={statut}
+        onChange={item => setStatut(item.value)}
+        renderLeftIcon={() => (
+          <MaterialIcons name="info" size={20} color="black" style={styles.icon} />  // Utilise MaterialIcons pour le statut
+        )}
+      />
       <TextInput
         label="Observation"
         value={observation}
@@ -690,7 +716,7 @@ const styles = StyleSheet.create({
     // borderRadius: 5,
     // backgroundColor: '#28a745',
     marginBottom: 10,
-    backgroundColor:'#009C57'
+    backgroundColor: '#009C57'
 
   },
   resetButton: {

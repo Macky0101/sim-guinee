@@ -20,6 +20,8 @@ import FormGrossistes from '../src/Fiche/ficheEnqutGrossiste/formListGrossiste';
 import Setting from '../src/parametre/setting';
 import ListData from '../src/ListeData/ListData';
 import DetailFiche from '../src/ListeData/DetailFiche';
+import DetailPage from '../src/DetailPage/DetailPage';
+import MarketFiches from '../src/DetailPage/MarketFiches';
 
 const Stack = createStackNavigator();
 
@@ -132,6 +134,16 @@ const Routes = () => {
           name="DetailFiche"
           component={DetailFiche}
           options={{ title: 'Listes des détails' }}
+        />
+          <Stack.Screen
+          name="DetailPage"
+          component={DetailPage}
+          options={{ title: 'Liste des marchés' }}
+        />
+         <Stack.Screen
+          name="MarketFiches"
+          component={MarketFiches}
+          options={{ title: 'Liste des fiches' }}
         />
           <Stack.Screen
           name="Setting"

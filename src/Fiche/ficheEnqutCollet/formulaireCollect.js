@@ -3,6 +3,7 @@ import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity, Mod
 import { TextInput, Button } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRoute } from '@react-navigation/native';
+import database from '../../../database/database';
 import FormCollect from '../../../services/serviceAgricultures/ficheCollect/serviceFormulaire';
 import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
 import { Dropdown } from 'react-native-element-dropdown';
@@ -10,30 +11,34 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import * as SQLite from 'expo-sqlite';
-import { createTables, insertCollecte, checkTableStructure, recreateCollecteTable,deleteAllCollecte } from '../../../database/db';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+// import {dropTables} from '../../../database/db';
+import {createCollecte} from '../../../database/collecteService';
+import axios from 'axios';
+
 const FormCollecte = () => {
   const route = useRoute();
-  const { id, num_fiche } = route.params;
+  const { id, num_fiche,type_marche } = route.params;
   const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
+  const [typemarche, settype_marche] = useState(type_marche || ''); // Stocker type_marche
+  // console.log('typemarche', typemarche);
   const [unite, setUnite] = useState(0);
-  const [poidsUnitaire, setPoidsUnitaire] = useState('');
-  const [montantAchat, setMontantAchat] = useState('');
-  const [prixFgKg, setPrixFgKg] = useState('');
-  const [distanceOrigineMarche, setDistanceOrigineMarche] = useState('');
-  const [montantTransport, setMontantTransport] = useState('');
-  const [etatRoute, setEtatRoute] = useState('');
-  const [quantiteCollecte, setQuantiteCollecte] = useState('');
-  const [clientPrincipal, setClientPrincipal] = useState('');
-  const [fournisseurPrincipal, setFournisseurPrincipal] = useState('');
-  const [niveauApprovisionement, setNiveauApprovisionement] = useState('');
+  const [poids_unitaire, setPoidsUnitaire] = useState('');
+  const [montant_achat, setMontantAchat] = useState('');
+  const [prix_fg_kg, setPrixFgKg] = useState('');
+  const [distance_origine_marche, setDistanceOrigineMarche] = useState('');
+  const [destination_finale, Setdestination_finale] = useState('');
+  const [etat_route, setEtatRoute] = useState('');
+  const [quantite_collecte, setQuantiteCollecte] = useState('');
+  const [etat, Setetat] = useState('');
+  const [fournisseur_principal, setFournisseurPrincipal] = useState('');
+  const [niveau_approvisionement, setNiveauApprovisionement] = useState('');
   const [statut, setStatut] = useState('');
   const [observation, setObservation] = useState('');
   const [enquete, setEnquete] = useState(parseInt(id, 10) || 0);
   // const [produit, setProduit] = useState(null);
   const [produits, setProduits] = useState([]);
-  const [localiteOrigine, setLocaliteOrigine] = useState('');
+  const [localite_origine, setLocaliteOrigine] = useState('');
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   // const [selectedCategory, setSelectedCategory] = useState(null);
@@ -42,8 +47,8 @@ const FormCollecte = () => {
   const [prefecture, setPrefecture] = useState([]);
   const [searchPrefecture, setSearchPrefecture] = useState('');
 
-  const [UniteMesures, setUniteMesures] = useState([]);
-  const [UniteMesure, setUniteMesure] = useState([]);
+  // const [UniteMesures, setUniteMesures] = useState([]);
+  // const [UniteMesure, setUniteMesure] = useState([]);
   const [searchUniteMesure, setSearchUniteMesure] = useState('');
 
 
@@ -52,14 +57,57 @@ const FormCollecte = () => {
   const [groupedProduits, setGroupedProduits] = useState({});
   const [searchProduit, setSearchProduit] = useState('');
 
-  useEffect(() => {
-    // recreateCollecteTable();
-    createTables(); // Créer la table lorsque le composant est monté
-    // checkTableStructure();
-    // deleteAllCollecte();
-  }, []);
 
   const [isConnected, setIsConnected] = useState(true);
+
+
+    // États pour les messages d'erreur
+    const [produitError, setProduitError] = useState('');
+    const [localiteError, setLocaliteError] = useState('');
+    const [uniteError, setUniteError] = useState('');
+    const [montantAchatError, setMontantAchatError] = useState('');
+    const [prixFgKgError, setPrixFgKgError] = useState('');
+     // Fonction de validation
+  const validateFields = () => {
+    let isValid = true;
+
+    if (!produit) {
+      setProduitError('Veuillez sélectionner un produit.');
+      isValid = false;
+    } else {
+      setProduitError('');
+    }
+
+    if (!commune) {
+      setLocaliteError('Veuillez sélectionner une localité.');
+      isValid = false;
+    } else {
+      setLocaliteError('');
+    }
+
+    if (!UniteMesure) {
+      setUniteError('Veuillez sélectionner une unité de mesure.');
+      isValid = false;
+    } else {
+      setUniteError('');
+    }
+
+    if (!montant_achat) {
+      setMontantAchatError('Veuillez entrer le montant de l\'achat.');
+      isValid = false;
+    } else {
+      setMontantAchatError('');
+    }
+
+    if (!prix_fg_kg) {
+      setPrixFgKgError('Veuillez entrer le prix par kg.');
+      isValid = false;
+    } else {
+      setPrixFgKgError('');
+    }
+
+    return isValid;
+  };
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -68,7 +116,9 @@ const FormCollecte = () => {
     return () => unsubscribe();
   }, []);
 
-
+// useEffect(() =>{
+//   dropTables();
+// },[])
   useEffect(() => {
     const loadData = async () => {
       const produitsLocaux = await loadDataFromStorage('produits');
@@ -107,15 +157,6 @@ const FormCollecte = () => {
       getUniteMesure();
     }
   }, [isConnected]);
-
-
-  // useEffect(() => {
-  //   // getProduit();
-  //   getPrefecture();
-  //   getUniteMesure();
-  //   getCommune();
-  //   fetchProduits();
-  // }, []);
 
   const fetchProduits = async () => {
     setLoading(true);
@@ -183,40 +224,75 @@ const FormCollecte = () => {
 
 
 
-  const getUniteMesure = async () => {
-    try {
-      const response = await FormCollect.getUniteMesure();
-      const UniteMesures = response.map((UniteMesure) => ({
-        label: UniteMesure.nom_unite,
-        value: UniteMesure.id_unite.toString(), // Assurez-vous que la valeur est bien l'ID correct
-      }));
-      setUniteMesures(UniteMesures);
-      await storeData('uniteMesures', UniteMesures);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des UniteMesure:', error);
+  const [UniteMesures, setUniteMesures] = useState([]);
+const [UniteMesure, setUniteMesure] = useState(null); // Ajoutez cet état pour stocker l'unité sélectionnée
+
+// const getUniteMesure = async () => {
+//   try {
+//     const response = await FormCollect.getUniteMesure();
+//     const UniteMesures = response.map((UniteMesure) => ({
+//       label: UniteMesure.nom_unite,
+//       value: UniteMesure.id_unite.toString(), // Assurez-vous que la valeur est bien l'ID correct
+//     }));
+//     setUniteMesures(UniteMesures);
+//     // console.log('UniteMesures', UniteMesures);
+//     await storeData('uniteMesures', UniteMesures);
+//   } catch (error) {
+//     console.error('Erreur lors de la récupération des UniteMesure:', error);
+//   }
+// };
+
+useEffect(() => {
+  console.log('type_marche:', type_marche);
+  getUniteMesure();
+}, [type_marche]);
+
+const getUniteMesure = async () => {
+  try {
+    const userToken = await AsyncStorage.getItem('userToken');
+    if (!userToken) {
+      throw new Error('Aucun jeton trouvé');
     }
-  };
 
+    const response = await axios.get(`http://92.112.194.154:8000/api/parametrages/unites/associated-unites/type-marche?id_of_type_market=${type_marche}`, {
+      headers: {
+        Authorization: `Bearer ${userToken}`,
+      },
+    });
 
+    const UniteMesures = response.data[0].unites.map((unite) => ({
+      label: unite.unite_relation.nom_unite,
+      value: unite.id, // Assurez-vous que la valeur est bien l'ID correct
+    }));
+    
+    setUniteMesures(UniteMesures);
+    await storeData('uniteMesures', UniteMesures);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des UniteMesure:', error.response ? error.response.data : error.message);
+  }
+};
 
-  const renderUniteMesure = () => (
-    <Dropdown
-      style={styles.dropdown}
-      data={UniteMesures.filter(item => item.label?.toLowerCase().includes(searchUniteMesure.toLowerCase()))}
+useEffect(() => {
+  getUniteMesure();
+}, [type_marche]);
 
-      labelField="label"
-      valueField="value"
-      placeholder="Sélectionnez une unite de mésure"
-      value={UniteMesure}
-      onChange={item => setUniteMesure(item.value)}
-      search
-      searchPlaceholder="Rechercher une unite de mésure..."
-      onSearch={setSearchUniteMesure}
-      renderLeftIcon={() => (
-        <AntDesign style={styles.icon} color="black" name="barschart" size={20} />
-      )}
-    />
-  );
+const renderUniteMesure = () => (
+  <Dropdown
+    style={styles.dropdown}
+    data={UniteMesures.filter(item => item.label?.toLowerCase().includes(searchUniteMesure.toLowerCase()))}
+    labelField="label"
+    valueField="value"
+    placeholder="Sélectionnez une unité de mesure"
+    value={UniteMesure}
+    onChange={item => setUniteMesure(item.value)}
+    search
+    searchPlaceholder="Rechercher une unité de mesure..."
+    onSearch={setSearchUniteMesure}
+    renderLeftIcon={() => (
+      <AntDesign style={styles.icon} color="black" name="barschart" size={20} />
+    )}
+  />
+);
 
   const [communes, setcommunes] = useState([]);
   const [commune, setCommune] = useState([]);
@@ -283,70 +359,6 @@ const FormCollecte = () => {
   };
 
 
-  const postForm = async () => {
-    const ficheData = {
-      unite: parseInt(UniteMesure, 10),
-      poids_unitaire: parseFloat(poidsUnitaire) || 0,
-      montant_achat: parseFloat(montantAchat) || 0,
-      prix_fg_kg: parseFloat(prixFgKg) || 0,
-      distance_origine_marche: parseFloat(distanceOrigineMarche) || 0,
-      montant_transport: parseFloat(montantTransport) || 0,
-      etat_route: etatRoute || '',
-      quantite_collecte: parseFloat(quantiteCollecte) || 0,
-      client_principal: clientPrincipal || '',
-      fournisseur_principal: fournisseurPrincipal || '',
-      niveau_approvisionement: niveauApprovisionement || '',
-      statut: statut || '',
-      observation: observation || '',
-      enquete: parseInt(enquete, 10) || 0,
-      produit: produit.value,
-      localite_origine: parseInt(commune.id, 10) || 0, // Conversion de la localité d'origine
-      num_fiche: numFiche
-    };
-    // Insérer les données dans la base de données
-    insertCollecte(
-      ficheData.unite,
-      ficheData.poids_unitaire,
-      ficheData.montant_achat,
-      ficheData.prix_fg_kg,
-      ficheData.distance_origine_marche,
-      ficheData.montant_transport,
-      ficheData.etat_route,
-      ficheData.quantite_collecte,
-      ficheData.client_principal,
-      ficheData.fournisseur_principal,
-      ficheData.niveau_approvisionement,
-      ficheData.statut,
-      ficheData.observation,
-      ficheData.enquete,
-      ficheData.produit,
-      ficheData.localite_origine,
-      ficheData.num_fiche
-    );
-    console.log('donne envoyer', ficheData);
-    Alert.alert('Succès', 'Les données ont été insérées dans la base de données.');
-
-    try {
-      setLoading(true);
-      // await FormCollect.postFormCollect(ficheData);
-      Toast.show({
-        type: 'success',
-        text1: 'Succès',
-        text2: 'Formulaire enregistré avec succès!',
-      });
-      resetFields();
-    } catch (error) {
-      console.error('Erreur lors de la création de la fiche:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: 'Une erreur est survenue. Veuillez réessayer.',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   const resetFields = () => {
     setUnite(0);
@@ -354,10 +366,10 @@ const FormCollecte = () => {
     setMontantAchat(0);
     setPrixFgKg(0);
     setDistanceOrigineMarche(0);
-    setMontantTransport(0);
+    Setdestination_finale(0);
     setEtatRoute('');
     setQuantiteCollecte(0);
-    setClientPrincipal('');
+    Setetat('');
     setFournisseurPrincipal('');
     setNiveauApprovisionement('');
     setStatut('');
@@ -405,6 +417,68 @@ const FormCollecte = () => {
     );
   };
 
+
+const handleSaveCollect = async () => {
+  if (!validateFields()) {  // Ne pas exécuter la fonction d'enregistrement si la validation échoue
+    Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires.');
+    return;  // Arrêter l'exécution si les champs ne sont pas valides
+}
+  try {
+   const ficheData ={
+    unite: UniteMesure,
+    poids_unitaire,
+    montant_achat,
+    prix_fg_kg,
+    etat_route,
+    quantite_collecte,
+    niveau_approvisionement,
+    statut: getStatusForAPI(statut),
+    observation,
+    etat,
+    enquete,
+    produit: produit?.value,
+    destination_finale:commune?.id,
+    numFiche,
+   };
+   resetFields();
+   try {
+    await createCollecte(ficheData);
+    console.log("Envoi réussi",ficheData);
+  } catch (error) {
+    console.error("Erreur lors de la création de la fiche:", error);
+  }
+  } catch (error) {
+    console.error('Erreur lors de l\'enregistrement dans la table collecte:', error);
+  }
+};
+  
+  const deleteAllCollects = async () => {
+    try {
+      await database.write(async () => {
+        const allCollects = await database.get('collecte').query().fetch();
+        allCollects.forEach(async (collect) => {
+          await collect.markAsDeleted(); // Suppression logique de chaque collecte
+        });
+      });
+      console.log('Toutes les entrées de la table collecte ont été supprimées.');
+    } catch (error) {
+      console.error('Erreur lors de la suppression de toutes les entrées collecte :', error);
+    }
+  };
+
+  const getStatusForAPI = (statut) => {
+    switch (statut) {
+      case 'En cours':
+        return true; // ou une valeur correspondant au statut "En cours" pour l'API
+      case 'Terminé':
+      case 'Annulé':
+        return false; // ou une valeur correspondant au statut "Terminé" ou "Annulé"
+      default:
+        return null; // Gérer les cas inattendus
+    }
+  };
+  
+  
   const etatRouteOptions = [
     { label: 'Bon', value: 'Bon' },
     { label: 'Moyen', value: 'Moyen' },
@@ -412,9 +486,9 @@ const FormCollecte = () => {
   ];
 
   const niveauApprovisionementOptions = [
-    { label: 'Haut', value: 'Haut' },
-    { label: 'Moyen', value: 'Moyen' },
-    { label: 'Faible', value: 'Faible' },
+    { label: 'Abondant', value: 'Abondant' },
+    { label: 'Normal', value: 'Normal' },
+    { label: 'Rare', value: 'Rare' },
   ];
 
   const statutOptions = [
@@ -461,50 +535,50 @@ const FormCollecte = () => {
         />
 
         {renderProductsDropdown()}
+        {produitError ? <Text style={styles.errorText}>{produitError}</Text> : null}
         {renderCommunes()}
+        {localiteError ? <Text style={styles.errorText}>{localiteError}</Text> : null}
+        {/* <Text>{UniteMesure}</Text> */}
         {renderUniteMesure()}
+        {uniteError ? <Text style={styles.errorText}>{uniteError}</Text> : null}
         <TextInput
           label="Poids Unitaire"
-          value={poidsUnitaire.toString()}
+          value={poids_unitaire.toString()}
           onChangeText={text => setPoidsUnitaire(parseFloat(text))}
           keyboardType="numeric"
           style={styles.input}
         />
         <TextInput
           label="Montant Achat"
-          value={montantAchat.toString()}
+          value={montant_achat.toString()}
           onChangeText={text => setMontantAchat(parseFloat(text))}
           keyboardType="numeric"
           style={styles.input}
         />
+        {montantAchatError ? <Text style={styles.errorText}>{montantAchatError}</Text> : null}
         <TextInput
           label="Prix FG/kg"
-          value={prixFgKg.toString()}
+          value={prix_fg_kg.toString()}
           onChangeText={text => setPrixFgKg(parseFloat(text))}
           keyboardType="numeric"
           style={styles.input}
         />
+        {prixFgKgError ? <Text style={styles.errorText}>{prixFgKgError}</Text> : null}
         <TextInput
           label="Distance Origine Marché"
-          value={distanceOrigineMarche.toString()}
+          value={distance_origine_marche.toString()}
           onChangeText={text => setDistanceOrigineMarche(parseFloat(text))}
           keyboardType="numeric"
           style={styles.input}
         />
-        <TextInput
-          label="Montant Transport"
-          value={montantTransport.toString()}
-          onChangeText={text => setMontantTransport(parseFloat(text))}
-          keyboardType="numeric"
-          style={styles.input}
-        />
+       
         <Dropdown
           style={styles.dropdown}
           data={etatRouteOptions}
           labelField="label"
           valueField="value"
           placeholder="Sélectionnez l'état de la route"
-          value={etatRoute}
+          value={etat_route}
           onChange={item => setEtatRoute(item.value)}
           renderLeftIcon={() => (
             <FontAwesome name="road" size={20} color="black" style={styles.icon} />  // Utilise FontAwesome pour l'icône de route
@@ -512,30 +586,30 @@ const FormCollecte = () => {
         />
         <TextInput
           label="Quantité Collectée"
-          value={quantiteCollecte.toString()}
+          value={quantite_collecte.toString()}
           onChangeText={text => setQuantiteCollecte(parseFloat(text))}
           keyboardType="numeric"
           style={styles.input}
         />
         <TextInput
-          label="Client Principal"
-          value={clientPrincipal}
-          onChangeText={text => setClientPrincipal(text)}
+          label="Etat"
+          value={etat}
+          onChangeText={text => Setetat(text)}
           style={styles.input}
         />
-        <TextInput
+        {/* <TextInput
           label="Fournisseur Principal"
-          value={fournisseurPrincipal}
+          value={fournisseur_principal}
           onChangeText={text => setFournisseurPrincipal(text)}
           style={styles.input}
-        />
+        /> */}
         <Dropdown
           style={styles.dropdown}
           data={niveauApprovisionementOptions}
           labelField="label"
           valueField="value"
           placeholder=" niveau d'approvisionnement"
-          value={niveauApprovisionement}
+          value={niveau_approvisionement}
           onChange={item => setNiveauApprovisionement(item.value)}
           renderLeftIcon={() => (
             <AntDesign name="barschart" size={20} color="black" style={styles.icon} />  // Icône pour le niveau d'approvisionnement
@@ -553,6 +627,13 @@ const FormCollecte = () => {
             <AntDesign name="infocirlce" size={20} color="black" style={styles.icon} />  // Icône pour le statut
           )}
         />
+         {/* <TextInput
+          label="Destination finale"
+          value={destination_finale.toString()}
+          onChangeText={text => Setdestination_finale(parseFloat(text))}
+          keyboardType="numeric"
+          style={styles.input}
+        /> */}
         <TextInput
           label="Observation"
           value={observation}
@@ -563,9 +644,12 @@ const FormCollecte = () => {
         />
 
 
-        <Button mode="contained" onPress={postForm} style={styles.button}>
+        <Button mode="contained" onPress={handleSaveCollect} style={styles.button}>
           Enregistrer
         </Button>
+        {/* <Button mode="contained" onPress={deleteAllCollects} style={styles.button}>
+          sup
+        </Button> */}
       </KeyboardAwareScrollView>
     </View>
   );
@@ -621,6 +705,11 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 10,
   },
 });
 

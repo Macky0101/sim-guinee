@@ -7,11 +7,13 @@ import { getData } from '../../../database/db';
 import { useNavigation } from '@react-navigation/native';
 import { Searchbar, FAB, Dialog, Button } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import GrossistesService from '../../../database/GrossistesService';
 
 const ListesGrossistesCollect = () => {
   const route = useRoute();
   const { id } = route.params;
   const { num_fiche } = route.params;
+  // console.log('num_fiche', num_fiche);
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [produits, setProduits] = useState({});
@@ -48,23 +50,38 @@ const ListesGrossistesCollect = () => {
     };
     loadUniteMesures();
   }, []);
-
+  
   useEffect(() => {
-    const fetchCollectes = async () => {
+    const fetchAndFilterCollects = async () => {
       try {
-        const allCollectes = await getGrossistesData();
-        const filteredCollectes = allCollectes.filter(
+        // Récupérer toutes les collectes via WatermelonDB
+        const allCollects = await GrossistesService.listGrossistes();
+        
+        // Mapper les données pour accéder aux champs réels à partir de `_raw`
+        const allCollectsRaw = allCollects.map((collecte) => collecte._raw);
+        
+        // Filtrer les collectes selon le num_fiche
+        const filteredCollectes = allCollectsRaw.filter(
           (collecte) => collecte.num_fiche === num_fiche
         );
+      
+        // Mettre à jour l'état avec les collectes filtrées
         setCollectes(filteredCollectes);
-        // console.log('Collectes', filteredCollectes)
-        setLoading(false);
+        
+        console.log('Liste des grossistes filtrés', filteredCollectes);
+        console.log('Liste de tous les grossistes', allCollectsRaw);
       } catch (error) {
         console.error('Erreur lors de la récupération des collectes:', error);
+      } finally {
+        // Mettre à jour l'état de chargement
+        setLoading(false);
       }
     };
-    fetchCollectes();
+  
+    fetchAndFilterCollects();
   }, [num_fiche]);
+  
+  
 
   const getProduitInfo = (codeProduit) => {
     for (const category in produits) {
@@ -100,7 +117,7 @@ const ListesGrossistesCollect = () => {
 
   const handleDelete = async () => {
     if (selectedCollecte) {
-      await deletegrossistes(selectedCollecte.id);
+      await GrossistesService.deleteGrossiste(selectedCollecte.id);
       setCollectes(collectes.filter((c) => c.id !== selectedCollecte.id));
       setDialogVisible(false);
     }
@@ -250,8 +267,8 @@ const ListesGrossistesCollect = () => {
                     </View>
                     {expandedCollecte === collecte.id && (
                       <>
-                        <Text style={styles.produitLabel}>{produitInfo.label}</Text>
-                        <Text>Unité de Stock :<Text style={styles.label}> {uniteInfo}</Text></Text>
+                        {/* <Text style={styles.produitLabel}>{produitInfo.label}</Text> */}
+                        {/* <Text>Unité de Stock :<Text style={styles.label}> {uniteInfo}</Text></Text> */}
                         <Text>Localité : <Text style={styles.label}>{localiteInfo}</Text></Text>
                         <Text>Poids Moyen Unité de Stock : <Text style={styles.label}>{collecte.poids_moyen_unite_stock}</Text></Text>
                         <Text>Poids Stock : <Text style={styles.label}>{collecte.poids_stock}</Text></Text>

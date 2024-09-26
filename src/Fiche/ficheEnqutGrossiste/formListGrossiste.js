@@ -10,13 +10,17 @@ import FormConso from '../../../services/serviceAgricultures/ficheConsommation/s
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { createTables, insertgrossistes,deleteAllGros } from '../../../database/requeteGros';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import database from '../../../database/database';
+import GrossistesService from '../../../database/GrossistesService';
+import axios from 'axios';
+
 
 const FormGrossistes = () => {
   const route = useRoute();
-  const { id, num_fiche } = route.params;
+  const { id, num_fiche ,type_marche} = route.params;
   const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
+  // console.log('type marche', type_marche);
   const [uniteStock, setUniteStock] = useState(0);
   const [poidsMoyenUniteStock, setPoidsMoyenUniteStock] = useState('');
   const [poidsStock, setPoidsStock] = useState('');
@@ -60,12 +64,6 @@ const FormGrossistes = () => {
 
   const [isConnected, setIsConnected] = useState(true);
 
-  useEffect(() => {
-    // recreateCollecteTable();
-    createTables(); // Créer la table lorsque le composant est monté
-    // checkTableStructure();
-    // deleteAllGros();
-    }, []);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -142,6 +140,11 @@ const FormGrossistes = () => {
       setGroupedProduits(grouped);
       await storeData('produits', grouped);
     } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Impossible de récupérer les produits',
+     });
       console.error('Erreur lors de la récupération des produits:', error);
       // Alert.alert(
       //   'Erreur',
@@ -185,6 +188,58 @@ const FormGrossistes = () => {
       />
     );
   };
+
+  // useEffect(() => {
+  //   console.log('type_marche:', type_marche);
+  //   getUniteMesure();
+  // }, [type_marche]);
+  
+  // const getUniteMesure = async () => {
+  //   try {
+  //     const userToken = await AsyncStorage.getItem('userToken');
+  //     if (!userToken) {
+  //       throw new Error('Aucun jeton trouvé');
+  //     }
+  
+  //     const response = await axios.get(`http://92.112.194.154:8000/api/parametrages/unites/associated-unites/type-marche?id_of_type_market=${type_marche}`, {
+  //       headers: {
+  //         Authorization: `Bearer ${userToken}`,
+  //       },
+  //     });
+  
+  //     const UniteMesures = response.data[0].unites.map((unite) => ({
+  //       label: unite.unite_relation.nom_unite,
+  //       value: unite.id, // Assurez-vous que la valeur est bien l'ID correct
+  //     }));
+  //     console.log('UniteMesures', UniteMesures);
+  //     setUniteMesures(UniteMesures);
+  //     await storeData('uniteMesures', UniteMesures);
+  //   } catch (error) {
+  //     console.error('Erreur lors de la récupération des UniteMesure:', error.response ? error.response.data : error.message);
+  //   }
+  // };
+  
+  // useEffect(() => {
+  //   getUniteMesure();
+  // }, [type_marche]);
+  
+  // const renderUniteMesure = () => (
+  //   <Dropdown
+  //     style={styles.dropdown}
+  //     data={UniteMesures.filter(item => item.label?.toLowerCase().includes(searchUniteMesure.toLowerCase()))}
+  //     labelField="label"
+  //     valueField="value"
+  //     placeholder="Sélectionnez une unité de mesure"
+  //     value={UniteMesure}
+  //     onChange={item => setUniteMesure(item.value)}
+  //     search
+  //     searchPlaceholder="Rechercher une unité de mesure..."
+  //     onSearch={setSearchUniteMesure}
+  //     renderLeftIcon={() => (
+  //       <AntDesign style={styles.icon} color="black" name="barschart" size={20} />
+  //     )}
+  //   />
+  // );
 
   const getUniteMesure = async () => {
     try {
@@ -269,6 +324,11 @@ const FormGrossistes = () => {
     try {
       await AsyncStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Sauvegarde des données échouée.',
+     });
       console.error('Erreur lors de la sauvegarde des données:', error);
     }
   };
@@ -281,86 +341,96 @@ const FormGrossistes = () => {
       console.error('Erreur lors du chargement des données locales:', error);
     }
   };
-
-
   const postForm = async () => {
+    setLoading(true);
     const ficheData = {
-      unite_stock: parseInt(UniteMesure, 10),
-      poids_moyen_unite_stock: parseFloat(poidsMoyenUniteStock) || 0,
-      poids_stock: parseFloat(poidsStock) || 0,
-      unite_achat: uniteAchat || '',
-      nombre_unite_achat: parseFloat(nombreUniteAchat) || 0,
-      poids_moyen_unite_achat: parseFloat(poidsMoyenUniteAchat) || 0,
-      poids_total_achat: parseFloat(poidsTotalAchat) || 0,
-      localite_achat: localiteAchat || '',
-      fournisseur_achat: fournisseurAchat || '',
-      unite_vente: uniteVente || '',
-      nombre_unite_vente: parseFloat(nombreUniteVente) || 0,
-      poids_moyen_unite_vente: parseFloat(poidsMoyenUniteVente) || 0,
-      poids_total_unite_vente: parseFloat(poidsTotalUniteVente) || 0,
-      prix_unitaire_vente: parseFloat(prixUnitaireVente) || 0,
-      client_vente: parseFloat(clientVente) || 0,
-      client_principal: clientPrincipal || '',
-      fournisseur_principal: fournisseurPrincipal || '',
-      niveau_approvisionement: niveauApprovisionement || '',
-      statut: statut || '',
-      observation: observation || '',
-      enquete: parseInt(enquete, 10) || 0,
-      produit: produit.value,
-      localite_origine: parseInt(commune.id, 10) || 0,
-      num_fiche: numFiche
+      uniteStock: UniteMesure,
+      poidsMoyenUniteStock,
+      poidsStock,
+      uniteAchat,
+      nombreUniteAchat,
+      poidsMoyenUniteAchat,
+      poidsTotalAchat,
+      localiteAchat,
+      fournisseurAchat,
+      uniteVente,
+      nombreUniteVente,
+      poidsMoyenUniteVente,
+      poidsTotalUniteVente,
+      prixUnitaireVente,
+      clientVente,
+      clientPrincipal,
+      fournisseurPrincipal,
+      niveauApprovisionement,
+      statut,
+      observation,
+      enquete,
+      produit: produit?.value,
+      localiteOrigine: commune?.id,
+      numFiche,
     };
-    console.log('Données envoyées:', JSON.stringify(ficheData, null, 2));
-    // Insérer les données dans la base de données
-    insertgrossistes(
-      ficheData.unite_stock,
-      ficheData.poids_moyen_unite_stock,
-      ficheData.poids_stock,
-      ficheData.unite_achat,
-      ficheData.nombre_unite_achat,
-      ficheData.poids_moyen_unite_achat,
-      ficheData.poids_total_achat,
-      ficheData.localite_achat,
-      ficheData.fournisseur_achat,
-      ficheData.unite_vente,
-      ficheData.nombre_unite_vente,
-      ficheData.poids_moyen_unite_vente,
-      ficheData.poids_total_unite_vente,
-      ficheData.prix_unitaire_vente,
-      ficheData.client_vente,
-      ficheData.client_principal,
-      ficheData.fournisseur_principal,
-      ficheData.niveau_approvisionement,
-      ficheData.statut,
-      ficheData.observation,
-      ficheData.enquete,
-      ficheData.produit,
-      ficheData.localite_origine,
-      ficheData.num_fiche
-    );
-    console.log('donne envoyer', JSON.stringify(ficheData, null, 2));
-    Alert.alert('Succès', 'Les données ont été insérées dans la base de données.');
-
+    resetFields();
     try {
-      setLoading(true);
-      // await FormGrossiste.postFormGrossiste(ficheData);
-      Toast.show({
-        type: 'success',
-        text1: 'Succès',
-        text2: 'Formulaire soumis avec succès.',
-      });
-      resetFields();
+      await GrossistesService.createGrossiste(ficheData);
+      console.log("Envoi réussi");
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: 'Impossible de soumettre le formulaire. Veuillez réessayer.',
-      });
-      console.error('Erreur lors de la création de la fiche:', error);
-    } finally {
-      setLoading(false);
+      console.error("Erreur lors de la création de la fiche:", error);
     }
+    
+    setLoading(false);
+
   };
+
+  // const postForm = async () => {
+  //   const ficheData = {
+  //     unite_stock: parseInt(UniteMesure, 10),
+  //     poids_moyen_unite_stock: parseFloat(poidsMoyenUniteStock) || 0,
+  //     poids_stock: parseFloat(poidsStock) || 0,
+  //     unite_achat: uniteAchat || '',
+  //     nombre_unite_achat: parseFloat(nombreUniteAchat) || 0,
+  //     poids_moyen_unite_achat: parseFloat(poidsMoyenUniteAchat) || 0,
+  //     poids_total_achat: parseFloat(poidsTotalAchat) || 0,
+  //     localite_achat: localiteAchat || '',
+  //     fournisseur_achat: fournisseurAchat || '',
+  //     unite_vente: uniteVente || '',
+  //     nombre_unite_vente: parseFloat(nombreUniteVente) || 0,
+  //     poids_moyen_unite_vente: parseFloat(poidsMoyenUniteVente) || 0,
+  //     poids_total_unite_vente: parseFloat(poidsTotalUniteVente) || 0,
+  //     prix_unitaire_vente: parseFloat(prixUnitaireVente) || 0,
+  //     client_vente: parseFloat(clientVente) || 0,
+  //     client_principal: clientPrincipal || '',
+  //     fournisseur_principal: fournisseurPrincipal || '',
+  //     niveau_approvisionement: niveauApprovisionement || '',
+  //     statut: statut || '',
+  //     observation: observation || '',
+  //     enquete: parseInt(enquete, 10) || 0,
+  //     produit: produit.value,
+  //     localite_origine: parseInt(commune.id, 10) || 0,
+  //     num_fiche: numFiche
+  //   };
+  //   console.log('Données envoyées:', JSON.stringify(ficheData, null, 2));
+   
+
+  //   try {
+  //     setLoading(true);
+  //     // await FormGrossiste.postFormGrossiste(ficheData);
+  //     Toast.show({
+  //       type: 'success',
+  //       text1: 'Succès',
+  //       text2: 'Formulaire soumis avec succès.',
+  //     });
+  //     resetFields();
+  //   } catch (error) {
+  //     Toast.show({
+  //       type: 'error',
+  //       text1: 'Erreur',
+  //       text2: 'Impossible de soumettre le formulaire. Veuillez réessayer.',
+  //     });
+  //     console.error('Erreur lors de la création de la fiche:', error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const resetFields = () => {
     setUniteStock(0);
@@ -390,11 +460,24 @@ const FormGrossistes = () => {
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
     setProduit(null); // Reset selected product when category changes
+    setSearchProduit(''); // Réinitialiser la recherche produit
   };
   const niveauApprovisionementOptions = [
-    { label: 'Haut', value: 'Haut' },
-    { label: 'Moyen', value: 'Moyen' },
-    { label: 'Faible', value: 'Faible' },
+    { label: 'Abondant', value: 'Abondant' },
+    { label: 'Normal', value: 'Normal' },
+    { label: 'Rare', value: 'Rare' },
+  ];
+  const ClientPrincipaledata = [
+    { label: 'Grossistes', value: 'Grossistes' },
+    { label: 'Sémi-Grossistes', value: 'Sémi-Grossistes' },
+    { label: 'Detaillant', value: 'Detaillant' },
+    { label: 'Autre', value: 'Autre' },
+  ];
+  const FournisseursPrincipaledata = [
+    { label: 'Grossistes', value: 'Grossistes' },
+    { label: 'Collecteurs', value: 'Collecteurs' },
+    { label: 'Importateur', value: 'Importateur' },
+    { label: 'Producteur', value: 'Producteur' },
   ];
 
   const statutOptions = [
@@ -402,7 +485,13 @@ const FormGrossistes = () => {
     { label: 'Terminé', value: 'Terminé' },
     { label: 'Annulé', value: 'Annulé' },
   ];
-
+  if (loading) {
+    return (
+       <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+       </View>
+    );
+ }
   return (
     <KeyboardAwareScrollView>
       <View style={styles.container}>
@@ -541,18 +630,42 @@ const FormGrossistes = () => {
           style={styles.input}
           keyboardType="numeric"
         />
-        <TextInput
+         <Dropdown
+          style={styles.dropdown}
+          data={ClientPrincipaledata}
+          labelField="label"
+          valueField="value"
+          placeholder="Client principal"
+          value={clientPrincipal}
+          onChange={item => setClientPrincipal(item.value)}
+          renderLeftIcon={() => (
+            <AntDesign name="user" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
+          )}
+        />
+        {/* <TextInput
           label="Client principal"
           value={clientPrincipal}
           onChangeText={setClientPrincipal}
           style={styles.input}
+        /> */}
+            <Dropdown
+          style={styles.dropdown}
+          data={FournisseursPrincipaledata}
+          labelField="label"
+          valueField="value"
+          placeholder="Fournisseur principal"
+          value={fournisseurPrincipal}
+          onChange={item => setFournisseurPrincipal(item.value)}
+          renderLeftIcon={() => (
+            <AntDesign name="user" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
+          )}
         />
-        <TextInput
+        {/* <TextInput
           label="Fournisseur principal"
           value={fournisseurPrincipal}
           onChangeText={setFournisseurPrincipal}
           style={styles.input}
-        />
+        /> */}
         <Dropdown
           style={styles.dropdown}
           data={niveauApprovisionementOptions}
@@ -565,18 +678,7 @@ const FormGrossistes = () => {
             <AntDesign name="barschart" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
           )}
         />
-        {/* <TextInput
-          label="Niveau d'approvisionnement"
-          value={niveauApprovisionement}
-          onChangeText={setNiveauApprovisionement}
-          style={styles.input}
-        /> */}
-        {/* <TextInput
-          label="Statut"
-          value={statut}
-          onChangeText={setStatut}
-          style={styles.input}
-        /> */}
+      
 
         <Dropdown
           style={styles.dropdown}
@@ -598,15 +700,11 @@ const FormGrossistes = () => {
           numberOfLines={4}
           style={styles.input}
         />
-        {/* <TextInput
-          label="Enquête"
-          value={enquete.toString()}
-          onChangeText={setEnquete}
-          style={styles.input}
-          keyboardType="numeric"
-        /> */}
-
-        <Button
+     
+          {loading ?(
+              <ActivityIndicator size="small" color="#FFFFFF" />
+          ):(
+            <Button
           mode="contained"
           onPress={postForm}
           style={styles.button}
@@ -614,6 +712,8 @@ const FormGrossistes = () => {
         >
           Enregistrer
         </Button>
+          )}
+        
       </View>
       <Toast />
     </KeyboardAwareScrollView>

@@ -10,6 +10,7 @@ import { Searchbar, FAB, Dialog, Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
 import { Ionicons } from '@expo/vector-icons';
+import ConsommationServices from '../../../database/ConsommationService.js';
 
 const ListesConso = () => {
   const navigation = useNavigation();
@@ -44,6 +45,35 @@ const ListesConso = () => {
     loadUniteMesures();
   }, []);
 
+  useEffect(() => {
+    const fetchConsommation = async () => {
+      try {
+        // Récupérer toutes les collectes via WatermelonDB
+        const allCollectes = await ConsommationServices.listConsommations();
+        
+        // Mapper les données pour accéder aux champs réels à partir de `_raw`
+        const allCollectsRaw = allCollectes.map((collecte) => collecte._raw);
+        
+        // Filtrer les collectes selon le num_fiche
+        const filteredCollectes = allCollectsRaw.filter(
+          (collecte) => collecte.num_fiche === num_fiche
+        );
+      
+        // Mettre à jour l'état avec les collectes filtrées
+        setCollectes(filteredCollectes);
+        
+        console.log('Liste des grossistes filtrés', filteredCollectes);
+        console.log('Liste de tous les grossistes', allCollectsRaw);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des collectes:', error);
+      } finally {
+        // Mettre à jour l'état de chargement
+        setLoading(false);
+      }
+    };
+  
+    fetchConsommation();
+  }, [num_fiche]);
   useEffect(() => {
     const fetchConsommation = async () => {
       try {
