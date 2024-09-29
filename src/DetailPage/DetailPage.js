@@ -13,6 +13,9 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Q } from '@nozbe/watermelondb';
 import database from '../../database/database';  // Assurez-vous d'importer la base de données
 import SyncService from '../../database/services/SyncService';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import { TimePickerModal } from 'react-native-paper-dates';
 
 const DetailPage = ({ route }) => {
     const { idCollecteur, typeMarche } = route.params;  // Récupérer les paramètres de la navigation
@@ -20,7 +23,7 @@ const DetailPage = ({ route }) => {
     console.log('non du type fiche actuelle :', typeFiche);
     const navigation = useNavigation();
     const [data, setData] = useState(null);
-    // console.log('route', route.params)
+    console.log('route', route.params)
     const [isLoading, setIsLoading] = useState(true);
     const [fiche, setFiche] = useState('');
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -28,9 +31,17 @@ const DetailPage = ({ route }) => {
     const [date, setDate] = useState(new Date());
     const [loading, setLoading] = useState(false);
     const [visible, setVisible] = useState(false);
+    const [visibleHeure, setVisibleHeure] = useState(false);
     const [collecteur, setCollecteur] = useState(idCollecteur || '');
     const [TypeMarche, setTypeMarche] = useState(typeMarche || '');
     const [ficheError, setFicheError] = useState('');
+    const [NumError, setNumError] = useState('');
+    const [NomPersError, setNomPersError] = useState('');
+    const [ContactError, setContactError] = useState('');
+    const [TypeEmbarError, setTypeEmbError] = useState('');
+    const [nbrBrqJrsError, setnbrBrqJrsError] = useState('');
+    const [DifficultesError, setDifficultesError] = useState('');
+    const [HeureFinError, setHeureFinError] = useState('');
     const [dateError, setDateError] = useState('');
 
     // pour le betail
@@ -73,7 +84,7 @@ const DetailPage = ({ route }) => {
     const [nom_personne_enquete, setNomPersonneEnquete] = useState('');
     const [contact_personne_enquete, setContactPersonneEnquete] = useState('');
 
-    // pour le debarcadere
+    // pour le debarcadere et Port
 
     const [type_embarcation, setTypeEmbarcation] = useState('');
     const [espece_presente, setEspecePresente] = useState([]);
@@ -81,7 +92,46 @@ const DetailPage = ({ route }) => {
     const [nbr_barques_rentres_jour, setNbrBarquesRentresJour] = useState(0);
     const [heure_fin_collecte_semaine, setHeureFinCollecteSemaine] = useState(new Date());
     const [isSyncing, setIsSyncing] = useState(false);
-    
+
+    // State pour stocker les produits filtrés et les erreurs
+    const [searchProducts, setSearchProduit] = useState([]);
+    const [filteredProducts, setFilteredProducts] = useState([]);
+    const [error, setError] = useState(null); // Pour gérer les erreurs
+
+    // Fonction pour récupérer et filtrer les produits
+    const fetchFilteredProducts = async () => {
+        try {
+            const produits = await database.collections.get('produits').query(
+                Q.where('type_marche', Q.like(`%${TypeMarche}%`)) // Filtrer par type_marche
+            ).fetch();
+
+            console.log('Produits filtrés :', produits); // Vérification
+            const productList = produits.map(prod => ({
+                label: prod.nom_produit,
+                value: prod.id_produit,
+            }));
+
+            setFilteredProducts(productList); // Mettre à jour le dropdown avec les produits filtrés
+            setError(null); // Réinitialiser l'erreur si l'appel réussit
+        } catch (err) {
+            console.error('Erreur lors du filtrage des produits :', err);
+            setError(err); // Capturer l'erreur
+        } finally {
+            setLoading(false); // Fin du chargement
+        }
+    };
+
+    // Utilise `useEffect` pour gérer les appels de données
+    useEffect(() => {
+        setLoading(true); // Réinitialiser l'état de chargement
+        fetchFilteredProducts();
+    }, [TypeMarche]); // Lancer l'effet à chaque changement du `type_marche`
+
+
+    if (error) {
+        return <Text>Erreur lors de la récupération des produits : {error.message}</Text>;
+    }
+
     const handleSync = async () => {
         setIsSyncing(true);
         console.log('Synchronisation démarrée');  // Ajout pour débogage
@@ -110,20 +160,20 @@ const DetailPage = ({ route }) => {
     //     fetchCounts();
     //   }, []);
 
-    const  countApiFiches= async () => {
+    const countApiFiches = async () => {
         try {
-          const apiFichesCount = await database.collections
-            .get('fiches')
-            .query(Q.where('source', 'api' && 'type_marche', TypeMarche))
-            .fetchCount();
+            const apiFichesCount = await database.collections
+                .get('fiches')
+                .query(Q.where('source', 'api' && 'type_marche', TypeMarche))
+                .fetchCount();
             console.log('total:', apiFichesCount);
-          return apiFichesCount;
+            return apiFichesCount;
         } catch (error) {
-          console.error('Erreur lors du comptage des fiches synchronisées:', error);
-          return 0;
+            console.error('Erreur lors du comptage des fiches synchronisées:', error);
+            return 0;
         }
-      };
-      
+    };
+
     const fetchData = async () => {
         try {
             // Récupérer les marchés filtrés par type_marche dans WatermelonDB
@@ -167,10 +217,22 @@ const DetailPage = ({ route }) => {
 
     // Fonction pour afficher chaque marché dans une card avec les icônes
     const renderCard = (marketData) => {
-        const { id_marche, nom_marche, localite, nom_prefecture, nom_region, nom_type_marche, nbre_fiche } = marketData._raw;
+        const { id_marche, nom_marche, localite, nom_prefecture, nom_region, nom_type_marche, nbre_fiche, type_marche } = marketData._raw;
 
         return (
-            <Card style={styles.card} key={id_marche}>
+            <Card style={styles.card} key={id_marche}
+                onPress={() => {
+                    // Ajout de log pour afficher les valeurs avant la navigation
+                    console.log('ID du collecteur:', collecteur);
+                    console.log('marché id:', id_marche);
+
+                    navigation.navigate('MarketFiches', {
+                        id_marche: id_marche,// Transmission du marche ID
+                        idCollecteur: collecteur,// Transmission du collecteur ID
+                        type_marche: type_marche // id du type de marche
+                    });
+                }}
+            >
                 <Card.Content>
                     {/* Header de la carte avec le nom du marché */}
                     <View style={styles.cardHeader}>
@@ -178,27 +240,28 @@ const DetailPage = ({ route }) => {
                         <TouchableOpacity
                             onPress={() => {
                                 setMarche(id_marche);  // Associe le marché sélectionné
-                                showModal(nom_type_marche);  // Ouvre le modal avec l'ID du type de marché
+                                showModal(type_marche);  // Ouvre le modal avec l'ID du type de marché
                             }}
-                            style={{ padding: 10, backgroundColor: '#ddd', borderRadius: 50 }}
+                            style={{ padding: 10, backgroundColor: '#009C57', borderRadius: 50 }}
                         >
-                            <MaterialIcons name="add" size={24} color="black" />
+                            {/* <MaterialIcons name="add" size={24} color="black" /> */}
+                            <AntDesign name="addfile" size={24} color="white" />
                         </TouchableOpacity>
 
                     </View>
 
                     {/* Informations principales du marché */}
                     <View style={styles.infoRow}>
-                        <MaterialIcons name="place" size={20} color="black" style={styles.infoIcon} />
-                        <Text style={styles.infoText}>Localité: {localite}, {nom_prefecture}</Text>
+                        <MaterialIcons name="place" size={20} color="#009C57" style={styles.infoIcon} />
+                        <Text style={styles.infoText}>Communes: {localite}, {nom_prefecture}</Text>
                     </View>
 
                     <View style={styles.infoRow}>
-                        <MaterialIcons name="location-city" size={20} color="black" style={styles.infoIcon} />
+                        <MaterialIcons name="location-city" size={20} color="#009C57" style={styles.infoIcon} />
                         <Text style={styles.infoText}>Région: {nom_region}</Text>
                     </View>
                     <View style={styles.infoRow}>
-                        <MaterialIcons name="" size={20} color="black" style={styles.infoIcon} />
+                        <FontAwesome name="file-text" size={18} color="#009C57" style={styles.infoIcon} />
                         <Text style={styles.infoText}>Nombre de fiche: <Text>{nbre_fiche}</Text></Text>
                     </View>
                     <Image
@@ -206,7 +269,7 @@ const DetailPage = ({ route }) => {
                         style={styles.backgroundImage}
                     />
                     {/* Badge pour le nombre de fiches */}
-                    <Badge style={styles.badge}> nbr de fiche{nbre_fiche}</Badge>
+                    {/* <Badge style={styles.badge}>nbr de fiche {nbre_fiche}</Badge> */}
                 </Card.Content>
             </Card>
         );
@@ -216,20 +279,20 @@ const DetailPage = ({ route }) => {
         try {
             // Récupérer l'ID du collecteur depuis les paramètres ou l'état
             const collecteurId = idCollecteur || '0000'; // Utiliser une valeur par défaut si non disponible
-    
+
             // Générer un identifiant unique basé sur la date et l'heure (timestamp)
             const timestamp = new Date().getTime(); // Nombre de millisecondes depuis 1970
-    
+
             // Combiner l'ID du collecteur avec le timestamp pour générer un numéro unique
             const generatedFiche = `${collecteurId}-${timestamp}`;
-    
+
             console.log('Numéro de fiche généré:', generatedFiche);
             setFiche(generatedFiche); // Stocker le numéro de fiche dans l'état
         } catch (error) {
             console.error("Erreur lors de la génération du numéro de fiche:", error);
         }
     };
-    
+
     // const generateFicheNumber = async () => {
     //     try {
     //         const generatedFiche = await FicheCollect.getNumeroFiche();
@@ -242,9 +305,9 @@ const DetailPage = ({ route }) => {
     //     }
     // };
 
-    const showModal = async (idTypeMarche) => {
+    const showModal = async (type_marche) => {
         await generateFicheNumber(); // Génére le numéro de fiche avant d'ouvrir le modal
-        setTypeFiche(idTypeMarche); // Stocke le type de fiche
+        setTypeFiche(type_marche); // Stocke le type de fiche
         setVisible(true);
     };
 
@@ -254,26 +317,85 @@ const DetailPage = ({ route }) => {
         setMarche('');
         setDate(new Date());
         setVisible(false);
+
+
     };
+
     const validateForm = () => {
         let isValid = true;
+
+        // Réinitialiser les messages d'erreur
+        setFicheError('');
+        setDateError('');
+        setNumError('');
+        setNomPersError('');
+        setContactError('');
+        setTypeEmbError('');
+        setnbrBrqJrsError('');
+        setDifficultesError('');
+        setHeureFinError('');
 
         // Validation pour le champ fiche
         if (!fiche) {
             setFicheError('Le numéro de fiche est requis.');
             isValid = false;
-        } else {
-            setFicheError(''); // Réinitialiser l'erreur si le champ est valide
         }
-
-
 
         // Validation pour la date
         if (!date) {
             setDateError('La date est requise.');
             isValid = false;
-        } else {
-            setDateError('');
+        }
+
+        // Validations spécifiques en fonction du type de marché
+        if (typeFiche === 2) { // Exemple pour le type "grossiste"
+            if (!numero_point_collecte) {
+                setNumError('Le numéro de point de collecte est requis pour le type grossiste.');
+                isValid = false;
+            }
+            if (!nom_personne_enquete) {
+                setNomPersError('Le nom de la personne enquêtée est requis.');
+                isValid = false;
+            }
+            if (!contact_personne_enquete) {
+                setContactError('Le contact de la personne enquêtée est requis.');
+                isValid = false;
+            }
+        } else if (typeFiche === 7) { // Exemple pour le type "débarcadère , Port"
+            if (!type_embarcation) {
+                setTypeEmbError('Le type d\'embarcation est requis pour le type débarcadère.');
+                isValid = false;
+            }
+            if (espece_presente.length === 0) {
+                setFicheError('Au moins une espèce doit être présente.');
+                isValid = false;
+            }
+            if (!nbr_barques_rentres_jour) {
+                setnbrBrqJrsError('Le nombre de barques rentrées est requis.');
+                isValid = false;
+            }
+            if (!difficultes_rencontrees) {
+                setDifficultesError('difficultes rencontrees est requis.');
+                isValid = false;
+            }
+            if (!heure_fin_collecte_semaine) {
+                setHeureFinError('heure de fin est requis.');
+                isValid = false;
+            }
+
+        } else if (typeFiche === 9) { // Exemple pour le type "bétail"
+            if (stock_initial_bovins <= 0) {
+                setFicheError('Le stock initial de bovins doit être supérieur à zéro.');
+                isValid = false;
+            }
+            if (nbr_bovins_debarques < 0) {
+                setFicheError('Le nombre de bovins débarqués ne peut pas être négatif.');
+                isValid = false;
+            }
+            if (stock_soir_bovins < 0) {
+                setFicheError('Le stock du soir de bovins ne peut pas être négatif.');
+                isValid = false;
+            }
         }
 
         return isValid;
@@ -284,7 +406,7 @@ const DetailPage = ({ route }) => {
             return;
         }
         setLoading(true);
-    
+
         const ficheData = {
             num_fiche: fiche,
             date_enquete: date.toISOString().split('T')[0], // Extraire uniquement la date
@@ -294,23 +416,30 @@ const DetailPage = ({ route }) => {
             source: 'local', // Définir la source comme locale
         };
         // Ajouter les champs spécifiques en fonction du type de marché
-        if (typeFiche === 'Grossiste') {
+        if (typeFiche === 2) {
             ficheData.numero_point_collecte = numero_point_collecte;
             ficheData.nom_personne_enquete = nom_personne_enquete;
             ficheData.contact_personne_enquete = contact_personne_enquete;
-        } else if (typeFiche === 'Débarcadère') {
+        } else if (typeFiche === 6 || typeFiche === 7){
             ficheData.type_embarcation = type_embarcation;
             ficheData.espece_presente = espece_presente;
             ficheData.difficultes_rencontrees = difficultes_rencontrees;
             ficheData.nbr_barques_rentres_jour = nbr_barques_rentres_jour;
             ficheData.heure_fin_collecte_semaine = heure_fin_collecte_semaine;
+    // Si le typeFiche est 6, on modifie l'ID ici pour qu'il soit celui de type 6
+    if (typeFiche === 6) {
+        ficheData.id_type_marche = 6;
+      } else if (typeFiche === 7) {
+        ficheData.id_type_marche = 7;
+      }
+
         } else if (typeFiche === 'Bétail') {
             ficheData.stock_initial_bovins = stock_initial_bovins;
             ficheData.nbr_bovins_debarques = nbr_bovins_debarques;
             ficheData.stock_soir_bovins = stock_soir_bovins;
             ficheData.nombre_bovin_vendu_calcule = nombre_bovin_vendu_calcule;
         }
-    
+
         try {
             // Exécuter la transaction d'écriture dans WatermelonDB
             await database.write(async () => {
@@ -321,19 +450,19 @@ const DetailPage = ({ route }) => {
                     fiche.collecteur = ficheData.collecteur;
                     fiche.id_type_marche = ficheData.id_type_marche;
                     fiche.source = ficheData.source; // Assigner la source
-    
+
                     // Assigner les champs spécifiques au type de marché
-                    if (typeFiche === 'Grossiste') {
+                    if (typeFiche === 2) {
                         fiche.numero_point_collecte = ficheData.numero_point_collecte;
                         fiche.nom_personne_enquete = ficheData.nom_personne_enquete;
                         fiche.contact_personne_enquete = ficheData.contact_personne_enquete;
-                    } else if (typeFiche === 'debarcadere') {
+                    } else if (typeFiche === 6 || typeFiche === 7) {
                         fiche.type_embarcation = ficheData.type_embarcation;
                         fiche.espece_presente = ficheData.espece_presente;
                         fiche.difficultes_rencontrees = ficheData.difficultes_rencontrees;
                         fiche.nbr_barques_rentres_jour = ficheData.nbr_barques_rentres_jour;
                         fiche.heure_fin_collecte_semaine = ficheData.heure_fin_collecte_semaine;
-            // ficheData.heure_fin_collecte_semaine = heure_fin_collecte_semaine.toISOString();
+                        // ficheData.heure_fin_collecte_semaine = heure_fin_collecte_semaine.toISOString();
                     } else if (typeFiche === 'Betail') {
                         fiche.stock_initial_bovins = ficheData.stock_initial_bovins;
                         fiche.nbr_bovins_debarques = ficheData.nbr_bovins_debarques;
@@ -341,11 +470,11 @@ const DetailPage = ({ route }) => {
                         fiche.nombre_bovin_vendu_calcule = ficheData.nombre_bovin_vendu_calcule;
                     }
                     console.log('les donne fichedata ', ficheData);
-                
+
                 });
                 console.log('Fiche sauvegardée:', newFiche);
             });
-    
+
             setLoading(false);
             setFiche('');
             setMarche('');
@@ -359,83 +488,84 @@ const DetailPage = ({ route }) => {
             setDifficultesRencontrees('');
             setNbrBarquesRentresJour();
             setHeureFinCollecteSemaine('');
-            await fetchData(); 
+            await fetchData();
         } catch (error) {
             console.error('Erreur lors de la création de la fiche:', error);
-            
-        }finally {
+
+        } finally {
             setLoading(false); // Arrêtez le chargement
         }
     };
+    const type_embarcationListe = [
+        { label: 'SALAN', value: 'SALAN' },
+        { label: 'FLYMBOTE', value: 'FLYMBOTE' },
+        { label: 'MONOXYLE', value: 'MONOXYLE' },
+    ];
+    const onConfirm = ({ hours, minutes }) => {
+        const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        setHeureFinCollecteSemaine(formattedTime);
+        setVisibleHeure(false);
+    };
+
+    const onDismiss = () => {
+        setVisibleHeure(false);
+    };
 
     return (
+
         <ScrollView style={styles.container}>
-      {/* <Button
-        title={isSyncing ? 'Synchronisation en cours...' : 'Synchroniser les fiches'}
-        onPress={handleSync}
-        disabled={isSyncing} // Désactiver le bouton pendant la synchronisation
-      /> */}
             <View>
                 {data.map((marketData) => renderCard(marketData))}
                 <Portal>
                     <Modal visible={visible} onDismiss={hideModal} contentContainerStyle={styles.modalContainer}>
                         <Text>Créer une fiche d’enquête</Text>
-                        <Text>N° fiche: {fiche || 'Generating...'}</Text>
+                        <Text style={{ padding: 10, marginBottom: 5, backgroundColor: '#dddddd' }}>N° fiche: {fiche || 'Generating...'}</Text>
                         {ficheError ? <Text style={styles.errorText}>{ficheError}</Text> : null}
 
                         {/* Affichage des champs selon le type de fiche */}
-                        {typeFiche === 'Collecte' && (
+                        {typeFiche === 1 && (
                             <>
-                                <TextInput
-                                    label="Numéro de fiche"
-                                    value={fiche}
-                                    onChangeText={setFiche}
-                                    error={!!ficheError}
-                                />
                                 <TextInput
                                     label="Date d'enquête"
                                     value={date.toLocaleDateString('fr-FR')}
                                     onPressIn={() => setShowDatePicker(true)}
                                 />
+                                {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
+
                                 {/* Autres champs pour collecte */}
                             </>
                         )}
-
-                        {typeFiche === 'Grossiste' && (
+                        {/* Grossiste */}
+                        {typeFiche === 2 && (
                             <>
-                                {/* <TextInput 
-                    label="Numéro de fiche" 
-                    value={fiche} 
-                    onChangeText={setFiche} 
-                    error={!!ficheError} 
-                /> */}
                                 <TextInput
                                     label="Numero du point collecte"
                                     value={numero_point_collecte}
                                     onChangeText={setNumeroPointCollecte}
                                 />
+                                {NumError ? <Text style={styles.errorText}>{NumError}</Text> : null}
+
                                 <TextInput
                                     label="Nom de la personne enquêtée"
                                     value={nom_personne_enquete}
                                     onChangeText={setNomPersonneEnquete}
                                 />
+                                {NomPersError ? <Text style={styles.errorText}>{NomPersError}</Text> : null}
+
                                 <TextInput
                                     label="Contact de la personne enquêtée"
                                     value={contact_personne_enquete}
                                     onChangeText={setContactPersonneEnquete}
+                                    keyboardType='phone-pad'
                                 />
+                                {ContactError ? <Text style={styles.errorText}>{ContactError}</Text> : null}
+
                                 {/* Autres champs pour grossiste */}
                             </>
                         )}
-
-                        {typeFiche === 'Hebdomadaire' && (
+                        {/* Hebdomadaire */}
+                        {typeFiche === 3 && (
                             <>
-                                <TextInput
-                                    label="Numéro de fiche"
-                                    value={fiche}
-                                    onChangeText={setFiche}
-                                    error={!!ficheError}
-                                />
                                 <TextInput
                                     label="Date d'enquête"
                                     value={date.toLocaleDateString('fr-FR')}
@@ -444,43 +574,83 @@ const DetailPage = ({ route }) => {
                             </>
                         )}
 
-                        {typeFiche === 'debarcadere' && (
+                        {(typeFiche === 6 || typeFiche === 7) && (
                             <>
                                 <TextInput
-                                    label="Numéro de fiche"
-                                    value={fiche}
-                                    onChangeText={setFiche}
-                                    error={!!ficheError}
+                                    label="Date d'enquête"
+                                    value={date.toLocaleDateString('fr-FR')}
+                                    onPressIn={() => setShowDatePicker(true)}
                                 />
-                                <TextInput
-                                    label="Type embarcation"
+                                {dateError ? <Text style={styles.errorText}>{dateError}</Text> : null}
+                                <Dropdown
+                                    style={styles.dropdown}
+                                    data={type_embarcationListe}
+                                    labelField="label"
+                                    valueField="value"
+                                    placeholder="Type embarcation"
                                     value={type_embarcation}
-                                    onChangeText={setTypeEmbarcation}
+                                    onChange={item => setTypeEmbarcation(item.value)}
+                                    renderLeftIcon={() => (
+                                        <AntDesign name="barschart" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
+                                    )}
                                 />
-                                <TextInput
-                                    label="Espece presente"
-                                    value={espece_presente}
-                                    onChangeText={setEspecePresente}
+                                {TypeEmbarError ? <Text style={styles.errorText}>{TypeEmbarError}</Text> : null}
+                                <Dropdown
+                                    style={styles.dropdown}
+                                    data={filteredProducts}  // Utilisation des produits filtrés
+                                    labelField="label"
+                                    valueField="value"
+                                    placeholder="Sélectionnez un produit"
+                                    value={espece_presente} // Valeur sélectionnée
+                                    onChange={item => {
+                                        setEspecePresente(item.value);
+                                        console.log('Produit sélectionné :', item); // Vérification du produit sélectionné
+                                    }}
+                                    search
+                                    searchPlaceholder="Rechercher un produit..."
+                                    onSearch={setSearchProduit} // Recherche
+                                    renderLeftIcon={() => (
+                                        <AntDesign style={styles.icon} color="black" name="barschart" size={20} />
+                                    )}
                                 />
+         
                                 <TextInput
-                                    label="Difficultes rencontrées"
-                                    value={difficultes_rencontrees}
-                                    onChangeText={setDifficultesRencontrees}
-                                />
-                                <TextInput
-                                    label="nbr barques rentres/jour"
+                                    label="nombre de barques rentres/jour"
                                     value={nbr_barques_rentres_jour}
                                     onChangeText={setNbrBarquesRentresJour}
                                 />
+                                {nbrBrqJrsError ? <Text style={styles.errorText}>{nbrBrqJrsError}</Text> : null}
                                 <TextInput
-                                    label="heure de fin collecte semaine"
+                                    label="Heure de fin collecte semaine"
                                     value={heure_fin_collecte_semaine}
+                                    onFocus={() => setVisibleHeure(true)}
                                     onChangeText={setHeureFinCollecteSemaine}
+                                    editable={true}
                                 />
-                                {/* Autres champs pour débarcadère */}
-                            </>
-                        )}
+                                <Portal>
+                                    <TimePickerModal
+                                        visible={visibleHeure}
+                                        onDismiss={onDismiss}
+                                        onConfirm={onConfirm}
+                                        hours={12}
+                                        minutes={30}
+                                        label="Sélectionnez l'heure"
+                                        cancelLabel="Annuler"
+                                        confirmLabel="Confirmer"
+                                    />
+                                </Portal>
+                                {HeureFinError ? <Text style={styles.errorText}>{HeureFinError}</Text> : null}
 
+                                    <TextInput
+                                    label="Difficultes rencontrées"
+                                    value={difficultes_rencontrees}
+                                    onChangeText={setDifficultesRencontrees}
+                                    multiline
+                                />
+                                {DifficultesError ? <Text style={styles.errorText}>{DifficultesError}</Text> : null} 
+                            </>
+                            
+                        )}
                         {/* Sélecteur de date */}
                         {showDatePicker && (
                             <DateTimePicker

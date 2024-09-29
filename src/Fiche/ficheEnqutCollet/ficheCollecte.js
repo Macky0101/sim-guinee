@@ -77,16 +77,7 @@ const FicheCollecte = () => {
             console.error('Erreur lors de la récupération du collecteur:', error);
         }
     };
-    const dayIconsAndColors = {
-        Lundi: { icon: 'calendar', color: '#2E8B57' }, // Vert séquoia
-        Mardi: { icon: 'calendar', color: '#3CB371' }, // Vert moyen
-        Mercredi: { icon: 'calendar', color: '#66CDAA' }, // Vert aquatique
-        Jeudi: { icon: 'calendar', color: '#8FBC8F' }, // Vert foncé
-        Vendredi: { icon: 'calendar', color: '#20B2AA' }, // Vert clair
-        Samedi: { icon: 'calendar', color: '#00FA9A' }, // Vert menthe
-        Dimanche: { icon: 'calendar', color: '#98FB98' }, // Vert pâle
-    };
-
+    
     const getFiche = async () => {
         setLoading(true);
         try {

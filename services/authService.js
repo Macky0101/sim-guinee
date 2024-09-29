@@ -21,6 +21,9 @@ const AuthService = {
           await SyncService.syncTypeMarche();
           await SyncService.syncAllMarches(); // Démarre la synchronisation manuelle
           // await SyncService.syncMarche();
+          const idTypeMarcheArray = await SyncService.syncTypeMarche();
+await SyncService.syncProduits(idTypeMarcheArray);
+
         } else {
           throw new Error("Impossible de récupérer l'ID du collecteur.");
         }

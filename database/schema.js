@@ -33,7 +33,7 @@ export const schema = appSchema({
         { name: 'nom_region', type: 'string' }, // Nom de la région
         { name: 'nom_prefecture', type: 'string' }, // Nom de la préfecture
         { name: 'longitude', type: 'number' }, // Longitude du marché
-        { name: 'latitude', type: 'number' } ,// Latitude du marché
+        { name: 'latitude', type: 'number' },// Latitude du marché
         { name: 'nbre_fiche', type: 'number' } // nbre_fiche du marché
       ]
     }),
@@ -46,7 +46,7 @@ export const schema = appSchema({
         { name: 'date_enquete', type: 'string' }, // Date de l'enquête
         { name: 'marche', type: 'number' }, // ID du marché (relation)
         { name: 'collecteur', type: 'number' }, // ID du collecteur
-        { name: 'id_type_marche', type: 'string' }, // Relation avec le type de marché pour savoir quel formulaire utiliser
+        { name: 'id_type_marche', type: 'number' }, // Relation avec le type de marché pour savoir quel formulaire utiliser
         { name: 'source', type: 'string' }, // Source des données (local ou api)
 
         // Champs supplémentaires pour le type Grossiste
@@ -97,13 +97,57 @@ export const schema = appSchema({
         { name: 'origine_caprins_debarques', type: 'string', isOptional: true }
       ]
     }),
+    tableSchema({
+      name: 'produits',
+      columns: [
+        { name: 'code_produit', type: 'string' },
+        { name: 'nom_produit', type: 'string' },
+        { name: 'nom_produit_en', type: 'string' },
+        { name: 'categorie_produit', type: 'number' },
+        { name: 'forme_produit', type: 'number' },
+        { name: 'type_marche', type: 'string' }, // JSON stored as string
+        { name: 'famille_produit', type: 'number' },
+        { name: 'affichage_ecran', type: 'boolean' },
+        { name: 'filiere', type: 'string' },
+        { name: 'image', type: 'string' },
+        { name: 'id_produit', type: 'number' },
+        { name: 'created_at', type: 'number' }
+      ]
+    }),
+    tableSchema({
+      name: 'categories_produit',
+      columns: [
+        { name: 'id_categorie_produit', type: 'number' },
+        { name: 'code_categorie_produit', type: 'string' },
+        { name: 'nom_categorie_produit', type: 'string' },
+        { name: 'created_at', type: 'number' }
+      ]
+    }),
+    tableSchema({
+      name: 'formes_produit',
+      columns: [
+        { name: 'id_forme_produit', type: 'number' },
+        { name: 'code_forme_produit', type: 'string' },
+        { name: 'nom_forme_produit', type: 'string' },
+        { name: 'created_at', type: 'number' }
+      ]
+    }),
+    tableSchema({
+      name: 'familles_produit',
+      columns: [
+        { name: 'id_famille_produit', type: 'number' },
+        { name: 'code_famille_produit', type: 'string' },
+        { name: 'nom_famille_produit', type: 'string' },
+        { name: 'affichage_ecran', type: 'boolean' },
+        { name: 'created_at', type: 'number' }
+      ]
+    }),
 
-    
- // Table pour les formulaires spécifiques au type de marché Collecte
- tableSchema({
-  name: 'formulaire_collecte',
-  columns: [
-    { name: 'unite', type: 'number' },
+    // Table pour les formulaires spécifiques au type de marché Collecte
+    tableSchema({
+      name: 'formulaire_collecte',
+      columns: [
+        { name: 'unite', type: 'number' },
         { name: 'poids_unitaire', type: 'number' },
         { name: 'montant_achat', type: 'number' },
         { name: 'prix_fg_kg', type: 'number' },
@@ -112,31 +156,57 @@ export const schema = appSchema({
         { name: 'niveau_approvisionement', type: 'string' },
         { name: 'statut', type: 'boolean' },
         { name: 'observation', type: 'string' },
+        { name: 'etat', type: 'string' },
         { name: 'enquete', type: 'number' },
         { name: 'produit', type: 'string' },
         { name: 'destination_finale', type: 'number' },
         { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
-  ]
-}),
+      ]
+    }),
 
-// Table pour les formulaires spécifiques au type de marché Grossiste
-tableSchema({
-  name: 'formulaire_grossiste',
-  columns: [
-    { name: 'unite_stock', type: 'number' },
-    { name: 'stock_anterieur', type: 'number' },
-    { name: 'poids_moyen_unite_stock', type: 'number' },
-    { name: 'poids_stock', type: 'number' },
-    { name: 'stock_du_jour', type: 'number' },
-    { name: 'quantite_entree', type: 'number' },
-    { name: 'fournisseur_principaux', type: 'number' },
-    { name: 'provenance_produit', type: 'string' },
-    { name: 'date_peremption', type: 'string' },
-    { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+    // Table pour les formulaires spécifiques au type de marché Grossiste
+    tableSchema({
+      name: 'formulaire_grossiste',
+      columns: [
+        { name: 'unite_stock', type: 'number' },
+        { name: 'stock_anterieur', type: 'number' },
+        { name: 'poids_moyen_unite_stock', type: 'number' },
+        { name: 'poids_stock', type: 'number' },
+        { name: 'stock_du_jour', type: 'number' },
+        { name: 'quantite_entree', type: 'number' },
+        { name: 'fournisseur_principaux', type: 'number' },
+        { name: 'nombre_unite_achat', type: 'number' },
+        { name: 'unite_achat', type: 'number' },
+        { name: 'unite_vente', type: 'number' },
+        { name: 'prix_achat', type: 'number' },
+        { name: 'prix_unitaire_vente', type: 'number' },
+        { name: 'localite_achat', type: 'number' },
+        { name: 'client_vente', type: 'number' },
+        { name: 'autre_client_principal', type: 'number' },
+        { name: 'statut', type: 'boolean' },
+        { name: 'observation', type: 'string' },
+        { name: 'enquete', type: 'number' },
+        { name: 'produit', type: 'string' },
+        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+      ]
+    }),
+       // Table pour les formulaires spécifiques au type de marché consommation
+       tableSchema({
+        name: 'formulaire_consommation',
+        columns: [
+          { name: 'unite', type: 'number' },
+          { name: 'poids_unitaire', type: 'string' },
+          { name: 'prix_mesure', type: 'number' },
+          { name: 'prix_kg_litre', type: 'number' },
+          { name: 'niveau_approvisionement', type: 'string' },
+          { name: 'statut', type: 'boolean' },
+          { name: 'observation', type: 'string' },
+          { name: 'enquete', type: 'number' },
+          { name: 'produit', type: 'string' },
+          { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+        ]
+      }),
   ]
-})
-// Ajout des autres formulaires pour les autres types de marché ici...
-]
 });
 
 // Explication:

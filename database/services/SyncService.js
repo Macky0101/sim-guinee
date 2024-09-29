@@ -162,6 +162,162 @@ const SyncService = {
   },
 
 
+syncProduits: async () => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) {
+      throw new Error('Aucun jeton trouvé');
+    }
+
+    // Appel de syncTypeMarche
+    const typeMarcheArray = await SyncService.syncTypeMarche();
+    if (!typeMarcheArray || typeMarcheArray.length === 0) {
+      throw new Error('Erreur lors de la récupération des types de marché');
+    }
+
+    for (const typeMarche of typeMarcheArray) {
+      const url = `${SIMGUINEE_URL}parametrages/produits?code_type_marche=${typeMarche}`;
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const produits = response.data;
+
+      if (!produits || produits.length === 0) {
+        console.warn(`Aucun produit trouvé pour le type de marché: ${typeMarche}`);
+        continue;
+      }
+
+      await database.write(async () => {
+        const produitCollection = database.collections.get('produits');
+        const categorieCollection = database.collections.get('categories_produit');
+        const formeCollection = database.collections.get('formes_produit');
+        const familleCollection = database.collections.get('familles_produit');
+
+        for (const item of produits) {
+          // Extraire les champs nécessaires avec des vérifications
+          const { categorie = {}, forme = {}, famille = {} } = item;
+
+          // Synchronisation des catégories
+          if (categorie && categorie.id_categorie_produit) {
+            const existingCategory = await categorieCollection
+              .query(Q.where('id_categorie_produit', categorie.id_categorie_produit))
+              .fetch();
+
+            if (existingCategory.length > 0) {
+              await existingCategory[0].update((categoryRecord) => {
+                categoryRecord.id_categorie_produit = categorie.id_categorie_produit;
+                categoryRecord.code_categorie_produit = categorie.code_categorie_produit || '';
+                categoryRecord.nom_categorie_produit = categorie.nom_categorie_produit || '';
+                categoryRecord.created_at = new Date(categorie.created_at).getTime();
+              });
+            } else {
+              await categorieCollection.create((categoryRecord) => {
+                categoryRecord.id_categorie_produit = categorie.id_categorie_produit;
+                categoryRecord.code_categorie_produit = categorie.code_categorie_produit || '';
+                categoryRecord.nom_categorie_produit = categorie.nom_categorie_produit || '';
+                categoryRecord.created_at = new Date(categorie.created_at).getTime();
+              });
+            }
+          }
+
+          // Synchronisation des formes
+          if (forme && forme.id_forme_produit) {
+            const existingForme = await formeCollection
+              .query(Q.where('id_forme_produit', forme.id_forme_produit))
+              .fetch();
+
+            if (existingForme.length > 0) {
+              await existingForme[0].update((formeRecord) => {
+                formeRecord.id_forme_produit = forme.id_forme_produit;
+                formeRecord.code_forme_produit = forme.code_forme_produit || '';
+                formeRecord.nom_forme_produit = forme.nom_forme_produit || '';
+                formeRecord.created_at = new Date(forme.created_at).getTime();
+              });
+            } else {
+              await formeCollection.create((formeRecord) => {
+                formeRecord.id_forme_produit = forme.id_forme_produit;
+                formeRecord.code_forme_produit = forme.code_forme_produit || '';
+                formeRecord.nom_forme_produit = forme.nom_forme_produit || '';
+                formeRecord.created_at = new Date(forme.created_at).getTime();
+              });
+            }
+          } else {
+            console.warn(`Aucune forme trouvée pour le produit: ${item.nom_produit}`);
+          }
+
+          // Synchronisation des familles
+          if (famille && famille.id_famille_produit) {
+            const existingFamille = await familleCollection
+              .query(Q.where('id_famille_produit', famille.id_famille_produit))
+              .fetch();
+
+            if (existingFamille.length > 0) {
+              await existingFamille[0].update((familleRecord) => {
+                familleRecord.id_famille_produit = famille.id_famille_produit;
+                familleRecord.code_famille_produit = famille.code_famille_produit || '';
+                familleRecord.nom_famille_produit = famille.nom_famille_produit || '';
+                familleRecord.affichage_ecran = famille.affichage_ecran || false;
+                familleRecord.created_at = new Date(famille.created_at).getTime();
+              });
+            } else {
+              await familleCollection.create((familleRecord) => {
+                familleRecord.id_famille_produit = famille.id_famille_produit;
+                familleRecord.code_famille_produit = famille.code_famille_produit || '';
+                familleRecord.nom_famille_produit = famille.nom_famille_produit || '';
+                familleRecord.affichage_ecran = famille.affichage_ecran || false;
+                familleRecord.created_at = new Date(famille.created_at).getTime();
+              });
+            }
+          }
+
+          // Synchronisation des produits
+          if (item.id_produit) {
+            const existingProduct = await produitCollection
+              .query(Q.where('id_produit', item.id_produit))
+              .fetch();
+
+            if (existingProduct.length > 0) {
+              await existingProduct[0].update((produitRecord) => {
+                produitRecord.code_produit = item.code_produit || '';
+                produitRecord.nom_produit = item.nom_produit || '';
+                produitRecord.nom_produit_en = item.nom_produit_en || '';
+                produitRecord.categorie_produit = item.categorie_produit || 0;
+                produitRecord.forme_produit = item.forme_produit || 0;
+                produitRecord.type_marche = JSON.stringify(item.type_marche) || '';
+                produitRecord.famille_produit = item.famille_produit || 0;
+                produitRecord.affichage_ecran = item.affichage_ecran || false;
+                produitRecord.filiere = item.filiere || '';
+                produitRecord.image = item.image || '';
+                produitRecord.created_at = new Date(item.created_at).getTime();
+              });
+            } else {
+              await produitCollection.create((produitRecord) => {
+                produitRecord.code_produit = item.code_produit || '';
+                produitRecord.nom_produit = item.nom_produit || '';
+                produitRecord.nom_produit_en = item.nom_produit_en || '';
+                produitRecord.categorie_produit = item.categorie_produit || 0;
+                produitRecord.forme_produit = item.forme_produit || 0;
+                produitRecord.type_marche = JSON.stringify(item.type_marche) || '';
+                produitRecord.famille_produit = item.famille_produit || 0;
+                produitRecord.affichage_ecran = item.affichage_ecran || false;
+                produitRecord.filiere = item.filiere || '';
+                produitRecord.image = item.image || '';
+                produitRecord.id_produit = item.id_produit;
+                produitRecord.created_at = new Date(item.created_at).getTime();
+              });
+            }
+          }
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Erreur de synchronisation des produits:', error);
+  }
+},
+
+
+
 
   syncFiche: async (id_marche) => {
     try {
@@ -370,7 +526,7 @@ const SyncService = {
           // console.log('dataToSend',dataToSend + ' url associer ' + url);
 
           switch (ficheData.id_type_marche) {
-            case 'Collecte':
+            case 1:
               url = `${SIMGUINEE_URL}enquetes/Fiches/collectes`;
               dataToSend = {
                 num_fiche: ficheData.num_fiche,
@@ -379,7 +535,7 @@ const SyncService = {
                 collecteur: ficheData.collecteur,
               };
               break;
-            case 'Grossiste':
+            case 2:
               url = `${SIMGUINEE_URL}enquetes/Fiches/grossistes`;
               dataToSend = {
                 num_fiche: ficheData.num_fiche,
@@ -391,7 +547,21 @@ const SyncService = {
                 contact_personne_enquete: ficheData.contact_personne_enquete,
               };
               break;
-            case 'debarcadere':
+              case 6:
+                url = `${SIMGUINEE_URL}enquetes/Fiches/debarcadere-ports`;
+                dataToSend = {
+                  num_fiche: ficheData.num_fiche,
+                  date_enquete: ficheData.date_enquete,
+                  marche: ficheData.marche,
+                  collecteur: ficheData.collecteur,
+                  type_embarcation: ficheData.type_embarcation,
+                  espece_presente: ficheData.espece_presente,
+                  difficultes_rencontrees: ficheData.difficultes_rencontrees,
+                  nbr_barques_rentres_jour: ficheData.nbr_barques_rentres_jour,
+                  heure_fin_collecte_semaine: ficheData.heure_fin_collecte_semaine,
+                };
+                break;
+            case 7:
               url = `${SIMGUINEE_URL}enquetes/Fiches/debarcadere-ports`;
               dataToSend = {
                 num_fiche: ficheData.num_fiche,
@@ -405,7 +575,7 @@ const SyncService = {
                 heure_fin_collecte_semaine: ficheData.heure_fin_collecte_semaine,
               };
               break;
-            case 'Hebdomadaire':
+            case 3:
               url = `${SIMGUINEE_URL}enquetes/Fiches/consommations`;
               dataToSend = {
                 num_fiche: ficheData.num_fiche,
@@ -449,7 +619,7 @@ const SyncService = {
 
 
             console.log(`Fiche ${ficheData.num_fiche} synchronisée avec succès.`);
-          }catch (apiError) {
+          } catch (apiError) {
             console.error('Erreur lors de l\'envoi des données à l\'API:', apiError.response ? apiError.response.data : apiError.message);
           }
 

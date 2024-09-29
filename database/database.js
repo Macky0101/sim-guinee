@@ -6,6 +6,11 @@ import Marche from './models/Marche';
 import Fiche from './models/Fiche';
 import FormulaireCollecte from './models/FormulaireCollecte';
 import FormulaireGrossiste from './models/FormulaireGrossiste';
+import FormulaireConsommation from './models/FormulaireConsommation';
+import Produit from './models/Produit';
+import CategorieProduit from './models/CategorieProduit';
+import FormeProduit from './models/FormeProduit';
+import FamilleProduit from './models/FamilleProduit';
 
 // Configuration de l'adapter SQLite pour WatermelonDB
 const adapter = new SQLiteAdapter({
@@ -28,7 +33,11 @@ const database = new Database({
     Fiche,      // Modèle pour la table fiches
     FormulaireCollecte, // Modèle pour la table formulaire_collecte
     FormulaireGrossiste, // Modèle pour la table formulaire_grossiste
-    // Ajoute d'autres modèles ici si nécessaire
+    FormulaireConsommation,
+    Produit,
+    CategorieProduit, 
+    FormeProduit, 
+    FamilleProduit
   ],
   actionsEnabled: true, // Permet l'utilisation d'actions pour la synchronisation
 });

@@ -12,7 +12,6 @@ import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
-// import {dropTables} from '../../../database/db';
 import {createCollecte} from '../../../database/collecteService';
 import axios from 'axios';
 
@@ -116,9 +115,7 @@ const FormCollecte = () => {
     return () => unsubscribe();
   }, []);
 
-// useEffect(() =>{
-//   dropTables();
-// },[])
+
   useEffect(() => {
     const loadData = async () => {
       const produitsLocaux = await loadDataFromStorage('produits');

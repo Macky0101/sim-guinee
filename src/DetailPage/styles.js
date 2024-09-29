@@ -78,9 +78,9 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         right: 0,
-        width: '100%',
-        height: '100%',
-        opacity: 0.5,
+        width: '30%',
+        height: 100,
+        opacity: 0.9,
     },
     badge: {
         position: 'absolute',
@@ -100,6 +100,15 @@ const styles = StyleSheet.create({
         fontSize: 16,
         textAlign: 'center',
     },
+    dropdown: {
+        marginBottom: 10,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 5,
+        paddingHorizontal: 10,
+        height: 50,
+        justifyContent: 'center',
+      },
  
 });
 

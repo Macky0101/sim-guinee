@@ -12,7 +12,7 @@ const styles = StyleSheet.create({
       position: 'absolute',
       right: 10,
       top: 10,
-  },
+    },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -239,7 +239,7 @@ fontSize:12,
       width: (width / 2) - 20, // Adjust the width to fit two cards per row with padding
       height: 100, // Set a fixed height for all cards
       marginVertical: 10,
-      
+      borderRadius:5,
   },
   cardContent: {
       position: 'relative',
@@ -248,6 +248,7 @@ fontSize:12,
   leftContent: {
       flexDirection: 'column',
       alignItems: 'flex-start',
+      alignContent:'center',
       gap:10
   },
   marketIcon: {
@@ -261,11 +262,11 @@ fontSize:12,
   },
   backgroundImage: {
       position: 'absolute',
-      bottom: -14,
+      bottom: 10,
       right: 1,
       width: '100%',
-      height: '100%',
-      opacity: 0.5,
+      height: 100,
+      opacity: 0.4,
   },
   badge: {
       position: 'absolute',

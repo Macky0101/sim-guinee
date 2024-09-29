@@ -8,6 +8,7 @@ import SyncService from '../../database/services/SyncService';
 import database from '../../database/database'
 import { Q } from '@nozbe/watermelondb';
 import Toast from 'react-native-toast-message';
+import NetInfo from '@react-native-community/netinfo';
 
 const Setting = () => {
   const navigation = useNavigation();
@@ -20,6 +21,18 @@ const Setting = () => {
   const [isSyncingfiche, setIsSyncingfiche] = useState(false); // Pour la synchronisation des fiches
   const [localFichesCount, setLocalFichesCount] = useState(0);
   const [isSyncFicheButtonEnabled, setIsSyncFicheButtonEnabled] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
+  
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+  
   // Vérifier s'il existe des fiches locales
   const checkLocalFiches = async () => {
     try {
@@ -42,6 +55,16 @@ const Setting = () => {
 
   // Fonction de synchronisation des fiches avec calcul de pourcentage
   const handleSyncFiche = async () => {
+    if (!isConnected) {
+      // Afficher un Toast si pas de connexion
+      Toast.show({
+        type: 'error',
+        text1: 'Pas de connexion Internet',
+        text2: 'Veuillez vous connecter à Internet pour synchroniser.',
+      });
+      return; // Arrêter la fonction ici si pas de connexion
+    }
+    // Continuer la synchronisation si connecté
     if (!isSyncFicheButtonEnabled) return; // Empêcher la synchronisation si aucune fiche locale
 
     setIsSyncingfiche(true);
@@ -110,6 +133,16 @@ const Setting = () => {
 
   // Fonction de synchronisation avec mise à jour du pourcentage
   const handleSync = async () => {
+    if (!isConnected) {
+      // Afficher un Toast si pas de connexion
+      Toast.show({
+        type: 'error',
+        text1: 'Pas de connexion Internet',
+        text2: 'Veuillez vous connecter à Internet pour synchroniser.',
+      });
+      return; // Arrêter la fonction ici si pas de connexion
+    }
+    // Continuer la synchronisation si connecté
     try {
       setIsSyncing(true);
       setSyncProgress(0);
@@ -121,6 +154,9 @@ const Setting = () => {
       // Synchronisation des Marchés (50%)
       await SyncService.syncAllMarches();
       setSyncProgress(50);
+
+      const idTypeMarcheArray = await SyncService.syncTypeMarche();
+      await SyncService.syncProduits(idTypeMarcheArray);
 
       // Synchronisation des Fiches (75%)
       // Vous pouvez ajouter une autre synchronisation ici
@@ -202,10 +238,10 @@ const Setting = () => {
       <TouchableOpacity
         style={[
           styles.button,
-          (!isSyncFicheButtonEnabled || isSyncingfiche) ? styles.disabledButton : styles.enabledButton
+          (!isConnected || !isSyncFicheButtonEnabled || isSyncingfiche) ? styles.disabledButton : styles.enabledButton
         ]}
         onPress={handleSyncFiche}
-        disabled={!isSyncFicheButtonEnabled || isSyncingfiche}
+        // disabled={!isConnected || !isSyncFicheButtonEnabled || isSyncingfiche}
       >
         {isSyncingfiche ? (
           <ActivityIndicator size="small" color="#fff" />
@@ -220,7 +256,7 @@ const Setting = () => {
  <TouchableOpacity
         style={styles.button}
         onPress={handleSync}
-        disabled={isSyncing} // Désactiver pendant la synchronisation
+        // disabled={!isConnected || isSyncing} // Désactiver pendant la synchronisation
       >
         {/* Afficher le pourcentage pendant la synchronisation */}
         <Text style={styles.buttonText}>
@@ -289,7 +325,7 @@ const Setting = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 10,
     // justifyContent: 'center',
     // backgroundColor: '#f8f8f8',
   },
@@ -304,7 +340,7 @@ const styles = StyleSheet.create({
     height: 200,
     resizeMode: 'contain',
     // alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 0,
   },
   button: {
     backgroundColor: '#009C57',
