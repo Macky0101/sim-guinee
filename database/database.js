@@ -11,6 +11,9 @@ import Produit from './models/Produit';
 import CategorieProduit from './models/CategorieProduit';
 import FormeProduit from './models/FormeProduit';
 import FamilleProduit from './models/FamilleProduit';
+import FormulairePort from './models/FormulairePort';
+import Unite from './models/unite';
+import UniteRelation from './models/uniteRelation';
 
 // Configuration de l'adapter SQLite pour WatermelonDB
 const adapter = new SQLiteAdapter({
@@ -37,7 +40,11 @@ const database = new Database({
     Produit,
     CategorieProduit, 
     FormeProduit, 
-    FamilleProduit
+    FamilleProduit,
+    FormulairePort,
+    Unite,
+    UniteRelation
+    
   ],
   actionsEnabled: true, // Permet l'utilisation d'actions pour la synchronisation
 });

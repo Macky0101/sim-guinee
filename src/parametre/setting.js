@@ -105,32 +105,6 @@ const Setting = () => {
     }
   };
 
-  // Fonction de synchronisation des fiches avec ActivityIndicator
-  // const handleSyncFiche = async () => {
-  //   setIsSyncingfiche(true);
-  //   setSyncProgress(0);
-  //   console.log('Synchronisation des fiches démarrée');
-
-  //   try {
-  //     await SyncService.syncFiches();
-  //     console.log('Synchronisation des fiches réussie');
-  //     Toast.show({
-  //       type: 'success',
-  //       text1: 'Synchronisation terminée',
-  //       text2: 'Toutes les fiches ont été synchronisées avec succès.',
-  //     });
-  //       } catch (error) {
-  //     console.error('Erreur lors de la synchronisation des fiches:', error);
-  //     Toast.show({
-  //       type: 'error',
-  //       text1: 'Erreur de synchronisation',
-  //       text2: error.message,
-  //     });
-  //       } finally {
-  //     setIsSyncingfiche(false);
-  //   }
-  // };
-
   // Fonction de synchronisation avec mise à jour du pourcentage
   const handleSync = async () => {
     if (!isConnected) {
@@ -157,9 +131,10 @@ const Setting = () => {
 
       const idTypeMarcheArray = await SyncService.syncTypeMarche();
       await SyncService.syncProduits(idTypeMarcheArray);
-
+      await SyncService.syncUnites(idTypeMarcheArray);
       // Synchronisation des Fiches (75%)
-      // Vous pouvez ajouter une autre synchronisation ici
+    
+      
       // await SyncService.syncFiche();
       setSyncProgress(75);
 

@@ -142,7 +142,29 @@ export const schema = appSchema({
         { name: 'created_at', type: 'number' }
       ]
     }),
+    // Table pour stocker les unités
+    tableSchema({
+      name: 'unites',
+      columns: [
+        { name: 'id_unite', type: 'number' },
+        { name: 'type_marche', type: 'number' }, // ID du type de marché associé
+        { name: 'unite_mesure', type: 'number' },
+        { name: 'unite_relation_id', type: 'number' }  // ID de la relation vers UniteRelation
+      ]
+    }),
 
+    // Table pour stocker les relations des unités
+    tableSchema({
+      name: 'unite_relations',
+      columns: [
+        { name: 'id_unite', type: 'number' },
+        { name: 'nom_unite', type: 'string' },
+        { name: 'definition', type: 'string' },
+        { name: 'image', type: 'string' },
+        { name: 'poids_indicatif', type: 'number' },
+        { name: 'created_at', type: 'number' }
+      ]
+    }),
     // Table pour les formulaires spécifiques au type de marché Collecte
     tableSchema({
       name: 'formulaire_collecte',
@@ -190,22 +212,38 @@ export const schema = appSchema({
         { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
       ]
     }),
-       // Table pour les formulaires spécifiques au type de marché consommation
-       tableSchema({
-        name: 'formulaire_consommation',
-        columns: [
-          { name: 'unite', type: 'number' },
-          { name: 'poids_unitaire', type: 'string' },
-          { name: 'prix_mesure', type: 'number' },
-          { name: 'prix_kg_litre', type: 'number' },
-          { name: 'niveau_approvisionement', type: 'string' },
-          { name: 'statut', type: 'boolean' },
-          { name: 'observation', type: 'string' },
-          { name: 'enquete', type: 'number' },
-          { name: 'produit', type: 'string' },
-          { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
-        ]
-      }),
+    // Table pour les formulaires spécifiques au type de marché consommation
+    tableSchema({
+      name: 'formulaire_consommation',
+      columns: [
+        { name: 'unite', type: 'number' },
+        { name: 'poids_unitaire', type: 'string' },
+        { name: 'prix_mesure', type: 'number' },
+        { name: 'prix_kg_litre', type: 'number' },
+        { name: 'niveau_approvisionement', type: 'string' },
+        { name: 'statut', type: 'boolean' },
+        { name: 'observation', type: 'string' },
+        { name: 'enquete', type: 'number' },
+        { name: 'produit', type: 'string' },
+        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+      ]
+    }),
+    // Table pour les formulaires spécifiques au type de marché port
+    tableSchema({
+      name: 'formulaire_port',
+      columns: [
+        { name: 'date_enquete', type: 'string' },
+        { name: 'collecteur', type: 'number' },
+        { name: 'volume_poissons_peches', type: 'number' },
+        { name: 'prix_moyen_semaine_grossiste', type: 'number' },
+        { name: 'prix_moyen_semaine_detaillant', type: 'number' },
+        { name: 'niveau_disponibilite', type: 'string' },
+        { name: 'observation', type: 'string' },
+        { name: 'enquete', type: 'number' },
+        { name: 'principale_espece_peche', type: 'string' },
+        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+      ]
+    }),
   ]
 });
 

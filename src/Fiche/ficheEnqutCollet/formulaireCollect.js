@@ -3,8 +3,6 @@ import { View, StyleSheet, ActivityIndicator, Image, Text, TouchableOpacity, Mod
 import { TextInput, Button } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRoute } from '@react-navigation/native';
-import database from '../../../database/database';
-import FormCollect from '../../../services/serviceAgricultures/ficheCollect/serviceFormulaire';
 import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
 import { Dropdown } from 'react-native-element-dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -14,13 +12,16 @@ import NetInfo from '@react-native-community/netinfo';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import {createCollecte} from '../../../database/collecteService';
 import axios from 'axios';
+import database from '../../../database/database';
+import { Q } from '@nozbe/watermelondb';
 
 const FormCollecte = () => {
   const route = useRoute();
-  const { id, num_fiche,type_marche } = route.params;
+  const { id, idCollecteur ,id_marche, type_marche ,num_fiche} = route.params;
   const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
-  const [typemarche, settype_marche] = useState(type_marche || ''); // Stocker type_marche
-  // console.log('typemarche', typemarche);
+  const [typeMarche, setTypeMarche] = useState(type_marche || '');
+  console.log('route', route.params);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [unite, setUnite] = useState(0);
   const [poids_unitaire, setPoidsUnitaire] = useState('');
   const [montant_achat, setMontantAchat] = useState('');
@@ -35,19 +36,17 @@ const FormCollecte = () => {
   const [statut, setStatut] = useState('');
   const [observation, setObservation] = useState('');
   const [enquete, setEnquete] = useState(parseInt(id, 10) || 0);
-  // const [produit, setProduit] = useState(null);
+
   const [produits, setProduits] = useState([]);
   const [localite_origine, setLocaliteOrigine] = useState('');
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  // const [selectedCategory, setSelectedCategory] = useState(null);
-  // const [groupedProduits, setGroupedProduits] = useState({});
+
   const [prefectures, setPrefectures] = useState([]);
   const [prefecture, setPrefecture] = useState([]);
   const [searchPrefecture, setSearchPrefecture] = useState('');
 
-  // const [UniteMesures, setUniteMesures] = useState([]);
-  // const [UniteMesure, setUniteMesure] = useState([]);
+ 
   const [searchUniteMesure, setSearchUniteMesure] = useState('');
 
 
@@ -154,12 +153,21 @@ const FormCollecte = () => {
       getUniteMesure();
     }
   }, [isConnected]);
+// Fonction pour récupérer et filtrer les produits
+const fetchProduits = async () => {
+  setLoading(true);
+  try {
+      // Log pour indiquer le début de la récupération
+      console.log('Récupération des produits pour le type de marché:', typeMarche);
 
-  const fetchProduits = async () => {
-    setLoading(true);
-    try {
-      const response = await FormConso.getProduit();
-      const grouped = response.reduce((acc, item) => {
+      const produits = await database.collections.get('produits').query(
+          Q.where('type_marche', Q.like(`%${typeMarche}%`)) // Assurez-vous que 'type_marche' est bien le bon champ
+      ).fetch();
+
+      // Log pour vérifier les produits récupérés
+      console.log('Produits récupérés:', produits);
+
+      const grouped = produits.reduce((acc, item) => {
         const category = item.categorie.nom_categorie_produit;
         if (!acc[category]) {
           acc[category] = [];
@@ -173,17 +181,19 @@ const FormCollecte = () => {
         return acc;
       }, {});
       setGroupedProduits(grouped);
-      await storeData('produits', grouped);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des produits:', error);
-      // Alert.alert(
-      //   'Erreur',
-      //   'Impossible de récupérer les produits. Veuillez réessayer plus tard.'
-      // );
-    } finally {
+      // Log pour vérifier le produit final
+      console.log('Liste des produits filtrés:', grouped);
+  } catch (err) {
+      console.error('Erreur lors du filtrage des produits :', err);
+  } finally {
       setLoading(false);
-    }
-  };
+  }
+};
+useEffect(() => {
+  fetchProduits();
+}, [typeMarche]);
+
+
   /**
  * Rendu du dropdown des produits
  */
@@ -224,25 +234,11 @@ const FormCollecte = () => {
   const [UniteMesures, setUniteMesures] = useState([]);
 const [UniteMesure, setUniteMesure] = useState(null); // Ajoutez cet état pour stocker l'unité sélectionnée
 
-// const getUniteMesure = async () => {
-//   try {
-//     const response = await FormCollect.getUniteMesure();
-//     const UniteMesures = response.map((UniteMesure) => ({
-//       label: UniteMesure.nom_unite,
-//       value: UniteMesure.id_unite.toString(), // Assurez-vous que la valeur est bien l'ID correct
-//     }));
-//     setUniteMesures(UniteMesures);
-//     // console.log('UniteMesures', UniteMesures);
-//     await storeData('uniteMesures', UniteMesures);
-//   } catch (error) {
-//     console.error('Erreur lors de la récupération des UniteMesure:', error);
-//   }
-// };
-
 useEffect(() => {
   console.log('type_marche:', type_marche);
   getUniteMesure();
 }, [type_marche]);
+
 
 const getUniteMesure = async () => {
   try {
@@ -269,9 +265,7 @@ const getUniteMesure = async () => {
   }
 };
 
-useEffect(() => {
-  getUniteMesure();
-}, [type_marche]);
+
 
 const renderUniteMesure = () => (
   <Dropdown

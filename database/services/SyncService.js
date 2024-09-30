@@ -316,7 +316,64 @@ syncProduits: async () => {
   }
 },
 
+syncUnites: async () => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) {
+      throw new Error('Aucun jeton trouvé');
+    }
 
+    // Appel de syncTypeMarche pour obtenir tous les types de marché
+    const typeMarcheArray = await SyncService.syncTypeMarche();
+    if (!typeMarcheArray || typeMarcheArray.length === 0) {
+      throw new Error('Erreur lors de la récupération des types de marché');
+    }
+
+    for (const typeMarche of typeMarcheArray) {
+      const url = `${SIMGUINEE_URL}parametrages/unites?code_type_marche=${typeMarche}`;
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const unites = response.data;
+
+      if (!unites || unites.length === 0) {
+        console.warn(`Aucune unité trouvée pour le type de marché: ${typeMarche}`);
+        continue;
+      }
+
+      await database.write(async () => {
+        const uniteCollection = database.collections.get('unites');
+
+        for (const item of unites) {
+          const existingUnite = await uniteCollection
+            .query(Q.where('id_unite', item.id_unite))
+            .fetch();
+
+          if (existingUnite.length > 0) {
+            await existingUnite[0].update(uniteRecord => {
+              uniteRecord.code_unite = item.code_unite || '';
+              uniteRecord.nom_unite = item.nom_unite || '';
+              uniteRecord.type_unite = item.type_unite || '';
+              uniteRecord.created_at = new Date(item.created_at).getTime();
+            });
+          } else {
+            await uniteCollection.create(uniteRecord => {
+              uniteRecord.id_unite = item.id_unite;
+              uniteRecord.code_unite = item.code_unite || '';
+              uniteRecord.nom_unite = item.nom_unite || '';
+              uniteRecord.type_unite = item.type_unite || '';
+              uniteRecord.created_at = new Date(item.created_at).getTime();
+            });
+          }
+        }
+      });
+      console.log(`Unités synchronisées pour le type de marché ${typeMarche}`);
+    }
+  } catch (error) {
+    console.error('Erreur lors de la synchronisation des unités:', error);
+  }
+},
 
 
   syncFiche: async (id_marche) => {

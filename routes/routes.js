@@ -6,7 +6,6 @@ import Login from '../src/LoginPage/login';
 import Home from '../src/HomePage/home';
 import NewCollecte from '../src/NewCollecte/newCollecte';
 import Fiche from '../src/Fiche/fiche';
-import Peche from '../src/PecheFiche/peche';
 import IntroScreens from '../src/LoginPage/introductionPage';
 import FicheCollecte from '../src/Fiche/ficheEnqutCollet/ficheCollecte';
 import FormCollecte from '../src/Fiche/ficheEnqutCollet/formulaireCollect';
@@ -22,6 +21,8 @@ import ListData from '../src/ListeData/ListData';
 import DetailFiche from '../src/ListeData/DetailFiche';
 import DetailPage from '../src/DetailPage/DetailPage';
 import MarketFiches from '../src/DetailPage/MarketFiches';
+import FormPort from '../src/Fiche/ficheEnqutPort/FormulairePort';
+import ListPort from '../src/Fiche/ficheEnqutPort/ListPort';
 
 const Stack = createStackNavigator();
 
@@ -75,11 +76,6 @@ const Routes = () => {
           component={Fiche}
           options={{ title: 'Fiches enquêtes' }}
         />
-         <Stack.Screen
-          name="Peche"
-          component={Peche}
-          options={{ title: 'Données de pêche' }}
-        />
           <Stack.Screen
           name="Collectes"
           component={FicheCollecte}
@@ -123,6 +119,16 @@ const Routes = () => {
          <Stack.Screen
           name="FormGrossistes"
           component={FormGrossistes}
+          options={{ title: 'Nouvelle collecte' }}
+        />
+          <Stack.Screen
+          name="FormPort"
+          component={FormPort}
+          options={{ title: 'Nouvelle collecte' }}
+        />
+          <Stack.Screen
+          name="ListPort"
+          component={ListPort}
           options={{ title: 'Nouvelle collecte' }}
         />
          <Stack.Screen

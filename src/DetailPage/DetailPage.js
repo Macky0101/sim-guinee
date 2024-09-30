@@ -105,7 +105,7 @@ const DetailPage = ({ route }) => {
                 Q.where('type_marche', Q.like(`%${TypeMarche}%`)) // Filtrer par type_marche
             ).fetch();
 
-            console.log('Produits filtrés :', produits); // Vérification
+            // console.log('Produits filtrés :', produits); // Vérification
             const productList = produits.map(prod => ({
                 label: prod.nom_produit,
                 value: prod.id_produit,

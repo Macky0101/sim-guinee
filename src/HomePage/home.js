@@ -132,8 +132,12 @@ const Home = () => {
                 const Marches = await MarchesCollection.query().fetch();
 
                 // Récupérer les fiches depuis WatermelonDB
-                const ficheCollection = database.collections.get('produits');
+                const ficheCollection = database.collections.get('fiches');
                 const Fiches = await ficheCollection.query().fetch();
+
+
+                const ProduitsCollection = database.collections.get('produits');
+                const Produits = await ProduitsCollection.query().fetch();
                 // const fichesToSync = await ficheCollection.query(Q.where('is_synced', true)).fetch();
                 // is_synced: ${marche._raw.is_synced},
                 // Fiches.forEach((produit) => {
@@ -153,9 +157,9 @@ const Home = () => {
                 if (Fiches.length > 0) {
                     // console.log('Données trouvées dans la table:', fichesToSync);
                     // console.log('Données trouvées dans la table:', Fiches);
-                    // Fiches.forEach(marche => {
-                    //     console.log(`ID : ${marche._raw.num_fiche}, id_type_marche: ${marche._raw.id_type_marche}, marche: ${marche._raw.marche}, collecteur: ${marche._raw.collecteur}, numero_point_collecte: ${marche._raw.numero_point_collecte}, nom_personne_enquete: ${marche._raw.nom_personne_enquete}, contact_personne_enquete: ${marche._raw.contact_personne_enquete}, id_type_marche : ${marche._raw.id_type_marche},source: ${marche._raw.source},  `);
-                    // });
+                    Fiches.forEach(marche => {
+                        console.log(`ID : ${marche._raw.num_fiche}, id_type_marche: ${marche._raw.id_type_marche}, marche: ${marche._raw.marche}, collecteur: ${marche._raw.collecteur}, numero_point_collecte: ${marche._raw.numero_point_collecte}, nom_personne_enquete: ${marche._raw.nom_personne_enquete}, contact_personne_enquete: ${marche._raw.contact_personne_enquete}, id_type_marche : ${marche._raw.id_type_marche},source: ${marche._raw.source},  `);
+                    });
 
                 } else {
                     console.log('Aucune donnée trouvée dans la table marche.');
