@@ -12,6 +12,10 @@ import {getAllCollects ,countCollects,deleteCollect} from '../../../database/col
 const ListesCollecte = () => {
   const route = useRoute();
   const { num_fiche } = route.params;
+    const { ficheId, idCollecteur, id_marche, type_marche } = route.params;
+    console.log('====================================');
+    console.log(ficheId); 
+    console.log('====================================');
   const navigation = useNavigation(); 
   const [loading, setLoading] = useState(true);
   const [produits, setProduits] = useState({});

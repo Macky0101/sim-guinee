@@ -147,11 +147,12 @@ export const schema = appSchema({
       name: 'unites',
       columns: [
         { name: 'id_unite', type: 'number' },
-        { name: 'type_marche', type: 'number' }, // ID du type de marché associé
+        { name: 'type_marche', type: 'number' },  // ID du type de marché associé
         { name: 'unite_mesure', type: 'number' },
         { name: 'unite_relation_id', type: 'number' }  // ID de la relation vers UniteRelation
       ]
     }),
+    
 
     // Table pour stocker les relations des unités
     tableSchema({
@@ -160,11 +161,12 @@ export const schema = appSchema({
         { name: 'id_unite', type: 'number' },
         { name: 'nom_unite', type: 'string' },
         { name: 'definition', type: 'string' },
-        { name: 'image', type: 'string' },
-        { name: 'poids_indicatif', type: 'number' },
-        { name: 'created_at', type: 'number' }
+        { name: 'image', type: 'string', isOptional: true },  // Optionnel
+        { name: 'poids_indicatif', type: 'number', isOptional: true },  // Optionnel
+        { name: 'created_at', type: 'number' }  // Date au format ISO
       ]
     }),
+    
     // Table pour les formulaires spécifiques au type de marché Collecte
     tableSchema({
       name: 'formulaire_collecte',

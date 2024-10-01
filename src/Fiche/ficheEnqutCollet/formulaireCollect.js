@@ -17,11 +17,9 @@ import { Q } from '@nozbe/watermelondb';
 
 const FormCollecte = () => {
   const route = useRoute();
-  const { id, idCollecteur ,id_marche, type_marche ,num_fiche} = route.params;
-  const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
+  const { id, idCollecteur ,id_marche, type_marche ,ficheId} = route.params;
   const [typeMarche, setTypeMarche] = useState(type_marche || '');
-  console.log('route', route.params);
-  const [filteredProducts, setFilteredProducts] = useState([]);
+  // console.log('route', route.params);
   const [unite, setUnite] = useState(0);
   const [poids_unitaire, setPoidsUnitaire] = useState('');
   const [montant_achat, setMontantAchat] = useState('');
@@ -36,26 +34,13 @@ const FormCollecte = () => {
   const [statut, setStatut] = useState('');
   const [observation, setObservation] = useState('');
   const [enquete, setEnquete] = useState(parseInt(id, 10) || 0);
-
-  const [produits, setProduits] = useState([]);
-  const [localite_origine, setLocaliteOrigine] = useState('');
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
-
-  const [prefectures, setPrefectures] = useState([]);
-  const [prefecture, setPrefecture] = useState([]);
-  const [searchPrefecture, setSearchPrefecture] = useState('');
-
- 
+  const [search, setSearch] = useState(''); 
   const [searchUniteMesure, setSearchUniteMesure] = useState('');
-
-
   const [produit, setProduit] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [groupedProduits, setGroupedProduits] = useState({});
   const [searchProduit, setSearchProduit] = useState('');
-
-
   const [isConnected, setIsConnected] = useState(true);
 
 
@@ -153,22 +138,32 @@ const FormCollecte = () => {
       getUniteMesure();
     }
   }, [isConnected]);
+
 // Fonction pour récupérer et filtrer les produits
 const fetchProduits = async () => {
   setLoading(true);
   try {
-      // Log pour indiquer le début de la récupération
-      console.log('Récupération des produits pour le type de marché:', typeMarche);
+    // Récupérer les produits pour le type de marché donné
+    const produits = await database.collections.get('produits').query(
+      Q.where('type_marche', Q.like(`%${typeMarche}%`)) // Vérifier que 'type_marche' est bien le champ à filtrer
+    ).fetch();
 
-      const produits = await database.collections.get('produits').query(
-          Q.where('type_marche', Q.like(`%${typeMarche}%`)) // Assurez-vous que 'type_marche' est bien le bon champ
+    // Si on a des produits, on récupère les catégories associées
+    if (produits.length > 0) {
+      // Récupérer les IDs des catégories de produit
+      const categorieIds = produits.map(p => p.categorie_produit);
+
+      // Récupérer les catégories correspondantes à ces IDs
+      const categories = await database.collections.get('categories_produit').query(
+        Q.where('id_categorie_produit', Q.oneOf(categorieIds)) // Requête pour récupérer les catégories correspondant aux IDs
       ).fetch();
 
-      // Log pour vérifier les produits récupérés
-      console.log('Produits récupérés:', produits);
-
+      // Associer chaque produit à sa catégorie
       const grouped = produits.reduce((acc, item) => {
-        const category = item.categorie.nom_categorie_produit;
+        // Trouver la catégorie correspondante pour le produit
+        const category = categories.find(cat => cat.id_categorie_produit === item.categorie_produit)?.nom_categorie_produit || 'Inconnu';
+
+        // Organiser les produits par catégorie
         if (!acc[category]) {
           acc[category] = [];
         }
@@ -177,21 +172,20 @@ const fetchProduits = async () => {
           value: item.code_produit,
           image: item.image || 'https://via.placeholder.com/150',
         });
-        // console.log('liste des produits',acc[category])
+
         return acc;
       }, {});
+
       setGroupedProduits(grouped);
-      // Log pour vérifier le produit final
-      console.log('Liste des produits filtrés:', grouped);
+      // console.log('Liste des produits filtrés et groupés par catégorie:', grouped);
+    }
   } catch (err) {
-      console.error('Erreur lors du filtrage des produits :', err);
+    console.error('Erreur lors du filtrage des produits:', err);
   } finally {
-      setLoading(false);
+    setLoading(false);
   }
 };
-useEffect(() => {
-  fetchProduits();
-}, [typeMarche]);
+
 
 
   /**
@@ -230,43 +224,41 @@ useEffect(() => {
   };
 
 
-
-  const [UniteMesures, setUniteMesures] = useState([]);
-const [UniteMesure, setUniteMesure] = useState(null); // Ajoutez cet état pour stocker l'unité sélectionnée
-
-useEffect(() => {
-  console.log('type_marche:', type_marche);
-  getUniteMesure();
-}, [type_marche]);
-
-
-const getUniteMesure = async () => {
-  try {
-    const userToken = await AsyncStorage.getItem('userToken');
-    if (!userToken) {
-      throw new Error('Aucun jeton trouvé');
+  const [UniteMesures, setUniteMesures] = useState([]); // Liste des unités de mesure
+  const [UniteMesure, setUniteMesure] = useState(null); // Unité sélectionnée
+  
+  useEffect(() => {
+    if (typeMarche) {
+      // console.log('Type de marché:', typeMarche);
+      getUniteMesure(); // Récupérer les unités de mesure quand le type de marché change
     }
+  }, [typeMarche]);
+  
+  const getUniteMesure = async () => {
+    try {
+      const uniteRelationCollection = database.collections.get('unite_relations');
 
-    const response = await axios.get(`http://92.112.194.154:8000/api/parametrages/unites/associated-unites/type-marche?id_of_type_market=${type_marche}`, {
-      headers: {
-        Authorization: `Bearer ${userToken}`,
-      },
-    });
-
-    const UniteMesures = response.data[0].unites.map((unite) => ({
-      label: unite.unite_relation.nom_unite,
-      value: unite.id, // Assurez-vous que la valeur est bien l'ID correct
-    }));
-    
-    setUniteMesures(UniteMesures);
-    await storeData('uniteMesures', UniteMesures);
-  } catch (error) {
-    console.error('Erreur lors de la récupération des UniteMesure:', error.response ? error.response.data : error.message);
-  }
-};
-
-
-
+      // Exécuter une requête pour récupérer toutes les unités
+      const unites = await uniteRelationCollection.query().fetch();
+  
+      // // Parcourir les résultats et afficher les noms et IDs
+      // unites.forEach(unite => {
+      //   console.log(`ID Macky: ${unite.id_unite}, Nom: ${unite.nom_unite}`);
+      // });
+  
+      // Si des unités sont trouvées, mappez les données
+      const UniteMesures = unites.map((unite) => ({
+        label: unite.nom_unite, // Assurez-vous que 'unite_relation.nom_unite' existe dans la structure
+        value: unite.id_unite, // Assurez-vous que 'id' est correct
+      }));
+  
+      setUniteMesures(UniteMesures); // Mettre à jour l'état avec les unités récupérées
+      await storeData('uniteMesures', UniteMesures); // Enregistrer les unités localement
+    } catch (error) {
+      console.error('Erreur lors de la récupération des unités de mesure:', error.message || error);
+    }
+  };
+  
 const renderUniteMesure = () => (
   <Dropdown
     style={styles.dropdown}
@@ -310,7 +302,6 @@ const renderUniteMesure = () => (
       console.error('Erreur lors de la récupération des communes:', error);
     }
   };
-
 
   const renderCommunes = () => (
     <Dropdown
@@ -367,7 +358,6 @@ const renderUniteMesure = () => (
     setObservation('');
     setEnquete(parseInt(id, 10));
     setProduit(null);
-    setLocaliteOrigine('');
     setSearch('');
     setSelectedCategory(null);
   };
@@ -378,84 +368,74 @@ const renderUniteMesure = () => (
     setProduit(null); // Reset selected product when category changes
   };
 
-  const renderProducts = () => {
-    if (!selectedCategory) return null;
 
-    const products = groupedProduits[selectedCategory];
-
-    return (
-      <Dropdown
-        style={styles.input}
-        data={products.filter(product => product.label.toLowerCase().includes(search.toLowerCase()))}
-        labelField="label"
-        valueField="value"
-        placeholder="Sélectionnez un produit"
-        value={produit}
-        onChange={item => setProduit(item)}
-        search
-        searchPlaceholder="Rechercher..."
-        onSearch={setSearch}
-        renderLeftIcon={() => (
-          <AntDesign style={styles.icon} color="black" name="Safety" size={20} />
-        )}
-        renderItem={(item) => (
-          <View style={styles.itemContainer}>
-            <Image source={{ uri: item.image }} style={styles.image} />
-            <Text>{item.label}</Text>
-          </View>
-        )}
-      />
-    );
-  };
-
-
-const handleSaveCollect = async () => {
-  if (!validateFields()) {  // Ne pas exécuter la fonction d'enregistrement si la validation échoue
-    Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires.');
-    return;  // Arrêter l'exécution si les champs ne sont pas valides
-}
-  try {
-   const ficheData ={
-    unite: UniteMesure,
-    poids_unitaire,
-    montant_achat,
-    prix_fg_kg,
-    etat_route,
-    quantite_collecte,
-    niveau_approvisionement,
-    statut: getStatusForAPI(statut),
-    observation,
-    etat,
-    enquete,
-    produit: produit?.value,
-    destination_finale:commune?.id,
-    numFiche,
-   };
-   resetFields();
-   try {
-    await createCollecte(ficheData);
-    console.log("Envoi réussi",ficheData);
-  } catch (error) {
-    console.error("Erreur lors de la création de la fiche:", error);
-  }
-  } catch (error) {
-    console.error('Erreur lors de l\'enregistrement dans la table collecte:', error);
-  }
-};
+  const handleSaveCollect = async () => {
+    if (!validateFields()) {  // Validation des champs
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
   
-  const deleteAllCollects = async () => {
     try {
+      // Récupérer la valeur actuelle maximale de l'enquête
+      const maxEnquete = await database.collections.get('formulaire_collecte').query(
+        Q.sortBy('enquete', Q.desc), // Trier par la colonne 'enquete' de manière décroissante
+        Q.take(1) // Prendre la fiche avec la valeur la plus élevée pour 'enquete'
+      ).fetch();
+  
+      let newEnquete = 1; // Par défaut, si aucune fiche n'existe encore
+      if (maxEnquete.length > 0) {
+        newEnquete = maxEnquete[0].enquete + 1; // Incrémenter l'enquête
+      }
+  
+      const ficheData = {
+        unite: UniteMesure,
+        poids_unitaire,
+        montant_achat,
+        prix_fg_kg,
+        etat_route,
+        quantite_collecte,
+        niveau_approvisionement,
+        statut: getStatusForAPI(statut),
+        observation,
+        etat,
+        enquete: newEnquete, // Utiliser la nouvelle valeur de 'enquete' calculée
+        produit: produit?.value,
+        destination_finale: commune?.id, // Récupérer l'ID de la commune sélectionnée
+        ficheId: ficheId,
+      };
+  
+      console.log('Données envoyées :', ficheData);
+  
+      // Enregistrement dans WatermelonDB
       await database.write(async () => {
-        const allCollects = await database.get('collecte').query().fetch();
-        allCollects.forEach(async (collect) => {
-          await collect.markAsDeleted(); // Suppression logique de chaque collecte
+        const newCollectes = await database.collections.get('formulaire_collecte').create((newCollecte) => {
+          newCollecte.unite = ficheData.unite;
+          newCollecte.poids_unitaire = ficheData.poids_unitaire;
+          newCollecte.montant_achat = ficheData.montant_achat;
+          newCollecte.prix_fg_kg = ficheData.prix_fg_kg;
+          newCollecte.etat_route = ficheData.etat_route;
+          newCollecte.quantite_collecte = ficheData.quantite_collecte;
+          newCollecte.niveau_approvisionement = ficheData.niveau_approvisionement;
+          newCollecte.statut = ficheData.statut;
+          newCollecte.observation = ficheData.observation;
+          newCollecte.etat = ficheData.etat;
+          newCollecte.enquete = ficheData.enquete; // Enregistrement de la nouvelle enquête
+          newCollecte.produit = ficheData.produit;
+          newCollecte.destination_finale = ficheData.destination_finale;
+          newCollecte.fiche_id = ficheData.ficheId;
         });
+      console.log("Envoi réussi", newCollectes);
+
       });
-      console.log('Toutes les entrées de la table collecte ont été supprimées.');
+  
+      resetFields(); // Réinitialisation des champs après enregistrement
+  
     } catch (error) {
-      console.error('Erreur lors de la suppression de toutes les entrées collecte :', error);
+      console.error('Erreur lors de l\'enregistrement dans WatermelonDB :', error);
     }
   };
+  
+  
 
   const getStatusForAPI = (statut) => {
     switch (statut) {
@@ -588,12 +568,7 @@ const handleSaveCollect = async () => {
           onChangeText={text => Setetat(text)}
           style={styles.input}
         />
-        {/* <TextInput
-          label="Fournisseur Principal"
-          value={fournisseur_principal}
-          onChangeText={text => setFournisseurPrincipal(text)}
-          style={styles.input}
-        /> */}
+ 
         <Dropdown
           style={styles.dropdown}
           data={niveauApprovisionementOptions}
@@ -618,13 +593,6 @@ const handleSaveCollect = async () => {
             <AntDesign name="infocirlce" size={20} color="black" style={styles.icon} />  // Icône pour le statut
           )}
         />
-         {/* <TextInput
-          label="Destination finale"
-          value={destination_finale.toString()}
-          onChangeText={text => Setdestination_finale(parseFloat(text))}
-          keyboardType="numeric"
-          style={styles.input}
-        /> */}
         <TextInput
           label="Observation"
           value={observation}
@@ -638,9 +606,6 @@ const handleSaveCollect = async () => {
         <Button mode="contained" onPress={handleSaveCollect} style={styles.button}>
           Enregistrer
         </Button>
-        {/* <Button mode="contained" onPress={deleteAllCollects} style={styles.button}>
-          sup
-        </Button> */}
       </KeyboardAwareScrollView>
     </View>
   );

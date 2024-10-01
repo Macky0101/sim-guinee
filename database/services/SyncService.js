@@ -318,57 +318,90 @@ syncProduits: async () => {
 
 syncUnites: async () => {
   try {
+    console.log('Début de la synchronisation des unités...');
+
     const token = await AsyncStorage.getItem('userToken');
     if (!token) {
       throw new Error('Aucun jeton trouvé');
     }
 
-    // Appel de syncTypeMarche pour obtenir tous les types de marché
+    // Récupérer les types de marché
     const typeMarcheArray = await SyncService.syncTypeMarche();
     if (!typeMarcheArray || typeMarcheArray.length === 0) {
       throw new Error('Erreur lors de la récupération des types de marché');
     }
 
-    for (const typeMarche of typeMarcheArray) {
-      const url = `${SIMGUINEE_URL}parametrages/unites?code_type_marche=${typeMarche}`;
+    // Boucle à travers chaque type de marché pour synchroniser les unités associées
+    for (const typeMarcheId of typeMarcheArray) {
+      const url = `${SIMGUINEE_URL}parametrages/unites/associated-unites/type-marche?id_of_type_market=${typeMarcheId}`;
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      const data = response.data;
 
-      const unites = response.data;
-
-      if (!unites || unites.length === 0) {
-        console.warn(`Aucune unité trouvée pour le type de marché: ${typeMarche}`);
+      // Vérifier s'il y a des unités dans la réponse API
+      if (!data || data.length === 0 || !data[0].unites || data[0].unites.length === 0) {
+        console.warn(`Aucune unité trouvée pour le type de marché: ${typeMarcheId}`);
         continue;
       }
 
+      console.log(`Réponse de l'API pour le type de marché ${typeMarcheId}:`, JSON.stringify(data, null, 2));
+
       await database.write(async () => {
         const uniteCollection = database.collections.get('unites');
+        const uniteRelationCollection = database.collections.get('unite_relations');
 
-        for (const item of unites) {
-          const existingUnite = await uniteCollection
-            .query(Q.where('id_unite', item.id_unite))
-            .fetch();
+        // Parcourir les unités pour ce type de marché
+        for (const unite of data[0].unites) {
+          const { id, unite_mesure, unite_relation } = unite;
 
-          if (existingUnite.length > 0) {
-            await existingUnite[0].update(uniteRecord => {
-              uniteRecord.code_unite = item.code_unite || '';
-              uniteRecord.nom_unite = item.nom_unite || '';
-              uniteRecord.type_unite = item.type_unite || '';
-              uniteRecord.created_at = new Date(item.created_at).getTime();
+          // Vérifier la validité des données de l'unité et de la relation
+          if (!id || !unite_relation || !unite_relation.id_unite) {
+            console.warn('Données d\'unité ou relation manquantes ou invalides:', unite);
+            continue;
+          }
+
+          // Synchronisation ou création de l'unite_relation
+          const existingRelation = await uniteRelationCollection.query(Q.where('id_unite', unite_relation.id_unite)).fetch();
+          if (existingRelation.length > 0) {
+            await existingRelation[0].update(uniteRelationRecord => {
+              uniteRelationRecord.nom_unite = unite_relation.nom_unite;
+              uniteRelationRecord.definition = unite_relation.definition;
+              uniteRelationRecord.image = unite_relation.image || null;
+              uniteRelationRecord.poids_indicatif = unite_relation.poids_indicatif || null;
+            });
+          } else {
+            await uniteRelationCollection.create(uniteRelationRecord => {
+              uniteRelationRecord.id_unite = unite_relation.id_unite;
+              uniteRelationRecord.nom_unite = unite_relation.nom_unite;
+              uniteRelationRecord.definition = unite_relation.definition;
+              uniteRelationRecord.image = unite_relation.image || null;
+              uniteRelationRecord.poids_indicatif = unite_relation.poids_indicatif || null;
+              uniteRelationRecord.created_at = new Date().getTime();
+            });
+          }
+
+          // Synchroniser ou créer l'unité
+          const existingUnites = await uniteCollection.query(Q.where('id_unite', id)).fetch();
+          if (existingUnites.length > 0) {
+            await existingUnites[0].update(uniteRecord => {
+              uniteRecord.type_marche = typeMarcheId;
+              uniteRecord.unite_relation_id = unite_relation.id_unite;
+              uniteRecord.unite_mesure = unite_mesure;
             });
           } else {
             await uniteCollection.create(uniteRecord => {
-              uniteRecord.id_unite = item.id_unite;
-              uniteRecord.code_unite = item.code_unite || '';
-              uniteRecord.nom_unite = item.nom_unite || '';
-              uniteRecord.type_unite = item.type_unite || '';
-              uniteRecord.created_at = new Date(item.created_at).getTime();
+              uniteRecord.id_unite = id;
+              uniteRecord.type_marche = typeMarcheId;
+              uniteRecord.unite_relation_id = unite_relation.id_unite;
+              uniteRecord.unite_mesure = unite_mesure;
             });
           }
+          console.log(`Unité synchronisée: Nom = ${unite_relation.nom_unite}, ID = ${unite_relation.id_unite}`);
         }
       });
-      console.log(`Unités synchronisées pour le type de marché ${typeMarche}`);
+
+      console.log(`Synchronisation des unités pour le type de marché ${typeMarcheId} terminée.`);
     }
   } catch (error) {
     console.error('Erreur lors de la synchronisation des unités:', error);
@@ -527,9 +560,6 @@ syncUnites: async () => {
       console.error('Erreur lors de la synchronisation des fiches:', error);
     }
   },
-
-
-
 
   syncAllMarches: async () => {
     try {

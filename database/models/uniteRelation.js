@@ -9,7 +9,7 @@ class UniteRelation extends Model {
   @field('definition') definition;
   @field('image') image;
   @field('poids_indicatif') poids_indicatif;
-  @field('created_at') createdAt;  // Date au format timestamp
+  @field('created_at') createdAt;  // Date au format timestamp ou ISO string
 }
 
 export default UniteRelation;
