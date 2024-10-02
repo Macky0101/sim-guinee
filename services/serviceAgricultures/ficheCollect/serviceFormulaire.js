@@ -16,7 +16,7 @@ const FormCollect = {
           'Content-Type': 'application/json',
         },
       });
-    //   console.log('Données enregistrées:', response.data);
+      console.log('Données enregistrées:', response.data);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de l’envoi des données:', error.response ? error.response.data : error.message);

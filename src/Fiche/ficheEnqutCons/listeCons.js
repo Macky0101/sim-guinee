@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Animated, { Layout, FadeIn, FadeOut } from 'react-native-reanimated';
 import { useRoute } from '@react-navigation/native';
 import FicheConsommationService from '../../../services/serviceAgricultures/ficheConsommation/serviceConsommation';
-import { getConsommationData, deleteConsommation } from '../../../database/requetteCons';
-import { getData } from '../../../database/db';
 import { Searchbar, FAB, Dialog, Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
 import { Ionicons } from '@expo/vector-icons';
 import ConsommationServices from '../../../database/ConsommationService.js';
+import { Q } from '@nozbe/watermelondb';
+import database from '../../../database/database';
+
 
 const ListesConso = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const { ficheId } = route.params;
   const { id, num_fiche } = route.params;
   const [loading, setLoading] = useState(false);
   const [filteredCollects, setFilteredCollects] = useState([]);
@@ -29,69 +30,47 @@ const ListesConso = () => {
   const [uploadProgress, setUploadProgress] = useState(0); // État pour suivre le pourcentage d'envoi
   const [isUploading, setIsUploading] = useState(false);   // État pour suivre si l'envoi est en cours
   
-  useEffect(() => {
-    const loadProduits = async () => {
-      const produitsData = await getData('produits');
-      setProduits(produitsData || {});
-    };
-    loadProduits();
-  }, []);
+  const fetchFiches = async () => {
+    try {
+      const fetchedFiches = await database.collections.get('formulaire_consommation').query(
+        Q.where('fiche_id', Q.like(`%${ficheId}`))
+      ).fetch();
+      console.log('donne',fetchedFiches);
+      setCollectes(fetchedFiches);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des fiches:', error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadUniteMesures = async () => {
-      const uniteMesuresData = await getData('uniteMesures');
-      setUniteMesures(uniteMesuresData || []);
-    };
-    loadUniteMesures();
+    fetchFiches();
   }, []);
 
-  useEffect(() => {
-    const fetchConsommation = async () => {
-      try {
-        // Récupérer toutes les collectes via WatermelonDB
-        const allCollectes = await ConsommationServices.listConsommations();
-        
-        // Mapper les données pour accéder aux champs réels à partir de `_raw`
-        const allCollectsRaw = allCollectes.map((collecte) => collecte._raw);
-        
-        // Filtrer les collectes selon le num_fiche
-        const filteredCollectes = allCollectsRaw.filter(
-          (collecte) => collecte.num_fiche === num_fiche
-        );
-      
-        // Mettre à jour l'état avec les collectes filtrées
-        setCollectes(filteredCollectes);
-        
-        console.log('Liste des grossistes filtrés', filteredCollectes);
-        console.log('Liste de tous les grossistes', allCollectsRaw);
-      } catch (error) {
-        console.error('Erreur lors de la récupération des collectes:', error);
-      } finally {
-        // Mettre à jour l'état de chargement
-        setLoading(false);
-      }
-    };
-  
-    fetchConsommation();
-  }, [num_fiche]);
-  useEffect(() => {
-    const fetchConsommation = async () => {
-      try {
-        setLoading(true); // Ajout de l'indicateur de chargement
-        const allCollectes = await getConsommationData();
-        const filteredCollectes = allCollectes.filter(
-          (collecte) => collecte.num_fiche === num_fiche
-        );
-        setCollectes(filteredCollectes);
-        console.log('Liste des consommations', filteredCollectes);
-        setLoading(false);
-      } catch (error) {
-        console.error('Erreur lors de la récupération des collectes:', error);
-        setLoading(false);
-      }
-    };
-    fetchConsommation();
-  }, [num_fiche]);
+  const deleteFiche = async (ficheId) => {
+    try {
+      await database.write(async () => {
+        const ficheToDelete = await database.collections.get('formulaire_consommation').find(ficheId);
+        await ficheToDelete.destroyPermanently();
+      });
+      fetchFiches();
+      Alert.alert('Succès', 'Fiche supprimée avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la fiche:', error);
+    }
+  };
+
+  const handleLongPress = (fiche) => {
+    setSelectedCollecte(fiche);
+    setDialogVisible(true);
+  };
+
+  const handleDelete = () => {
+    deleteFiche(selectedCollecte._raw.id);
+    setDialogVisible(false);
+  };
+
 
   const getProduitInfo = (codeProduit) => {
     for (const category in produits) {
@@ -114,18 +93,8 @@ const ListesConso = () => {
     Alert.alert('Collecte sélectionnée', `Produit: ${getProduitInfo(collecte.produit)?.label}`);
   };
 
-  const handleLongPress = (collecte) => {
-    setSelectedCollecte(collecte);
-    setDialogVisible(true);
-  };
 
-  const handleDelete = async () => {
-    if (selectedCollecte) {
-      await deleteConsommation(selectedCollecte.id);
-      setCollectes(collectes.filter((c) => c.id !== selectedCollecte.id));
-      setDialogVisible(false);
-    }
-  };
+
 
   const filteredCollectes = collectes.filter(collecte => {
     const produitInfo = getProduitInfo(collecte.produit);
@@ -144,10 +113,9 @@ const ListesConso = () => {
           unite: collecte.unite,
           poids_unitaire: String(collecte.poids_unitaire), // Convertir en chaîne de caractères
           prix_mesure: parseFloat(collecte.prix_mesure),
-          prix_fg_kg: parseFloat(collecte.prix_fg_kg),
           prix_kg_litre: parseFloat(collecte.prix_kg_litre),
-          niveau_approvisionement: collecte.niveau_approvisionnement,
-          document: collecte.document || '', // Assurez-vous que document est une chaîne vide s'il est non défini
+          niveau_approvisionement: collecte.niveau_approvisionement,
+          // document: collecte.document || '', // Assurez-vous que document est une chaîne vide s'il est non défini
           statut: collecte.statut,
           observation: collecte.observation,
           enquete: collecte.enquete,
@@ -158,10 +126,10 @@ const ListesConso = () => {
         try {
           // Envoi de l'enregistrement à l'API
           await FormConso.postFormConso(ficheData);
-          console.log(`Enregistrement ${collecte.id} envoyé avec succès.`);
+          console.log(`Enregistrement ${collecte.id} envoyé avec succès.${ficheData}`);
   
           // Suppression de l'enregistrement local si l'envoi a réussi
-          await deleteConsommation(collecte.id);
+          // (collecte.id);
           setCollectes((prevCollectes) => prevCollectes.filter((c) => c.id !== collecte.id));
 
            // Mise à jour de la progression
@@ -230,61 +198,46 @@ const ListesConso = () => {
   </View>
 )}
 
-      <ScrollView
-        showsVerticalScrollIndicator={false} 
-        showsHorizontalScrollIndicator={false}
-      >
-        {filteredCollectes.map((collecte, index) => {
-          const produitInfo = getProduitInfo(collecte.produit);
-          const uniteInfo = getUniteInfo(collecte.unite);
+<ScrollView showsVerticalScrollIndicator={false}>
+        {collectes.map((collecte, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.card}
+            onPress={() => toggleExpand(collecte.id)}
+            onLongPress={() => handleLongPress(collecte)}
+          >
+            <View style={styles.infoContainer}>
+              <Image source={{ uri: collecte.produit.image }} style={styles.produitImage} />
+              <Text style={styles.produitLabel}>{collecte.produit}</Text>
+              <View style={styles.chevronContainer}>
+                <Text>Unité de Stock: <Text style={styles.label}>{collecte.unite}</Text></Text>
+                <Ionicons
+                  name={expandedCollecte === collecte.id ? "chevron-up-outline" : "chevron-down-outline"}
+                  size={24}
+                  color="black"
+                  style={styles.chevronIcon}
+                />
+              </View>
 
-          return (
-            <TouchableOpacity
-              key={index}
-              style={styles.card}
-              onPress={() => toggleExpand(collecte.id)} 
-              onLongPress={() => handleLongPress(collecte)}
-            >
-              {produitInfo && (
+              {expandedCollecte === collecte.id && (
                 <>
-                  <View style={styles.infoContainer}>
-
-                  <Image source={{ uri: produitInfo.image }} style={styles.produitImage} />
-                    <Text style={styles.produitLabel}>{produitInfo.label}</Text>
-
-                    <View style={styles.chevronContainer}>
-                      <Text>Unité de Stock :<Text style={styles.label}> {getUniteInfo(collecte.unite)}</Text></Text>
-                      <Ionicons
-                        name={expandedCollecte === collecte.id ? "chevron-up-outline" : "chevron-down-outline"}
-                        size={24}
-                        color="black"
-                        style={styles.chevronIcon}
-                      />
-                    </View>
-                    
-                    {expandedCollecte === collecte.id && (
-                      <>
-                       <Text>Niveau d'Approvisionnement: <Text style={styles.label}>{collecte.niveau_approvisionnement}</Text></Text>
+                    <Text>Niveau d'Approvisionnement: <Text style={styles.label}>{collecte.niveau_approvisionement}</Text></Text>
                     <Text>Statut: <Text style={styles.label}>{collecte.statut}</Text></Text>
                     <Text>Poids Unitaire: <Text style={styles.label}>{collecte.poids_unitaire}</Text></Text>
                     <Text>Prix Mesure: <Text style={styles.label}>{collecte.prix_mesure}</Text> GNF</Text>
-                    <Text>Prix FG/KG: <Text style={styles.label}>{collecte.prix_fg_kg}</Text> GNF</Text>
                     <Text>Prix KG/Litre: <Text style={styles.label}>{collecte.prix_kg_litre}</Text> GNF</Text>
                     <Text>Observation: <Text style={styles.label}>{collecte.observation}</Text></Text>
-                      </>
-                    )}
-                  </View>
                 </>
               )}
-            </TouchableOpacity>
-          );
-        })}
+            </View>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
       <FAB
-        style={[styles.fab, { backgroundColor: filteredCollectes.length > 0 ? '#006951' : '#d3d3d3' }]}
+        style={[styles.fab, { backgroundColor: collectes.length > 0 ? '#006951' : '#d3d3d3' }]}
         icon="send"
-        onPress={filteredCollectes.length > 0 ? postFormConso : null}
-        disabled={filteredCollectes.length === 0}
+        onPress={collectes.length > 0 ? postFormConso : null}
+        disabled={collectes.length === 0}
       />
 
 

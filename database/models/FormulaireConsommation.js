@@ -14,7 +14,7 @@ export default class FormulaireConsommation extends Model {
     @field('observation')observation;
     @field('enquete')enquete;
     @field('produit')produit;
-    @field('fiche_id') ficheId; // Champ de relation
+    @field('fiche_id') fiche_id; // Champ de relation
 
     // Relation avec Fiche
     @relation('fiches', 'fiche_id') fiche;

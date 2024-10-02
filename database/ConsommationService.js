@@ -8,21 +8,19 @@ const ConsommationServices = {
   // Créer un nouvel enregistrement consommation
   createConsommation: async (data) => {
     try {
-      const consommationCollection = database.get('consommation');
+      const consommationCollection = database.get('formulaire_consommation');
       await database.write(async () => {
         await consommationCollection.create((consommations) => {
           consommations.unite= data.unite;
           consommations.poids_unitaire = data.poids_unitaire;
           consommations.prix_mesure = Number(data.prix_mesure);
-          consommations.prix_fg_kg = Number(data.prix_fg_kg);
           consommations.prix_kg_litre = Number(data.prix_kg_litre);
           consommations.niveau_approvisionement = data.niveau_approvisionement;
           consommations.statut = data.statut;
           consommations.observation = data.observation;
           consommations.enquete = data.enquete;
           consommations.produit = data.produit;
-          // consommations.document = data.document;
-          consommations.numFiche = data.numFiche;
+          consommations.fiche_id = data.fiche_id;
         });
         console.log('Données enregistrées:', data);
       });

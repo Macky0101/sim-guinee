@@ -12,7 +12,6 @@ import {
 import { TextInput, Button } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRoute } from '@react-navigation/native';
-import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
 import { Dropdown } from 'react-native-element-dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import * as DocumentPicker from 'expo-document-picker';
@@ -20,13 +19,15 @@ import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-// import { createTables, insertCollecte,deleteAllCons,updateConsommation } from '../../../database/requetteCons';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import ConsommationServices from '../../../database/ConsommationService';
+import database from '../../../database/database';
+import { Q } from '@nozbe/watermelondb';
 
 const FormCons = () => {
   const route = useRoute();
-  const { id, num_fiche } = route.params;
+  const { id, idCollecteur ,id_marche, type_marche ,ficheId,num_fiche} = route.params;
+  const [typeMarche, setTypeMarche] = useState(type_marche || '');
   const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
   // États pour gérer les valeurs du formulaire
   const [niveau_approvisionement, setNiveauApprovisionnement] = useState('');
@@ -36,17 +37,14 @@ const FormCons = () => {
   const [produit, setProduit] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [commune, setCommune] = useState(null);
-  const [uniteMesure, setUniteMesure] = useState(null);
   const [document, setDocument] = useState(null);
   const [poids_unitaire, setPoidsUnitaire] = useState('');
   const [prix_mesure, setPrixMesure] = useState('');
-  const [prix_fg_kg, setPrixFgKg] = useState('');
   const [prix_kg_litre, setPrixKgLitre] = useState('');
 
   // États pour gérer les données récupérées de l'API
   const [groupedProduits, setGroupedProduits] = useState({});
   const [communes, setCommunes] = useState([]);
-  const [uniteMesures, setUniteMesures] = useState([]);
 
   // États pour gérer le chargement et les recherches
   const [loading, setLoading] = useState(false);
@@ -55,12 +53,6 @@ const FormCons = () => {
   const [searchUniteMesure, setSearchUniteMesure] = useState('');
 
   const [isConnected, setIsConnected] = useState(true);
-
-  // useEffect(() => {
-  //   createTables(); // Créer la table lorsque le composant est monté
-  //   // deleteAllCons();
-  // }, []);
-
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -71,60 +63,53 @@ const FormCons = () => {
   useEffect(() => {
     const loadData = async () => {
       const produitsLocaux = await loadDataFromStorage('produits');
-      // const communesLocales = await loadDataFromStorage('communes');
       const uniteMesuresLocales = await loadDataFromStorage('uniteMesures');
 
       if (produitsLocaux) setGroupedProduits(produitsLocaux);
-      // if (communesLocales) setCommunes(communesLocales);
       if (uniteMesuresLocales) setUniteMesures(uniteMesuresLocales);
 
-      // Si les données ne sont pas présentes, on les charge depuis l'API
       if (!produitsLocaux) fetchProduits();
-      // if (!communesLocales) fetchCommunes();
-      if (!uniteMesuresLocales) fetchUniteMesures();
     };
 
     loadData();
   }, []);
-  useEffect(() => {
-    if (!isConnected) {
-      loadDataFromStorage('produits');
-      // loadDataFromStorage('communes');
-      loadDataFromStorage('uniteMesures');
-    } else {
-      fetchProduits();
-      // fetchCommunes();
-      fetchUniteMesures();
-    }
-  }, [isConnected]);
+ 
 
   /**
   * Utilise un useEffect qui détecte le retour de la connexion et synchronise les données avec le serveur :
   */
   useEffect(() => {
-    if (isConnected) {
       fetchProduits();
-      // fetchCommunes();
-      fetchUniteMesures();
-    }
-  }, [isConnected]);
+  }, []);
 
+  
+  
+  
+  // Fonction pour récupérer et filtrer les produits
+const fetchProduits = async () => {
+  setLoading(true);
+  try {
+    // Récupérer les produits pour le type de marché donné
+    const produits = await database.collections.get('produits').query(
+      Q.where('type_marche', Q.like(`%${typeMarche}%`)) // Vérifier que 'type_marche' est bien le champ à filtrer
+    ).fetch();
 
-  // useEffect(() => {
-  //   fetchProduits();
-  //   fetchCommunes();
-  //   fetchUniteMesures();
-  // }, []);
+    // Si on a des produits, on récupère les catégories associées
+    if (produits.length > 0) {
+      // Récupérer les IDs des catégories de produit
+      const categorieIds = produits.map(p => p.categorie_produit);
 
-  /** 
-   * Fonction pour récupérer les produits depuis l'API
-   */
-  const fetchProduits = async () => {
-    setLoading(true);
-    try {
-      const response = await FormConso.getProduit();
-      const grouped = response.reduce((acc, item) => {
-        const category = item.categorie.nom_categorie_produit;
+      // Récupérer les catégories correspondantes à ces IDs
+      const categories = await database.collections.get('categories_produit').query(
+        Q.where('id_categorie_produit', Q.oneOf(categorieIds)) // Requête pour récupérer les catégories correspondant aux IDs
+      ).fetch();
+
+      // Associer chaque produit à sa catégorie
+      const grouped = produits.reduce((acc, item) => {
+        // Trouver la catégorie correspondante pour le produit
+        const category = categories.find(cat => cat.id_categorie_produit === item.categorie_produit)?.nom_categorie_produit || 'Inconnu';
+
+        // Organiser les produits par catégorie
         if (!acc[category]) {
           acc[category] = [];
         }
@@ -133,64 +118,110 @@ const FormCons = () => {
           value: item.code_produit,
           image: item.image || 'https://via.placeholder.com/150',
         });
-        // console.log(acc[category])
+
         return acc;
       }, {});
+
       setGroupedProduits(grouped);
-      await storeData('produits', grouped);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des produits:', error);
-      // Alert.alert(
-      //   'Erreur',
-      //   'Impossible de récupérer les produits. Veuillez réessayer plus tard.'
-      // );
-    } finally {
-      setLoading(false);
+      // console.log('Liste des produits filtrés et groupés par catégorie:', grouped);
     }
+  } catch (err) {
+    console.error('Erreur lors du filtrage des produits:', err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+  /**
+ * Rendu du dropdown des produits
+ */
+  const renderProductsDropdown = () => {
+    if (!selectedCategory) return null;
+    const products = groupedProduits[selectedCategory] || [];
+
+    return (
+      <Dropdown
+        style={styles.dropdown}
+        data={products.filter((product) =>
+          product.label && product.label.toLowerCase().includes(searchProduit.toLowerCase())
+
+        )}
+        search
+        searchPlaceholder="Rechercher un produit..."
+        labelField="label"
+        valueField="value"
+        placeholder="Sélectionnez un produit"
+        value={produit}
+        onChange={(item) => setProduit(item)}
+        onChangeText={(text) => setSearchProduit(text)}
+        renderLeftIcon={() => (
+          <AntDesign name="shoppingcart" size={20} color="black" style={styles.icon} />
+        )}
+        renderItem={(item) => (
+          <View style={styles.itemContainer}>
+            <Image source={{ uri: item.image }} style={styles.image} />
+            <Text>{item.label}</Text>
+          </View>
+        )}
+      />
+    );
   };
 
-  /**
-   * Fonction pour récupérer les communes depuis l'API
-   */
-  // const fetchCommunes = async () => {
-  //   try {
-  //     const response = await FormConso.getCommune();
-  //     const communesData = response.map((commune) => ({
-  //       label: commune.nom_commune,
-  //       value: commune.id_commune,
-  //     }));
-  //     setCommunes(communesData);
-  //     await storeData('communes', communesData);
-  //   } catch (error) {
-  //     console.error('Erreur lors de la récupération des communes:', error);
-  //     // Alert.alert(
-  //     //   'Erreur',
-  //     //   'Impossible de récupérer les communes. Veuillez réessayer plus tard.'
-  //     // );
-  //   }
-  // };
 
-  /**
-   * Fonction pour récupérer les unités de mesure depuis l'API
-   */
-  const fetchUniteMesures = async () => {
+  const [UniteMesures, setUniteMesures] = useState([]); // Liste des unités de mesure
+  const [UniteMesure, setUniteMesure] = useState(null); // Unité sélectionnée
+  
+  useEffect(() => {
+    if (typeMarche) {
+      // console.log('Type de marché:', typeMarche);
+      getUniteMesure(); // Récupérer les unités de mesure quand le type de marché change
+    }
+  }, [typeMarche]);
+  
+  const getUniteMesure = async () => {
     try {
-      const response = await FormConso.getUniteMesure();
-      const uniteMesuresData = response.map((unite) => ({
-        label: unite.nom_unite,
-        value: unite.id_unite.toString(),
+      const uniteRelationCollection = database.collections.get('unite_relations');
+
+      // Exécuter une requête pour récupérer toutes les unités
+      const unites = await uniteRelationCollection.query().fetch();
+  
+      // // Parcourir les résultats et afficher les noms et IDs
+      // unites.forEach(unite => {
+      //   console.log(`ID Macky: ${unite.id_unite}, Nom: ${unite.nom_unite}`);
+      // });
+  
+      // Si des unités sont trouvées, mappez les données
+      const UniteMesures = unites.map((unite) => ({
+        label: unite.nom_unite, // Assurez-vous que 'unite_relation.nom_unite' existe dans la structure
+        value: unite.id_unite, // Assurez-vous que 'id' est correct
       }));
-      // console.log(uniteMesuresData)
-      setUniteMesures(uniteMesuresData);
-      await storeData('uniteMesures', uniteMesuresData);
+  
+      setUniteMesures(UniteMesures); // Mettre à jour l'état avec les unités récupérées
+      await storeData('uniteMesures', UniteMesures); // Enregistrer les unités localement
     } catch (error) {
-      console.error('Erreur lors de la récupération des unités de mesure:', error);
-      // Alert.alert(
-      //   'Erreur',
-      //   'Impossible de récupérer les unités de mesure. Veuillez réessayer plus tard.'
-      // );
+      console.error('Erreur lors de la récupération des unités de mesure:', error.message || error);
     }
   };
+  
+const renderUniteMesure = () => (
+  <Dropdown
+    style={styles.dropdown}
+    data={UniteMesures.filter(item => item.label?.toLowerCase().includes(searchUniteMesure.toLowerCase()))}
+    labelField="label"
+    valueField="value"
+    placeholder="Sélectionnez une unité de mesure"
+    value={UniteMesure}
+    onChange={item => setUniteMesure(item.value)}
+    search
+    searchPlaceholder="Rechercher une unité de mesure..."
+    onSearch={setSearchUniteMesure}
+    renderLeftIcon={() => (
+      <AntDesign style={styles.icon} color="black" name="barschart" size={20} />
+    )}
+  />
+);
 
   /**
    * Fonction pour gérer la sélection de la catégorie de produit
@@ -291,7 +322,7 @@ const FormCons = () => {
   };
 
   const validateFields = () => {
-    if (!uniteMesure || !produit || !poids_unitaire || !prix_mesure) {
+    if (!UniteMesure || !produit || !poids_unitaire || !prix_mesure) {
       Toast.show({
         type: 'error',
         text1: 'Erreur',
@@ -310,22 +341,31 @@ const FormCons = () => {
       return;
     }
     try {
+        // Récupérer la valeur actuelle maximale de l'enquête
+        const maxEnquete = await database.collections.get('formulaire_consommation').query(
+          Q.sortBy('enquete', Q.desc), // Trier par la colonne 'enquete' de manière décroissante
+          Q.take(1) // Prendre la fiche avec la valeur la plus élevée pour 'enquete'
+        ).fetch();
+    
+        let newEnquete = 1; // Par défaut, si aucune fiche n'existe encore
+        if (maxEnquete.length > 0) {
+          newEnquete = maxEnquete[0].enquete + 1; // Incrémenter l'enquête
+        }
       setLoading(true);
       const ficheData = {
-        unite: uniteMesure.value,
+        unite: UniteMesure,
         poids_unitaire,
         prix_mesure,
-        prix_fg_kg,
         prix_kg_litre,
         niveau_approvisionement,
-        statut,
+        statut:  getStatusForAPI(statut),
         observation,
-        enquete,
+        enquete:numFiche,
         produit: produit.value,
-        // document,
-        numFiche,
+        fiche_id: ficheId,
       };
       console.log("Données envoyées à WatermelonDB:", ficheData);
+
       await ConsommationServices.createConsommation(ficheData);
       console.log("Envoi réussi",ficheData);
       resetFields();
@@ -335,67 +375,6 @@ const FormCons = () => {
       setLoading(false);
     }
   };
-
-
-  // const postForm = async () => {
-
-  //   const ficheData = {
-  //     unite:  uniteMesure.value,  // Nombre attendu par l'API
-  //     poids_unitaire: poids_unitaire,
-  //     prix_mesure: parseFloat(prix_mesure),  // Conversion en nombre
-  //     prix_fg_kg: parseFloat(prix_fg_kg),     // Conversion en nombre
-  //     prix_kg_litre: parseFloat(prix_kg_litre), // Conversion en nombre
-  //     niveau_approvisionement: niveau_approvisionement,
-  //     document: document,  // URL du document
-  //     statut,
-  //     observation,
-  //     enquete: enquete, // Nombre attendu par l'API
-  //     produit: produit.value, // Nombre attendu par l'API
-  //     num_fiche: numFiche 
-  //   };
-  //    // Insérer les données dans la base de données
-  //    insertCollecte(
-  //     ficheData.unite,
-  //     ficheData.poids_unitaire,
-  //     ficheData.prix_mesure,
-  //     ficheData.prix_fg_kg,
-  //     ficheData.prix_kg_litre,
-  //     ficheData.niveau_approvisionement,
-  //     ficheData.statut,
-  //     ficheData.observation,
-  //     ficheData.enquete,
-  //     ficheData.produit,
-  //     ficheData.num_fiche
-  //   );
-  //   console.log('donne envoyer',ficheData);
-  //   Alert.alert('Succès', 'Les données ont été insérées dans la base de données.');
-
-  //   console.log('ficheData', ficheData);
-
-  //   try {
-  //     setLoading(true);
-  //     // await FormConso.postFormConso(ficheData);
-  //     Toast.show({
-  //       type: 'success',
-  //       text1: 'Succès',
-  //       text2: 'Formulaire soumis avec succès.',
-  //     });
-  //     // Alert.alert('Succès', 'Formulaire soumis avec succès.');
-  //     resetFields();
-  //   } catch (error) {
-  //     console.error('Erreur lors de la soumission du formulaire:', error);
-  //     Toast.show({
-  //       type: 'error',
-  //       text1: 'Erreur',
-  //       text2: 'Impossible de soumettre le formulaire. Veuillez réessayer.',
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
-
 
   /**
    * Fonction pour réinitialiser les champs du formulaire
@@ -411,51 +390,27 @@ const FormCons = () => {
     setDocument(null);
     setPoidsUnitaire('');
     setPrixMesure('');
-    setPrixFgKg('');
     setPrixKgLitre('');
   };
 
-  /**
-   * Rendu du dropdown des produits
-   */
-  const renderProductsDropdown = () => {
-    if (!selectedCategory) return null;
-    const products = groupedProduits[selectedCategory] || [];
-
-    return (
-      <Dropdown
-        style={styles.dropdown}
-        data={products.filter((product) =>
-          product.label && product.label.toLowerCase().includes(searchProduit.toLowerCase())
-        )}
-
-        search
-        searchPlaceholder="Rechercher un produit..."
-        labelField="label"
-        valueField="value"
-        placeholder="Sélectionnez un produit"
-        value={produit}
-        onChange={(item) => setProduit(item)}
-        onChangeText={(text) => setSearchProduit(text)}
-        renderLeftIcon={() => (
-          <AntDesign name="shoppingcart" size={20} color="black" style={styles.icon} />
-        )}
-        renderItem={(item) => (
-          <View style={styles.itemContainer}>
-            <Image source={{ uri: item.image }} style={styles.image} />
-            <Text>{item.label}</Text>
-          </View>
-        )}
-      />
-    );
-  };
 
   const niveauApprovisionementOptions = [
     { label: 'Abondant', value: 'Abondant' },
     { label: 'Normal', value: 'Normal' },
     { label: 'Rare', value: 'Rare' },
   ];
-
+  const getStatusForAPI = (statut) => {
+    switch (statut) {
+      case 'En cours':
+        return true; // ou une valeur correspondant au statut "En cours" pour l'API
+      case 'Terminé':
+      case 'Annulé':
+        return false; // ou une valeur correspondant au statut "Terminé" ou "Annulé"
+      default:
+        return null; // Gérer les cas inattendus
+    }
+  };
+  
   const statutOptions = [
     { label: 'En cours', value: 'En cours' },
     { label: 'Terminé', value: 'Terminé' },
@@ -475,10 +430,6 @@ const FormCons = () => {
           </View>
         </View>
       </Modal>
-
-      {/* {loading && (
-        <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />
-      )} */}
 
       <Text style={styles.sectionTitle}>Produit</Text>
       <Dropdown
@@ -502,45 +453,7 @@ const FormCons = () => {
 
       {renderProductsDropdown()}
 
-      {/* <Text style={styles.sectionTitle}>Localité d'origine</Text>
-      <Dropdown
-        style={styles.dropdown}
-        data={communes.filter((item) =>
-          item.label && item.label.toLowerCase().includes(searchCommune.toLowerCase())
-        )}
-        
-        search
-        searchPlaceholder="Rechercher une commune..."
-        labelField="label"
-        valueField="value"
-        placeholder="Sélectionnez une commune"
-        value={commune}
-        onChange={(item) => setCommune(item)}
-        onChangeText={(text) => setSearchCommune(text)}
-        renderLeftIcon={() => (
-          <AntDesign name="enviromento" size={20} color="black" style={styles.icon} />
-        )}
-      /> */}
-
-      <Text style={styles.sectionTitle}>Unité de mesure</Text>
-      <Dropdown
-        style={styles.dropdown}
-        data={uniteMesures.filter((item) =>
-          item.label && item.label.toLowerCase().includes(searchUniteMesure.toLowerCase())
-        )}
-
-        search
-        searchPlaceholder="Rechercher une unité..."
-        labelField="label"
-        valueField="value"
-        placeholder="Sélectionnez une unité de mesure"
-        value={uniteMesure}
-        onChange={(item) => setUniteMesure(item)}
-        onChangeText={(text) => setSearchUniteMesure(text)}
-        renderLeftIcon={() => (
-          <AntDesign name="barschart" size={20} color="black" style={styles.icon} />
-        )}
-      />
+      {renderUniteMesure()}
 
       {/* <Text style={styles.sectionTitle}>Document</Text>
       <TouchableOpacity style={styles.uploadButton} onPress={uploadDocument}>
@@ -569,14 +482,6 @@ const FormCons = () => {
       />
 
       <TextInput
-        label="Prix FG/KG"
-        value={prix_fg_kg}
-        onChangeText={setPrixFgKg}
-        keyboardType="numeric"
-        style={styles.input}
-      />
-
-      <TextInput
         label="Prix KG/Litre"
         value={prix_kg_litre}
         onChangeText={setPrixKgLitre}
@@ -595,19 +500,6 @@ const FormCons = () => {
           <AntDesign name="barschart" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
         )}
       />
-      {/* <TextInput
-        label="Niveau d'approvisionnement"
-        value={niveau_approvisionement}
-        onChangeText={setNiveauApprovisionnement}
-        style={styles.input}
-      /> */}
-
-      {/* <TextInput
-        label="Statut"
-        value={statut}
-        onChangeText={setStatut}
-        style={styles.input}
-      /> */}
       <Dropdown
         style={styles.dropdown}
         data={statutOptions}

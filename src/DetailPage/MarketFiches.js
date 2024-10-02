@@ -168,7 +168,7 @@ const MarketFiches = ({ route }) => {
                       break;
                     case 3:
                       // Navigate to Consommation form and pass the fiche id
-                      navigation.navigate('ConsommationForm', { idCollecteur, id_marche, type_marche, ficheId: item.id });
+                      navigation.navigate('ListesConso', { idCollecteur, id_marche, type_marche, ficheId: item.id });
                       break;
                     case 7:
                       // Navigate to Port form and pass the fiche id
@@ -198,7 +198,7 @@ const MarketFiches = ({ route }) => {
                       break;
                     case 3:
                       // Navigate to Consommation form and pass the fiche id
-                      navigation.navigate('ConsommationForm', { idCollecteur, id_marche, type_marche, ficheId: item.id });
+                      navigation.navigate('FormCons', { idCollecteur, id_marche, type_marche, ficheId: item.id });
                       break;
                     case 7:
                       // Navigate to Port form and pass the fiche id
