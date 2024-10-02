@@ -10,10 +10,12 @@ import Toast from 'react-native-toast-message';
 import { Q } from '@nozbe/watermelondb';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-
-const FormPort = () => {
-    const route = useRoute();
+const FormulaireDebarcadere = () => {
+  const route = useRoute();
     const { ficheId, idCollecteur, id_marche, type_marche,external_id } = route.params;
+    console.log('====================================');
+    console.log(route.params);
+    console.log('====================================');
     const [typeMarche, setTypeMarche] = useState(type_marche || '');
     const [observation, setObservation] = useState('');
     const [volumePoissonsPeches, setVolumePoissonsPeches] = useState('');
@@ -116,7 +118,7 @@ const FormPort = () => {
 
             // Sauvegarder dans WatermelonDB
             await database.write(async () => {
-                const newFiche = await database.collections.get('formulaire_port').create((fiche) => {
+                const newFiche = await database.collections.get('formulaire_debarcaderes').create((fiche) => {
                     fiche.date_enquete = ficheData.date_enquete;
                     fiche.collecteur = ficheData.collecteur;
                     fiche.enquete = ficheData.enquete;
@@ -300,4 +302,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default FormPort;
+export default FormulaireDebarcadere

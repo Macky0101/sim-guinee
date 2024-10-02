@@ -23,6 +23,26 @@ const FormConso = {
     }
   },
 
+  postFormJournalier: async (ficheData) => {
+    try {
+      const userToken = await AsyncStorage.getItem('userToken');
+      if (!userToken) {
+        throw new Error('Aucun jeton trouvé');
+      }
+      const response = await axios.post(`${SIMGUINEE_URL}enquetes/marches-prix/journaliers`, ficheData, {
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+    //   console.log('Données enregistrées:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de l’envoi des données:', error.response ? error.response.data : error.message);
+      throw error;
+    }
+  },
+
   getFormConso: async () => {
     try {
       const userToken = await AsyncStorage.getItem('userToken');

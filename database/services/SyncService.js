@@ -162,251 +162,251 @@ const SyncService = {
   },
 
 
-syncProduits: async () => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    if (!token) {
-      throw new Error('Aucun jeton trouvé');
-    }
-
-    // Appel de syncTypeMarche
-    const typeMarcheArray = await SyncService.syncTypeMarche();
-    if (!typeMarcheArray || typeMarcheArray.length === 0) {
-      throw new Error('Erreur lors de la récupération des types de marché');
-    }
-
-    for (const typeMarche of typeMarcheArray) {
-      const url = `${SIMGUINEE_URL}parametrages/produits?code_type_marche=${typeMarche}`;
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const produits = response.data;
-
-      if (!produits || produits.length === 0) {
-        console.warn(`Aucun produit trouvé pour le type de marché: ${typeMarche}`);
-        continue;
+  syncProduits: async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        throw new Error('Aucun jeton trouvé');
       }
 
-      await database.write(async () => {
-        const produitCollection = database.collections.get('produits');
-        const categorieCollection = database.collections.get('categories_produit');
-        const formeCollection = database.collections.get('formes_produit');
-        const familleCollection = database.collections.get('familles_produit');
-
-        for (const item of produits) {
-          // Extraire les champs nécessaires avec des vérifications
-          const { categorie = {}, forme = {}, famille = {} } = item;
-
-          // Synchronisation des catégories
-          if (categorie && categorie.id_categorie_produit) {
-            const existingCategory = await categorieCollection
-              .query(Q.where('id_categorie_produit', categorie.id_categorie_produit))
-              .fetch();
-
-            if (existingCategory.length > 0) {
-              await existingCategory[0].update((categoryRecord) => {
-                categoryRecord.id_categorie_produit = categorie.id_categorie_produit;
-                categoryRecord.code_categorie_produit = categorie.code_categorie_produit || '';
-                categoryRecord.nom_categorie_produit = categorie.nom_categorie_produit || '';
-                categoryRecord.created_at = new Date(categorie.created_at).getTime();
-              });
-            } else {
-              await categorieCollection.create((categoryRecord) => {
-                categoryRecord.id_categorie_produit = categorie.id_categorie_produit;
-                categoryRecord.code_categorie_produit = categorie.code_categorie_produit || '';
-                categoryRecord.nom_categorie_produit = categorie.nom_categorie_produit || '';
-                categoryRecord.created_at = new Date(categorie.created_at).getTime();
-              });
-            }
-          }
-
-          // Synchronisation des formes
-          if (forme && forme.id_forme_produit) {
-            const existingForme = await formeCollection
-              .query(Q.where('id_forme_produit', forme.id_forme_produit))
-              .fetch();
-
-            if (existingForme.length > 0) {
-              await existingForme[0].update((formeRecord) => {
-                formeRecord.id_forme_produit = forme.id_forme_produit;
-                formeRecord.code_forme_produit = forme.code_forme_produit || '';
-                formeRecord.nom_forme_produit = forme.nom_forme_produit || '';
-                formeRecord.created_at = new Date(forme.created_at).getTime();
-              });
-            } else {
-              await formeCollection.create((formeRecord) => {
-                formeRecord.id_forme_produit = forme.id_forme_produit;
-                formeRecord.code_forme_produit = forme.code_forme_produit || '';
-                formeRecord.nom_forme_produit = forme.nom_forme_produit || '';
-                formeRecord.created_at = new Date(forme.created_at).getTime();
-              });
-            }
-          } else {
-            console.warn(`Aucune forme trouvée pour le produit: ${item.nom_produit}`);
-          }
-
-          // Synchronisation des familles
-          if (famille && famille.id_famille_produit) {
-            const existingFamille = await familleCollection
-              .query(Q.where('id_famille_produit', famille.id_famille_produit))
-              .fetch();
-
-            if (existingFamille.length > 0) {
-              await existingFamille[0].update((familleRecord) => {
-                familleRecord.id_famille_produit = famille.id_famille_produit;
-                familleRecord.code_famille_produit = famille.code_famille_produit || '';
-                familleRecord.nom_famille_produit = famille.nom_famille_produit || '';
-                familleRecord.affichage_ecran = famille.affichage_ecran || false;
-                familleRecord.created_at = new Date(famille.created_at).getTime();
-              });
-            } else {
-              await familleCollection.create((familleRecord) => {
-                familleRecord.id_famille_produit = famille.id_famille_produit;
-                familleRecord.code_famille_produit = famille.code_famille_produit || '';
-                familleRecord.nom_famille_produit = famille.nom_famille_produit || '';
-                familleRecord.affichage_ecran = famille.affichage_ecran || false;
-                familleRecord.created_at = new Date(famille.created_at).getTime();
-              });
-            }
-          }
-
-          // Synchronisation des produits
-          if (item.id_produit) {
-            const existingProduct = await produitCollection
-              .query(Q.where('id_produit', item.id_produit))
-              .fetch();
-
-            if (existingProduct.length > 0) {
-              await existingProduct[0].update((produitRecord) => {
-                produitRecord.code_produit = item.code_produit || '';
-                produitRecord.nom_produit = item.nom_produit || '';
-                produitRecord.nom_produit_en = item.nom_produit_en || '';
-                produitRecord.categorie_produit = item.categorie_produit || 0;
-                produitRecord.forme_produit = item.forme_produit || 0;
-                produitRecord.type_marche = JSON.stringify(item.type_marche) || '';
-                produitRecord.famille_produit = item.famille_produit || 0;
-                produitRecord.affichage_ecran = item.affichage_ecran || false;
-                produitRecord.filiere = item.filiere || '';
-                produitRecord.image = item.image || '';
-                produitRecord.created_at = new Date(item.created_at).getTime();
-              });
-            } else {
-              await produitCollection.create((produitRecord) => {
-                produitRecord.code_produit = item.code_produit || '';
-                produitRecord.nom_produit = item.nom_produit || '';
-                produitRecord.nom_produit_en = item.nom_produit_en || '';
-                produitRecord.categorie_produit = item.categorie_produit || 0;
-                produitRecord.forme_produit = item.forme_produit || 0;
-                produitRecord.type_marche = JSON.stringify(item.type_marche) || '';
-                produitRecord.famille_produit = item.famille_produit || 0;
-                produitRecord.affichage_ecran = item.affichage_ecran || false;
-                produitRecord.filiere = item.filiere || '';
-                produitRecord.image = item.image || '';
-                produitRecord.id_produit = item.id_produit;
-                produitRecord.created_at = new Date(item.created_at).getTime();
-              });
-            }
-          }
-        }
-      });
-    }
-  } catch (error) {
-    console.error('Erreur de synchronisation des produits:', error);
-  }
-},
-
-syncUnites: async () => {
-  try {
-    console.log('Début de la synchronisation des unités...');
-
-    const token = await AsyncStorage.getItem('userToken');
-    if (!token) {
-      throw new Error('Aucun jeton trouvé');
-    }
-
-    // Récupérer les types de marché
-    const typeMarcheArray = await SyncService.syncTypeMarche();
-    if (!typeMarcheArray || typeMarcheArray.length === 0) {
-      throw new Error('Erreur lors de la récupération des types de marché');
-    }
-
-    // Boucle à travers chaque type de marché pour synchroniser les unités associées
-    for (const typeMarcheId of typeMarcheArray) {
-      const url = `${SIMGUINEE_URL}parametrages/unites/associated-unites/type-marche?id_of_type_market=${typeMarcheId}`;
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = response.data;
-
-      // Vérifier s'il y a des unités dans la réponse API
-      if (!data || data.length === 0 || !data[0].unites || data[0].unites.length === 0) {
-        console.warn(`Aucune unité trouvée pour le type de marché: ${typeMarcheId}`);
-        continue;
+      // Appel de syncTypeMarche
+      const typeMarcheArray = await SyncService.syncTypeMarche();
+      if (!typeMarcheArray || typeMarcheArray.length === 0) {
+        throw new Error('Erreur lors de la récupération des types de marché');
       }
 
-      console.log(`Réponse de l'API pour le type de marché ${typeMarcheId}:`, JSON.stringify(data, null, 2));
+      for (const typeMarche of typeMarcheArray) {
+        const url = `${SIMGUINEE_URL}parametrages/produits?code_type_marche=${typeMarche}`;
+        const response = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      await database.write(async () => {
-        const uniteCollection = database.collections.get('unites');
-        const uniteRelationCollection = database.collections.get('unite_relations');
+        const produits = response.data;
 
-        // Parcourir les unités pour ce type de marché
-        for (const unite of data[0].unites) {
-          const { id, unite_mesure, unite_relation } = unite;
-
-          // Vérifier la validité des données de l'unité et de la relation
-          if (!id || !unite_relation || !unite_relation.id_unite) {
-            console.warn('Données d\'unité ou relation manquantes ou invalides:', unite);
-            continue;
-          }
-
-          // Synchronisation ou création de l'unite_relation
-          const existingRelation = await uniteRelationCollection.query(Q.where('id_unite', unite_relation.id_unite)).fetch();
-          if (existingRelation.length > 0) {
-            await existingRelation[0].update(uniteRelationRecord => {
-              uniteRelationRecord.nom_unite = unite_relation.nom_unite;
-              uniteRelationRecord.definition = unite_relation.definition;
-              uniteRelationRecord.image = unite_relation.image || null;
-              uniteRelationRecord.poids_indicatif = unite_relation.poids_indicatif || null;
-            });
-          } else {
-            await uniteRelationCollection.create(uniteRelationRecord => {
-              uniteRelationRecord.id_unite = unite_relation.id_unite;
-              uniteRelationRecord.nom_unite = unite_relation.nom_unite;
-              uniteRelationRecord.definition = unite_relation.definition;
-              uniteRelationRecord.image = unite_relation.image || null;
-              uniteRelationRecord.poids_indicatif = unite_relation.poids_indicatif || null;
-              uniteRelationRecord.created_at = new Date().getTime();
-            });
-          }
-
-          // Synchroniser ou créer l'unité
-          const existingUnites = await uniteCollection.query(Q.where('id_unite', id)).fetch();
-          if (existingUnites.length > 0) {
-            await existingUnites[0].update(uniteRecord => {
-              uniteRecord.type_marche = typeMarcheId;
-              uniteRecord.unite_relation_id = unite_relation.id_unite;
-              uniteRecord.unite_mesure = unite_mesure;
-            });
-          } else {
-            await uniteCollection.create(uniteRecord => {
-              uniteRecord.id_unite = id;
-              uniteRecord.type_marche = typeMarcheId;
-              uniteRecord.unite_relation_id = unite_relation.id_unite;
-              uniteRecord.unite_mesure = unite_mesure;
-            });
-          }
-          console.log(`Unité synchronisée: Nom = ${unite_relation.nom_unite}, ID = ${unite_relation.id_unite}`);
+        if (!produits || produits.length === 0) {
+          console.warn(`Aucun produit trouvé pour le type de marché: ${typeMarche}`);
+          continue;
         }
-      });
 
-      console.log(`Synchronisation des unités pour le type de marché ${typeMarcheId} terminée.`);
+        await database.write(async () => {
+          const produitCollection = database.collections.get('produits');
+          const categorieCollection = database.collections.get('categories_produit');
+          const formeCollection = database.collections.get('formes_produit');
+          const familleCollection = database.collections.get('familles_produit');
+
+          for (const item of produits) {
+            // Extraire les champs nécessaires avec des vérifications
+            const { categorie = {}, forme = {}, famille = {} } = item;
+
+            // Synchronisation des catégories
+            if (categorie && categorie.id_categorie_produit) {
+              const existingCategory = await categorieCollection
+                .query(Q.where('id_categorie_produit', categorie.id_categorie_produit))
+                .fetch();
+
+              if (existingCategory.length > 0) {
+                await existingCategory[0].update((categoryRecord) => {
+                  categoryRecord.id_categorie_produit = categorie.id_categorie_produit;
+                  categoryRecord.code_categorie_produit = categorie.code_categorie_produit || '';
+                  categoryRecord.nom_categorie_produit = categorie.nom_categorie_produit || '';
+                  categoryRecord.created_at = new Date(categorie.created_at).getTime();
+                });
+              } else {
+                await categorieCollection.create((categoryRecord) => {
+                  categoryRecord.id_categorie_produit = categorie.id_categorie_produit;
+                  categoryRecord.code_categorie_produit = categorie.code_categorie_produit || '';
+                  categoryRecord.nom_categorie_produit = categorie.nom_categorie_produit || '';
+                  categoryRecord.created_at = new Date(categorie.created_at).getTime();
+                });
+              }
+            }
+
+            // Synchronisation des formes
+            if (forme && forme.id_forme_produit) {
+              const existingForme = await formeCollection
+                .query(Q.where('id_forme_produit', forme.id_forme_produit))
+                .fetch();
+
+              if (existingForme.length > 0) {
+                await existingForme[0].update((formeRecord) => {
+                  formeRecord.id_forme_produit = forme.id_forme_produit;
+                  formeRecord.code_forme_produit = forme.code_forme_produit || '';
+                  formeRecord.nom_forme_produit = forme.nom_forme_produit || '';
+                  formeRecord.created_at = new Date(forme.created_at).getTime();
+                });
+              } else {
+                await formeCollection.create((formeRecord) => {
+                  formeRecord.id_forme_produit = forme.id_forme_produit;
+                  formeRecord.code_forme_produit = forme.code_forme_produit || '';
+                  formeRecord.nom_forme_produit = forme.nom_forme_produit || '';
+                  formeRecord.created_at = new Date(forme.created_at).getTime();
+                });
+              }
+            } else {
+              console.warn(`Aucune forme trouvée pour le produit: ${item.nom_produit}`);
+            }
+
+            // Synchronisation des familles
+            if (famille && famille.id_famille_produit) {
+              const existingFamille = await familleCollection
+                .query(Q.where('id_famille_produit', famille.id_famille_produit))
+                .fetch();
+
+              if (existingFamille.length > 0) {
+                await existingFamille[0].update((familleRecord) => {
+                  familleRecord.id_famille_produit = famille.id_famille_produit;
+                  familleRecord.code_famille_produit = famille.code_famille_produit || '';
+                  familleRecord.nom_famille_produit = famille.nom_famille_produit || '';
+                  familleRecord.affichage_ecran = famille.affichage_ecran || false;
+                  familleRecord.created_at = new Date(famille.created_at).getTime();
+                });
+              } else {
+                await familleCollection.create((familleRecord) => {
+                  familleRecord.id_famille_produit = famille.id_famille_produit;
+                  familleRecord.code_famille_produit = famille.code_famille_produit || '';
+                  familleRecord.nom_famille_produit = famille.nom_famille_produit || '';
+                  familleRecord.affichage_ecran = famille.affichage_ecran || false;
+                  familleRecord.created_at = new Date(famille.created_at).getTime();
+                });
+              }
+            }
+
+            // Synchronisation des produits
+            if (item.id_produit) {
+              const existingProduct = await produitCollection
+                .query(Q.where('id_produit', item.id_produit))
+                .fetch();
+
+              if (existingProduct.length > 0) {
+                await existingProduct[0].update((produitRecord) => {
+                  produitRecord.code_produit = item.code_produit || '';
+                  produitRecord.nom_produit = item.nom_produit || '';
+                  produitRecord.nom_produit_en = item.nom_produit_en || '';
+                  produitRecord.categorie_produit = item.categorie_produit || 0;
+                  produitRecord.forme_produit = item.forme_produit || 0;
+                  produitRecord.type_marche = JSON.stringify(item.type_marche) || '';
+                  produitRecord.famille_produit = item.famille_produit || 0;
+                  produitRecord.affichage_ecran = item.affichage_ecran || false;
+                  produitRecord.filiere = item.filiere || '';
+                  produitRecord.image = item.image || '';
+                  produitRecord.created_at = new Date(item.created_at).getTime();
+                });
+              } else {
+                await produitCollection.create((produitRecord) => {
+                  produitRecord.code_produit = item.code_produit || '';
+                  produitRecord.nom_produit = item.nom_produit || '';
+                  produitRecord.nom_produit_en = item.nom_produit_en || '';
+                  produitRecord.categorie_produit = item.categorie_produit || 0;
+                  produitRecord.forme_produit = item.forme_produit || 0;
+                  produitRecord.type_marche = JSON.stringify(item.type_marche) || '';
+                  produitRecord.famille_produit = item.famille_produit || 0;
+                  produitRecord.affichage_ecran = item.affichage_ecran || false;
+                  produitRecord.filiere = item.filiere || '';
+                  produitRecord.image = item.image || '';
+                  produitRecord.id_produit = item.id_produit;
+                  produitRecord.created_at = new Date(item.created_at).getTime();
+                });
+              }
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Erreur de synchronisation des produits:', error);
     }
-  } catch (error) {
-    console.error('Erreur lors de la synchronisation des unités:', error);
-  }
-},
+  },
+
+  syncUnites: async () => {
+    try {
+      console.log('Début de la synchronisation des unités...');
+
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        throw new Error('Aucun jeton trouvé');
+      }
+
+      // Récupérer les types de marché
+      const typeMarcheArray = await SyncService.syncTypeMarche();
+      if (!typeMarcheArray || typeMarcheArray.length === 0) {
+        throw new Error('Erreur lors de la récupération des types de marché');
+      }
+
+      // Boucle à travers chaque type de marché pour synchroniser les unités associées
+      for (const typeMarcheId of typeMarcheArray) {
+        const url = `${SIMGUINEE_URL}parametrages/unites/associated-unites/type-marche?id_of_type_market=${typeMarcheId}`;
+        const response = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = response.data;
+
+        // Vérifier s'il y a des unités dans la réponse API
+        if (!data || data.length === 0 || !data[0].unites || data[0].unites.length === 0) {
+          console.warn(`Aucune unité trouvée pour le type de marché: ${typeMarcheId}`);
+          continue;
+        }
+
+        console.log(`Réponse de l'API pour le type de marché ${typeMarcheId}:`, JSON.stringify(data, null, 2));
+
+        await database.write(async () => {
+          const uniteCollection = database.collections.get('unites');
+          const uniteRelationCollection = database.collections.get('unite_relations');
+
+          // Parcourir les unités pour ce type de marché
+          for (const unite of data[0].unites) {
+            const { id, unite_mesure, unite_relation } = unite;
+
+            // Vérifier la validité des données de l'unité et de la relation
+            if (!id || !unite_relation || !unite_relation.id_unite) {
+              console.warn('Données d\'unité ou relation manquantes ou invalides:', unite);
+              continue;
+            }
+
+            // Synchronisation ou création de l'unite_relation
+            const existingRelation = await uniteRelationCollection.query(Q.where('id_unite', unite_relation.id_unite)).fetch();
+            if (existingRelation.length > 0) {
+              await existingRelation[0].update(uniteRelationRecord => {
+                uniteRelationRecord.nom_unite = unite_relation.nom_unite;
+                uniteRelationRecord.definition = unite_relation.definition;
+                uniteRelationRecord.image = unite_relation.image || null;
+                uniteRelationRecord.poids_indicatif = unite_relation.poids_indicatif || null;
+              });
+            } else {
+              await uniteRelationCollection.create(uniteRelationRecord => {
+                uniteRelationRecord.id_unite = unite_relation.id_unite;
+                uniteRelationRecord.nom_unite = unite_relation.nom_unite;
+                uniteRelationRecord.definition = unite_relation.definition;
+                uniteRelationRecord.image = unite_relation.image || null;
+                uniteRelationRecord.poids_indicatif = unite_relation.poids_indicatif || null;
+                uniteRelationRecord.created_at = new Date().getTime();
+              });
+            }
+
+            // Synchroniser ou créer l'unité
+            const existingUnites = await uniteCollection.query(Q.where('id_unite', id)).fetch();
+            if (existingUnites.length > 0) {
+              await existingUnites[0].update(uniteRecord => {
+                uniteRecord.type_marche = typeMarcheId;
+                uniteRecord.unite_relation_id = unite_relation.id_unite;
+                uniteRecord.unite_mesure = unite_mesure;
+              });
+            } else {
+              await uniteCollection.create(uniteRecord => {
+                uniteRecord.id_unite = id;
+                uniteRecord.type_marche = typeMarcheId;
+                uniteRecord.unite_relation_id = unite_relation.id_unite;
+                uniteRecord.unite_mesure = unite_mesure;
+              });
+            }
+            console.log(`Unité synchronisée: Nom = ${unite_relation.nom_unite}, ID = ${unite_relation.id_unite}`);
+          }
+        });
+
+        console.log(`Synchronisation des unités pour le type de marché ${typeMarcheId} terminée.`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la synchronisation des unités:', error);
+    }
+  },
 
 
   syncFiche: async (id_marche) => {
@@ -447,6 +447,7 @@ syncUnites: async () => {
               ficheRecord.date_enquete = fiche.date_enquete;
               ficheRecord.marche = fiche.marche;
               ficheRecord.collecteur = fiche.collecteur;
+              ficheRecord.external_id = fiche.id;
               ficheRecord.numero_point_collecte = fiche.numero_point_collecte;
               ficheRecord.nom_personne_enquete = fiche.nom_personne_enquete;
               ficheRecord.contact_personne_enquete = fiche.contact_personne_enquete;
@@ -502,6 +503,7 @@ syncUnites: async () => {
               ficheRecord.date_enquete = fiche.date_enquete;
               ficheRecord.marche = fiche.marche;
               ficheRecord.collecteur = fiche.collecteur;
+              ficheRecord.external_id = fiche.id;
               ficheRecord.numero_point_collecte = fiche.numero_point_collecte;
               ficheRecord.nom_personne_enquete = fiche.nom_personne_enquete;
               ficheRecord.contact_personne_enquete = fiche.contact_personne_enquete;
@@ -561,6 +563,7 @@ syncUnites: async () => {
     }
   },
 
+  
   syncAllMarches: async () => {
     try {
       const idTypeMarcheArray = await SyncService.syncTypeMarche();
@@ -634,20 +637,38 @@ syncUnites: async () => {
                 contact_personne_enquete: ficheData.contact_personne_enquete,
               };
               break;
-              case 6:
-                url = `${SIMGUINEE_URL}enquetes/Fiches/debarcadere-ports`;
-                dataToSend = {
-                  num_fiche: ficheData.num_fiche,
-                  date_enquete: ficheData.date_enquete,
-                  marche: ficheData.marche,
-                  collecteur: ficheData.collecteur,
-                  type_embarcation: ficheData.type_embarcation,
-                  espece_presente: ficheData.espece_presente,
-                  difficultes_rencontrees: ficheData.difficultes_rencontrees,
-                  nbr_barques_rentres_jour: ficheData.nbr_barques_rentres_jour,
-                  heure_fin_collecte_semaine: ficheData.heure_fin_collecte_semaine,
-                };
-                break;
+            case 3:
+              url = `${SIMGUINEE_URL}enquetes/Fiches/consommations`;
+              dataToSend = {
+                num_fiche: ficheData.num_fiche,
+                date_enquete: ficheData.date_enquete,
+                marche: ficheData.marche,
+                collecteur: ficheData.collecteur,
+              };
+              break;
+            case 4:
+              url = `${SIMGUINEE_URL}enquetes/Fiches/collectes`;
+              dataToSend = {
+                num_fiche: ficheData.num_fiche,
+                date_enquete: ficheData.date_enquete,
+                marche: ficheData.marche,
+                collecteur: ficheData.collecteur,
+              };
+              break;
+            case 6:
+              url = `${SIMGUINEE_URL}enquetes/Fiches/debarcadere-ports`;
+              dataToSend = {
+                num_fiche: ficheData.num_fiche,
+                date_enquete: ficheData.date_enquete,
+                marche: ficheData.marche,
+                collecteur: ficheData.collecteur,
+                type_embarcation: ficheData.type_embarcation,
+                espece_presente: ficheData.espece_presente,
+                difficultes_rencontrees: ficheData.difficultes_rencontrees,
+                nbr_barques_rentres_jour: ficheData.nbr_barques_rentres_jour,
+                heure_fin_collecte_semaine: ficheData.heure_fin_collecte_semaine,
+              };
+              break;
             case 7:
               url = `${SIMGUINEE_URL}enquetes/Fiches/debarcadere-ports`;
               dataToSend = {
@@ -662,15 +683,15 @@ syncUnites: async () => {
                 heure_fin_collecte_semaine: ficheData.heure_fin_collecte_semaine,
               };
               break;
-            case 3:
-              url = `${SIMGUINEE_URL}enquetes/Fiches/consommations`;
-              dataToSend = {
-                num_fiche: ficheData.num_fiche,
-                date_enquete: ficheData.date_enquete,
-                marche: ficheData.marche,
-                collecteur: ficheData.collecteur,
-              };
-              break;
+              case 8:
+                url = `${SIMGUINEE_URL}enquetes/Fiches/collectes`;
+                dataToSend = {
+                  num_fiche: ficheData.num_fiche,
+                  date_enquete: ficheData.date_enquete,
+                  marche: ficheData.marche,
+                  collecteur: ficheData.collecteur,
+                };
+                break;
             case 'Betail':
               url = `${SIMGUINEE_URL}enquetes/Fiches/betails`;
               dataToSend = {
@@ -716,6 +737,7 @@ syncUnites: async () => {
       console.error('Erreur lors de la synchronisation:', error);
     }
   },
+  
   getUserInfo: async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');

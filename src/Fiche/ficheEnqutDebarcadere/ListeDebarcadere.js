@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, FlatList, Alert,Image } from 'react-native';
-import { FAB, Snackbar,IconButton } from 'react-native-paper';
+import { FAB, Snackbar ,IconButton} from 'react-native-paper';
 import database from '../../../database/database';
 import { Q } from '@nozbe/watermelondb';
 import Toast from 'react-native-toast-message';
@@ -8,8 +8,7 @@ import axios from 'axios';
 import { useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-const ListPort = () => {
+const ListeDebarcadere = () => {
     const route = useRoute();
     const { ficheId, idCollecteur, id_marche, type_marche } = route.params;
     const [fiches, setFiches] = useState([]);
@@ -20,7 +19,7 @@ const ListPort = () => {
 
     const fetchFiches = async () => {
         try {
-            const fetchedFiches = await database.collections.get('formulaire_port').query(
+            const fetchedFiches = await database.collections.get('formulaire_debarcaderes').query(
                 Q.where('fiche_id',Q.like(`%${ficheId}`))
             ).fetch();
             setFiches(fetchedFiches);
@@ -37,7 +36,7 @@ const ListPort = () => {
     const deleteFiche = async (ficheId) => {
         try {
             await database.write(async () => {
-                const ficheToDelete = await database.collections.get('formulaire_port').find(ficheId);
+                const ficheToDelete = await database.collections.get('formulaire_debarcaderes').find(ficheId);
                 await ficheToDelete.destroyPermanently(); // Supprimer définitivement
             });
             fetchFiches(); // Rafraîchir la liste après suppression
@@ -50,7 +49,7 @@ const ListPort = () => {
     const updateFiche = async (ficheId, updatedData) => {
         try {
             await database.write(async () => {
-                const ficheToUpdate = await database.collections.get('formulaire_port').find(ficheId);
+                const ficheToUpdate = await database.collections.get('formulaire_debarcaderes').find(ficheId);
                 await ficheToUpdate.update(fiche => {
                     fiche.date_enquete = updatedData.date_enquete;
                     fiche.collecteur = updatedData.collecteur;
@@ -128,6 +127,7 @@ const ListPort = () => {
         setSyncing(false);
         Toast.show({ text1: 'Synchronisation terminée' });
     };
+    
     const renderNoData = () => (
         <View style={styles.noDataContainer}>
             <Image source={require('../../../assets/images/no-data.png')} style={styles.noDataImage} />
@@ -138,7 +138,7 @@ const ListPort = () => {
 
     return (
         <View style={styles.container}>
-               {fiches.length === 0 ? (
+             {fiches.length === 0 ? (
                 renderNoData()
             ) : (
             <FlatList
@@ -156,7 +156,7 @@ const ListPort = () => {
                     </View>
                 )}
             />
-            )}
+        )}
             <FAB
                 style={styles.fab}
                 icon="sync"
@@ -246,5 +246,4 @@ const styles = StyleSheet.create({
         color: '#888',
     },
 });
-
-export default ListPort;
+export default ListeDebarcadere

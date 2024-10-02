@@ -12,7 +12,7 @@ import { Q } from '@nozbe/watermelondb';
 import database from '../../../database/database';
 
 
-const ListesConso = () => {
+const ListeJournalier = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { ficheId } = route.params;
@@ -32,7 +32,7 @@ const ListesConso = () => {
   
   const fetchFiches = async () => {
     try {
-      const fetchedFiches = await database.collections.get('formulaire_consommation').query(
+      const fetchedFiches = await database.collections.get('formulaire_journalier').query(
         Q.where('fiche_id', Q.like(`%${ficheId}`))
       ).fetch();
       console.log('donne',fetchedFiches);
@@ -51,7 +51,7 @@ const ListesConso = () => {
   const deleteFiche = async (ficheId) => {
     try {
       await database.write(async () => {
-        const ficheToDelete = await database.collections.get('formulaire_consommation').find(ficheId);
+        const ficheToDelete = await database.collections.get('formulaire_journalier').find(ficheId);
         await ficheToDelete.destroyPermanently();
       });
       fetchFiches();
@@ -124,7 +124,7 @@ const ListesConso = () => {
   
         try {
           // Envoi de l'enregistrement à l'API
-          await FormConso.postFormConso(ficheData);
+          await FormConso.postFormJournalier(ficheData);
           console.log(`Enregistrement ${collecte.id} envoyé avec succès.${ficheData}`);
   
           // Suppression de l'enregistrement local si l'envoi a réussi
@@ -380,4 +380,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ListesConso;
+export default ListeJournalier;

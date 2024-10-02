@@ -10,7 +10,7 @@ import IntroScreens from '../src/LoginPage/introductionPage';
 import FicheCollecte from '../src/Fiche/ficheEnqutCollet/ficheCollecte';
 import FormCollecte from '../src/Fiche/ficheEnqutCollet/formulaireCollect';
 import ListesCollecte from '../src/Fiche/ficheEnqutCollet/listcollect';
-import FicheConsommation from '../src/Fiche/ficheEnqutCons/ficheConsommation';
+// import FicheConsommation from '../src/Fiche/ficheEnqutCons/ficheConsommation';
 import FormCons from '../src/Fiche/ficheEnqutCons/formulaireCons';
 import ListesConso from '../src/Fiche/ficheEnqutCons/listeCons';
 import FicheGrossiste from '../src/Fiche/ficheEnqutGrossiste/ficheGrossiste';
@@ -23,17 +23,23 @@ import DetailPage from '../src/DetailPage/DetailPage';
 import MarketFiches from '../src/DetailPage/MarketFiches';
 import FormPort from '../src/Fiche/ficheEnqutPort/FormulairePort';
 import ListPort from '../src/Fiche/ficheEnqutPort/ListPort';
+import FormulaireJournalier from '../src/Fiche/ficheEnqutJournalier/FormulaireJournalier';
+import ListeJournalier from '../src/Fiche/ficheEnqutJournalier/ListeJournalier';
+import FormulaireDebarcadere from '../src/Fiche/ficheEnqutDebarcadere/FormulaireDebarcadere';
+import ListeDebarcadere from '../src/Fiche/ficheEnqutDebarcadere/ListeDebarcadere';
+import FormulaireTranfrontalier from '../src/Fiche/ficheEnqutTransf/FormulaireTranfrontalier';
+import ListeTransfrontalier from '../src/Fiche/ficheEnqutTransf/listeTransfrontalier';
 
 const Stack = createStackNavigator();
 
 const Routes = () => {
-//   const { theme } = useTheme();
-  const [initialRoute, setInitialRoute] = useState(null); 
+  //   const { theme } = useTheme();
+  const [initialRoute, setInitialRoute] = useState(null);
 
   useEffect(() => {
     const checkToken = async () => {
       const token = await AsyncStorage.getItem('userToken');
-      console.log('token',token);
+      console.log('token', token);
       if (token) {
         setInitialRoute('Accueil');
       } else {
@@ -51,111 +57,141 @@ const Routes = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName={initialRoute}>
-         <Stack.Screen
+        <Stack.Screen
           name="Login"
           component={Login}
           options={{ headerShown: false }}
         />
-         <Stack.Screen
+        <Stack.Screen
           name="IntroScreens"
           component={IntroScreens}
           options={{ headerShown: false }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="Accueil"
           component={Home}
           options={{ headerShown: false }}
         />
-         <Stack.Screen
+        <Stack.Screen
           name="Collecte"
           component={NewCollecte}
           options={{ title: 'Nouvelle collecte' }}
         />
-         <Stack.Screen
+        <Stack.Screen
           name="Fiche"
           component={Fiche}
           options={{ title: 'Fiches enquêtes' }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="Collectes"
           component={FicheCollecte}
           options={{ title: 'Fiches collectes' }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="Formulaire"
           component={FormCollecte}
           options={{ title: 'Fiche de collecte' }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="ListesCollecte"
           component={ListesCollecte}
           options={{ title: 'Listes Collectés' }}
         />
-         <Stack.Screen
+        {/* <Stack.Screen
           name="FicheConsommation"
           component={FicheConsommation}
           options={{ title: 'Fiches de consommation' }}
-        />
-         <Stack.Screen
+        /> */}
+        <Stack.Screen
           name="FormCons"
           component={FormCons}
           options={{ title: 'Nouvelle collecte' }}
         />
-         <Stack.Screen
+        <Stack.Screen
           name="ListesConso"
           component={ListesConso}
           options={{ title: 'listes des consommations' }}
         />
-         <Stack.Screen
+        <Stack.Screen
           name="FicheGrossiste"
           component={FicheGrossiste}
           options={{ title: 'listes des grossistes' }}
         />
-         <Stack.Screen
+        <Stack.Screen
           name="ListesGrossistesCollect"
           component={ListesGrossistesCollect}
           options={{ title: 'listes des collectes' }}
         />
-         <Stack.Screen
+        <Stack.Screen
           name="FormGrossistes"
           component={FormGrossistes}
           options={{ title: 'Nouvelle collecte' }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="FormPort"
           component={FormPort}
           options={{ title: 'Nouvelle collecte' }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="ListPort"
           component={ListPort}
           options={{ title: 'Nouvelle collecte' }}
         />
-         <Stack.Screen
+        <Stack.Screen
+          name="FormulaireJournalier"
+          component={FormulaireJournalier}
+          options={{ title: 'Nouvelle collecte' }}
+        />
+        <Stack.Screen
+          name="ListeJournalier"
+          component={ListeJournalier}
+          options={{ title: 'Liste Journalier' }}
+        />
+        <Stack.Screen
+          name="FormulaireDebarcadere"
+          component={FormulaireDebarcadere}
+          options={{ title: 'Nouvelle collecte' }}
+        />
+        <Stack.Screen
+          name="ListeDebarcadere"
+          component={ListeDebarcadere}
+          options={{ title: 'Listes des débarcadères' }}
+        />
+        <Stack.Screen
+          name="FormulaireTranfrontalier"
+          component={FormulaireTranfrontalier}
+          options={{ title: 'Nouvelle collecte' }}
+        />
+        <Stack.Screen
+          name="listeTransfrontalier"
+          component={ListeTransfrontalier}
+          options={{ title: 'Listes transfrontalier' }}
+        />
+        <Stack.Screen
           name="ListData"
           component={ListData}
           options={{ title: 'Listes des collectes' }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="DetailFiche"
           component={DetailFiche}
           options={{ title: 'Listes des détails' }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="DetailPage"
           component={DetailPage}
           options={{ title: 'Liste des marchés' }}
         />
-         <Stack.Screen
+        <Stack.Screen
           name="MarketFiches"
           component={MarketFiches}
           options={{ title: 'Liste des fiches' }}
         />
-          <Stack.Screen
+        <Stack.Screen
           name="Setting"
           component={Setting}
           options={{ headerShown: false }}
-          // options={{ title: 'listes des collectes' }}
+        // options={{ title: 'listes des collectes' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

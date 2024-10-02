@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, StyleSheet, TouchableOpacity, Alert,Image } from 'react-native';
 import { Q } from '@nozbe/watermelondb';
 import database from '../../database/database';
 import { useNavigation } from '@react-navigation/native';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { Searchbar } from 'react-native-paper';
+import { Searchbar, IconButton} from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 
 const MarketFiches = ({ route }) => {
@@ -28,7 +28,7 @@ const MarketFiches = ({ route }) => {
       const fichesMarcheID = await ficheCollection.query(Q.where('marche', id_marche)).fetch();
 
       if (fichesMarcheID.length > 0) {
-        // console.log('Fiches filtrées:', fichesMarcheID);
+        console.log('Fiches filtrées:', fichesMarcheID);
         setData(fichesMarcheID);
         setFilteredFiches(fichesMarcheID); // Initialiser avec toutes les fiches
       } else {
@@ -62,17 +62,7 @@ const MarketFiches = ({ route }) => {
     }
   };
 
-  if (isLoading) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
-  }
 
-  if (!data || data.length === 0) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Aucune fiche trouvée pour ce marché.</Text>
-      </View>
-    );
-  }
   const deleteCollect = async (id) => {
     try {
       await database.write(async () => {
@@ -96,6 +86,22 @@ const MarketFiches = ({ route }) => {
       });
     }
   };
+  const renderNoData = () => (
+    <View style={styles.noDataContainer}>
+        <Image source={require('../../assets/images/no-data.png')} style={styles.noDataImage} />
+        <IconButton icon="alert-circle" size={50} />
+        <Text style={styles.noDataText}>Aucune donnée disponible</Text>
+    </View>
+);
+
+if (isLoading) {
+  return <ActivityIndicator size="large" color="#0000ff" />;
+}
+
+  // 2. Render "No Data" component if no fiches are available
+  if (!filteredFiches || filteredFiches.length === 0) {
+    return renderNoData();
+  }
   // Affichage des fiches filtrées
   return (
     <ScrollView style={styles.container}>
@@ -155,7 +161,14 @@ const MarketFiches = ({ route }) => {
 
             <View style={styles.btnContainer}>
               <TouchableOpacity
-                 onPress={() => {
+                onPress={() => {
+                  if (item._raw.source === "local") {
+                    // Si la fiche n'est pas synchronisée, afficher un message d'alerte
+                    Alert.alert(
+                      "Fiche non synchronisée",
+                      "Vous devez synchroniser cette fiche avant de pouvoir voir des données."
+                    );
+                  } else {
                   // Check type_marche to navigate to different pages
                   switch (type_marche) {
                     case 1:
@@ -170,13 +183,26 @@ const MarketFiches = ({ route }) => {
                       // Navigate to Consommation form and pass the fiche id
                       navigation.navigate('ListesConso', { idCollecteur, id_marche, type_marche, ficheId: item.id });
                       break;
+                    case 4:
+                      // Navigate to journalier form and pass the fiche id
+                      navigation.navigate('ListeJournalier', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
+                      break;
+                    case 6:
+                      // Navigate to FormulaireDebarcadere form and pass the fiche id
+                      navigation.navigate('ListeDebarcadere', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
+                      break;
                     case 7:
                       // Navigate to Port form and pass the fiche id
                       navigation.navigate('ListPort', { idCollecteur, id_marche, type_marche, ficheId: item.id });
                       break;
+                      case 8:
+                        // Navigate to Port form and pass the fiche id
+                        navigation.navigate('listeTransfrontalier', { idCollecteur, id_marche, type_marche, ficheId: item.id });
+                        break;
                     default:
                       Alert.alert('Type de marché non reconnu', 'Impossible de naviguer vers la page spécifiée.');
                       break;
+                    }
                   }
                 }}
               >
@@ -186,29 +212,49 @@ const MarketFiches = ({ route }) => {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
+                  if (item._raw.source === "local") {
+                    // Si la fiche n'est pas synchronisée, afficher un message d'alerte
+                    Alert.alert(
+                      "Fiche non synchronisée",
+                      "Vous devez synchroniser cette fiche avant de pouvoir ajouter des données."
+                    );
+                  } else {
                   // Check type_marche to navigate to different pages
                   switch (type_marche) {
                     case 1:
                       // Navigate to Collecte form and pass the fiche id
-                      navigation.navigate('Formulaire', { idCollecteur, id_marche, type_marche, ficheId: item.id });
+                      navigation.navigate('Formulaire', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
                       break;
                     case 2:
                       // Navigate to Grossiste form and pass the fiche id
-                      navigation.navigate('GrossisteForm', { idCollecteur, id_marche, type_marche, ficheId: item.id });
+                      navigation.navigate('GrossisteForm', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
                       break;
                     case 3:
                       // Navigate to Consommation form and pass the fiche id
-                      navigation.navigate('FormCons', { idCollecteur, id_marche, type_marche, ficheId: item.id });
+                      navigation.navigate('FormCons', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
+                      break;
+                    case 4:
+                      // Navigate to journalier form and pass the fiche id
+                      navigation.navigate('FormulaireJournalier', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
+                      break;
+                    case 6:
+                      // Navigate to FormulaireDebarcadere form and pass the fiche id
+                      navigation.navigate('FormulaireDebarcadere', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
                       break;
                     case 7:
                       // Navigate to Port form and pass the fiche id
-                      navigation.navigate('FormPort', { idCollecteur, id_marche, type_marche, ficheId: item.id });
+                      navigation.navigate('FormPort', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
                       break;
+                      case 8:
+                        // Navigate to Port form and pass the fiche id
+                        navigation.navigate('FormulaireTranfrontalier', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
+                        break;
                     default:
                       Alert.alert('Type de marché non reconnu', 'Impossible de naviguer vers la page spécifiée.');
                       break;
                   }
                 }}
+              }
               >
                 <View style={styles.btn1}>
                   <Text style={{ color: '#fff' }}>Nouvelle donnée</Text>
@@ -277,7 +323,20 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 10,
-  }
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+},
+noDataImage: {
+    width: 250,
+    height: 250,
+},
+noDataText: {
+    fontSize: 18,
+    color: '#888',
+},
 });
 
 export default MarketFiches;

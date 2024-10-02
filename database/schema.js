@@ -46,6 +46,7 @@ export const schema = appSchema({
         { name: 'date_enquete', type: 'string' }, // Date de l'enquête
         { name: 'marche', type: 'number' }, // ID du marché (relation)
         { name: 'collecteur', type: 'number' }, // ID du collecteur
+        { name: 'external_id', type: 'number' }, // Champ pour stocker l'ID externe
         { name: 'id_type_marche', type: 'number' }, // Relation avec le type de marché pour savoir quel formulaire utiliser
         { name: 'source', type: 'string' }, // Source des données (local ou api)
 
@@ -152,7 +153,7 @@ export const schema = appSchema({
         { name: 'unite_relation_id', type: 'number' }  // ID de la relation vers UniteRelation
       ]
     }),
-    
+
 
     // Table pour stocker les relations des unités
     tableSchema({
@@ -166,7 +167,7 @@ export const schema = appSchema({
         { name: 'created_at', type: 'number' }  // Date au format ISO
       ]
     }),
-    
+
     // Table pour les formulaires spécifiques au type de marché Collecte
     tableSchema({
       name: 'formulaire_collecte',
@@ -230,6 +231,22 @@ export const schema = appSchema({
         { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
       ]
     }),
+    // Table pour les formulaires spécifiques au type de marché journaliers
+    tableSchema({
+      name: 'formulaire_journalier',
+      columns: [
+        { name: 'unite', type: 'number' },
+        { name: 'poids_unitaire', type: 'string' },
+        { name: 'prix_mesure', type: 'number' },
+        { name: 'prix_kg_litre', type: 'number' },
+        { name: 'niveau_approvisionement', type: 'string' },
+        { name: 'statut', type: 'boolean' },
+        { name: 'observation', type: 'string' },
+        { name: 'enquete', type: 'number' },
+        { name: 'produit', type: 'string' },
+        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+      ]
+    }),
     // Table pour les formulaires spécifiques au type de marché port
     tableSchema({
       name: 'formulaire_port',
@@ -246,6 +263,43 @@ export const schema = appSchema({
         { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
       ]
     }),
+    // Table pour les formulaires spécifiques au type de marché debarcaderers
+    tableSchema({
+      name: 'formulaire_debarcaderes',
+      columns: [
+        { name: 'date_enquete', type: 'string' },
+        { name: 'collecteur', type: 'number' },
+        { name: 'volume_poissons_peches', type: 'number' },
+        { name: 'prix_moyen_semaine_grossiste', type: 'number' },
+        { name: 'prix_moyen_semaine_detaillant', type: 'number' },
+        { name: 'niveau_disponibilite', type: 'string' },
+        { name: 'observation', type: 'string' },
+        { name: 'enquete', type: 'number' },
+        { name: 'principale_espece_peche', type: 'string' },
+        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+      ]
+    }),
+        // Table pour les formulaires spécifiques au type de marché Tranfrontalier
+        tableSchema({
+          name: 'formulaire_tranfrontalier',
+          columns: [
+            { name: 'unite', type: 'number' },
+            { name: 'date_enquete', type: 'string' },
+            { name: 'prix_vente', type: 'number' },
+            { name: 'prix_achat', type: 'number' },
+            { name: 'collecteur', type: 'number' },
+            { name: 'quantite_sortant', type: 'number' },
+            { name: 'region_provenance', type: 'number' },
+            { name: 'region_destination', type: 'number' },
+            { name: 'quantite_entrant', type: 'number' },
+            { name: 'pays_destination', type: 'string' },
+            { name: 'pays_origine', type: 'string' },
+            { name: 'observation', type: 'string' },
+            { name: 'enquete', type: 'number' },
+            { name: 'produit', type: 'string' },
+            { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+          ]
+        }),
   ]
 });
 

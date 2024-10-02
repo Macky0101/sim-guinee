@@ -39,6 +39,39 @@ const ConsommationServices = {
     }
   },
 
+  createJournalier: async (data) => {
+    try {
+      const consommationCollection = database.get('formulaire_journalier');
+      await database.write(async () => {
+        await consommationCollection.create((consommations) => {
+          consommations.unite= data.unite;
+          consommations.poids_unitaire = data.poids_unitaire;
+          consommations.prix_mesure = Number(data.prix_mesure);
+          consommations.prix_kg_litre = Number(data.prix_kg_litre);
+          consommations.niveau_approvisionement = data.niveau_approvisionement;
+          consommations.statut = data.statut;
+          consommations.observation = data.observation;
+          consommations.enquete = data.enquete;
+          consommations.produit = data.produit;
+          consommations.fiche_id = data.fiche_id;
+        });
+        console.log('Données enregistrées:', data);
+      });
+      Toast.show({
+        type: 'success',
+        text1: 'Succès',
+        text2: 'journalier enregistré avec succès!',
+      });
+    } catch (error) {
+      console.error('Erreur lors de la création :', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Impossible de créer.',
+      });
+    }
+  },
+
   // Lire tous les enregistrements de la table consommation
   listConsommations: async () => {
     try {

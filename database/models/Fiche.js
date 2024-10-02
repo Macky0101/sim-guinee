@@ -9,6 +9,8 @@ export default class Fiche extends Model {
     @field('date_enquete') date_enquete;
     @field('marche') marche; // Champ de relation
     @field('collecteur') collecteur;
+    @field('external_id') external_id;
+    @field('id') id;
     @field('id_type_marche') id_type_marche; // Champ de relation
     @field('source') source; // Champ pour indiquer la source des données
     // Champs supplémentaires pour différents types de marché
@@ -88,24 +90,5 @@ export default class Fiche extends Model {
       record.source = 'api';
     });
   }
-
-    // @writer async updateSyncStatus  (id, isSynced)  {
-    //   try {
-    //     // Mettez à jour le champ is_synced dans la base de données locale
-    //     const ficheRecord = await database.collections.get('fiches').find(id);
-    //     await ficheRecord.update((record) => {
-    //       record.is_synced = isSynced;
-    //     });
-    //     console.log(`Fiche ${id} mise à jour avec succès avec is_synced=${isSynced}`);
-    //   } catch (error) {
-    //     console.error(`Erreur lors de la mise à jour de la fiche ${id}:`, error);
-    //   }
-    // }
       
 };
-// Méthode pour marquer une fiche comme synchronisée
-// const markAsSynced = async function () {
-//     await this.update(ficheRecord => {
-//       ficheRecord.is_synced = true; // Ajouter un champ 'is_synced' dans votre schéma si ce n'est pas déjà fait
-//     });
-//   };

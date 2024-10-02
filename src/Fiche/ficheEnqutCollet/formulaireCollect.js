@@ -17,7 +17,7 @@ import { Q } from '@nozbe/watermelondb';
 
 const FormCollecte = () => {
   const route = useRoute();
-  const { id, idCollecteur ,id_marche, type_marche ,ficheId} = route.params;
+  const { id, idCollecteur ,id_marche, type_marche ,ficheId,external_id} = route.params;
   const [typeMarche, setTypeMarche] = useState(type_marche || '');
   // console.log('route', route.params);
   const [unite, setUnite] = useState(0);
@@ -376,16 +376,7 @@ const renderUniteMesure = () => (
     }
   
     try {
-      // Récupérer la valeur actuelle maximale de l'enquête
-      const maxEnquete = await database.collections.get('formulaire_collecte').query(
-        Q.sortBy('enquete', Q.desc), // Trier par la colonne 'enquete' de manière décroissante
-        Q.take(1) // Prendre la fiche avec la valeur la plus élevée pour 'enquete'
-      ).fetch();
-  
-      let newEnquete = 1; // Par défaut, si aucune fiche n'existe encore
-      if (maxEnquete.length > 0) {
-        newEnquete = maxEnquete[0].enquete + 1; // Incrémenter l'enquête
-      }
+    
   
       const ficheData = {
         unite: UniteMesure,
@@ -398,7 +389,7 @@ const renderUniteMesure = () => (
         statut: getStatusForAPI(statut),
         observation,
         etat,
-        enquete: newEnquete, // Utiliser la nouvelle valeur de 'enquete' calculée
+        enquete: external_id, // Utiliser la nouvelle valeur de 'enquete' calculée
         produit: produit?.value,
         destination_finale: commune?.id, // Récupérer l'ID de la commune sélectionnée
         ficheId: ficheId,

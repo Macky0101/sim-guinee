@@ -106,49 +106,73 @@ const Setting = () => {
   };
 
   // Fonction de synchronisation avec mise à jour du pourcentage
-  const handleSync = async () => {
-    if (!isConnected) {
-      // Afficher un Toast si pas de connexion
-      Toast.show({
-        type: 'error',
-        text1: 'Pas de connexion Internet',
-        text2: 'Veuillez vous connecter à Internet pour synchroniser.',
-      });
-      return; // Arrêter la fonction ici si pas de connexion
-    }
-    // Continuer la synchronisation si connecté
-    try {
-      setIsSyncing(true);
-      setSyncProgress(0);
+// Fonction pour vider la table des fiches
+const clearFiches = async () => {
+  try {
+    await database.write(async () => {
+      const ficheCollection = database.collections.get('fiches');
+      const allFiches = await ficheCollection.query().fetch();
 
-      // Synchronisation TypeMarche (25%)
-      await SyncService.syncTypeMarche();
-      setSyncProgress(25);
+      // Supprimer toutes les fiches
+      for (const fiche of allFiches) {
+        // await fiche.markAsDeleted(); // Marque pour suppression
+        await fiche.destroyPermanently(); // Supprime définitivement de la base
+      }
 
-      // Synchronisation des Marchés (50%)
-      await SyncService.syncAllMarches();
-      setSyncProgress(50);
+      console.log('Toutes les fiches ont été supprimées');
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression des fiches :', error);
+  }
+};
 
-      const idTypeMarcheArray = await SyncService.syncTypeMarche();
-      await SyncService.syncProduits(idTypeMarcheArray);
-      await SyncService.syncUnites(idTypeMarcheArray);
-      // Synchronisation des Fiches (75%)
+// Votre fonction handleSync mise à jour
+const handleSync = async () => {
+  if (!isConnected) {
+    // Afficher un Toast si pas de connexion
+    Toast.show({
+      type: 'error',
+      text1: 'Pas de connexion Internet',
+      text2: 'Veuillez vous connecter à Internet pour synchroniser.',
+    });
+    return; // Arrêter la fonction ici si pas de connexion
+  }   
+
+  try {
+    setIsSyncing(true);
+    setSyncProgress(0);
+
+    // Étape 1: Vider la table des fiches avant de synchroniser
+    await clearFiches();
+
+    // Synchronisation TypeMarche (25%)
+    await SyncService.syncTypeMarche();
+    setSyncProgress(25);
+
+    // Synchronisation des Marchés (50%)
+    await SyncService.syncAllMarches();
+    setSyncProgress(50);
+
+    const idTypeMarcheArray = await SyncService.syncTypeMarche();
+    await SyncService.syncProduits(idTypeMarcheArray);
+    await SyncService.syncUnites(idTypeMarcheArray);
     
-      
-      // await SyncService.syncFiche();
-      setSyncProgress(75);
+    // Synchronisation des Fiches (75%)
+    await SyncService.syncFiche(); // Remettre la fonction syncFiche ici si elle existe
+    setSyncProgress(75);
 
-      // Fin de la synchronisation (100%)
-      setSyncProgress(100);
+    // Fin de la synchronisation (100%)
+    setSyncProgress(100);
 
-      Alert.alert('Succès', 'La synchronisation est terminée avec succès.');
-    } catch (error) {
-      Alert.alert('Erreur', 'Erreur lors de la synchronisation.');
-    } finally {
-      setIsSyncing(false);
-      setSyncProgress(0);
-    }
-  };
+    Alert.alert('Succès', 'La synchronisation est terminée avec succès.');
+  } catch (error) {
+    Alert.alert('Erreur', 'Erreur lors de la synchronisation.');
+  } finally {
+    setIsSyncing(false);
+    setSyncProgress(0);
+  }
+};
+
 
 
   //   const handleSync = async () => {
@@ -245,6 +269,7 @@ const Setting = () => {
         onPress={() => setIsModalVisible(true)}>
         <Text style={styles.buttonText}>Changer le mot de passe</Text>
       </TouchableOpacity>
+      
       {/* Bouton de déconnexion */}
       <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={logout}>
         <Text style={styles.buttonText}>Déconnexion</Text>

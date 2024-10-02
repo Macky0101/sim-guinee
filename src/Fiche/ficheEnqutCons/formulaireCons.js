@@ -26,9 +26,12 @@ import { Q } from '@nozbe/watermelondb';
 
 const FormCons = () => {
   const route = useRoute();
-  const { id, idCollecteur ,id_marche, type_marche ,ficheId,num_fiche} = route.params;
+  const { id, idCollecteur ,id_marche, type_marche ,ficheId,num_fiche, external_id} = route.params;
   const [typeMarche, setTypeMarche] = useState(type_marche || '');
   const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
+  console.log('====================================');
+  console.log('route param',route.params);
+  console.log('====================================');
   // États pour gérer les valeurs du formulaire
   const [niveau_approvisionement, setNiveauApprovisionnement] = useState('');
   const [statut, setStatut] = useState('');
@@ -341,16 +344,7 @@ const renderUniteMesure = () => (
       return;
     }
     try {
-        // Récupérer la valeur actuelle maximale de l'enquête
-        const maxEnquete = await database.collections.get('formulaire_consommation').query(
-          Q.sortBy('enquete', Q.desc), // Trier par la colonne 'enquete' de manière décroissante
-          Q.take(1) // Prendre la fiche avec la valeur la plus élevée pour 'enquete'
-        ).fetch();
     
-        let newEnquete = 1; // Par défaut, si aucune fiche n'existe encore
-        if (maxEnquete.length > 0) {
-          newEnquete = maxEnquete[0].enquete + 1; // Incrémenter l'enquête
-        }
       setLoading(true);
       const ficheData = {
         unite: UniteMesure,
@@ -360,7 +354,7 @@ const renderUniteMesure = () => (
         niveau_approvisionement,
         statut:  getStatusForAPI(statut),
         observation,
-        enquete:numFiche,
+        enquete:external_id,
         produit: produit.value,
         fiche_id: ficheId,
       };
@@ -527,7 +521,7 @@ const renderUniteMesure = () => (
         style={styles.submitButton}
         disabled={loading}
       >
-        Soumettre
+        Enregistrer
       </Button>
       <Button
         mode="outlined"
