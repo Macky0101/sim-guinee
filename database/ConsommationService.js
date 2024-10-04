@@ -28,6 +28,8 @@ const ConsommationServices = {
         type: 'success',
         text1: 'Succès',
         text2: 'Consommation enregistré avec succès!',
+        position: 'bottom'
+
       });
     } catch (error) {
       console.error('Erreur lors de la création du consommation:', error);
@@ -35,6 +37,8 @@ const ConsommationServices = {
         type: 'error',
         text1: 'Erreur',
         text2: 'Impossible de créer la consommation.',
+        position: 'bottom'
+
       });
     }
   },
@@ -61,6 +65,7 @@ const ConsommationServices = {
         type: 'success',
         text1: 'Succès',
         text2: 'journalier enregistré avec succès!',
+        position: 'bottom'
       });
     } catch (error) {
       console.error('Erreur lors de la création :', error);
@@ -68,6 +73,47 @@ const ConsommationServices = {
         type: 'error',
         text1: 'Erreur',
         text2: 'Impossible de créer.',
+         position: 'bottom'
+      });
+    }
+  },
+// pour le tranfrontaliers
+  createTranfrontanlier: async (data) => {
+    try {
+      const consommationCollection = database.get('formulaire_tranfrontalier');
+      await database.write(async () => {
+        await consommationCollection.create((consommations) => {
+          consommations.unite= Number(data.unite);
+          consommations.date_enquete = data.date_enquete;
+          consommations.prix_vente = Number(data.prix_vente);
+          consommations.prix_achat = Number(data.prix_achat);
+          consommations.collecteur = Number(data.collecteur);
+          consommations.quantite_sortant = Number(data.quantite_sortant);
+          consommations.region_provenance = Number(data.region_provenance);
+          consommations.region_destination = Number(data.region_destination);
+          consommations.quantite_entrant = Number(data.quantite_entrant);
+          consommations.pays_destination = data.pays_destination;
+          consommations.pays_origine = data.pays_origine;
+          consommations.observation = data.observation;
+          consommations.enquete = Number(data.enquete);
+          consommations.produit = data.produit;
+          consommations.fiche_id = data.fiche_id;
+        });
+        console.log('Données enregistrées:', data);
+      });
+      Toast.show({
+        type: 'success',
+        text1: 'Succès',
+        text2: 'tranfronstalier enregistré avec succès!',
+        position: 'bottom'
+      });
+    } catch (error) {
+      console.error('Erreur lors de la création :', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Impossible de créer.',
+         position: 'bottom'
       });
     }
   },

@@ -8,12 +8,14 @@ import { useNavigation } from '@react-navigation/native';
 import { Searchbar, FAB, Dialog, Button } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import GrossistesService from '../../../database/GrossistesService';
+import database from '../../../database/database';
+import { Q } from '@nozbe/watermelondb';
 
 const ListesGrossistesCollect = () => {
   const route = useRoute();
-  const { id } = route.params;
+  const { ficheId } = route.params;
   const { num_fiche } = route.params;
-  // console.log('num_fiche', num_fiche);
+  console.log('ficheId', ficheId);
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [produits, setProduits] = useState({});
@@ -26,6 +28,26 @@ const ListesGrossistesCollect = () => {
   const [dialogVisible, setDialogVisible] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0); // État pour suivre le pourcentage d'envoi
   const [isUploading, setIsUploading] = useState(false);   // État pour suivre si l'envoi est en cours
+
+  const fetchFiches = async () => {
+    try {
+      const fetchedFiches = await database.collections.get('formulaire_grossiste').query(
+        Q.where('fiche_id', Q.like(`%${ficheId}`))
+      ).fetch();
+      console.log('donne',fetchedFiches);
+      setCollectes(fetchedFiches);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des fiches:', error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFiches();
+  }, []);
+
+
 
   useEffect(() => {
     const loadProduits = async () => {
@@ -136,39 +158,33 @@ const ListesGrossistesCollect = () => {
         const collecte = collectes[i];
 
         const ficheData = {
-          unite_stock: parseInt(collecte.unite_stock) || 0,
-          poids_moyen_unite_stock: parseInt(collecte.poids_moyen_unite_stock) || 0,
-          poids_stock: parseInt(collecte.poids_stock) || 0,
-          unite_achat: collecte.unite_achat || '',
-          nombre_unite_achat: parseInt(collecte.nombre_unite_achat) || 0,
-          poids_moyen_unite_achat: parseInt(collecte.poids_moyen_unite_achat) || 0,
-          poids_total_achat: parseInt(collecte.poids_total_achat) || 0,
-          localite_achat: collecte.localite_achat || '',
-          fournisseur_achat: collecte.fournisseur_achat || '',
-          unite_vente: collecte.unite_vente || '',
-          nombre_unite_vente: parseInt(collecte.nombre_unite_vente) || 0,
-          poids_moyen_unite_vente: parseInt(collecte.poids_moyen_unite_vente) || 0,
-          poids_total_unite_vente: parseInt(collecte.poids_total_unite_vente) || 0,
-          prix_unitaire_vente: parseInt(collecte.prix_unitaire_vente) || 0,
+          unite_stock: parseInt(collecte.unite_stock),
+          stock_anterieur: parseInt(collecte.stock_anterieur),
+          poids_moyen_unite_stock: parseInt(collecte.poids_moyen_unite_stock),
+          poids_stock: parseInt(collecte.poids_stock) ,
+          stock_du_jour: parseInt(collecte.stock_du_jour),
+          quantite_entree: parseInt(collecte.quantite_entree),
+          fournisseur_principaux: parseInt(collecte.fournisseur_principaux),
+          nombre_unite_achat: parseInt(collecte.nombre_unite_achat),
+          unite_achat: parseInt(collecte.unite_achat),
+          unite_vente: parseInt(collecte.unite_vente),
+          prix_achat: parseInt(collecte.prix_achat),
+          prix_unitaire_vente: parseInt(collecte.prix_unitaire_vente),
+          localite_achat: parseInt(collecte.localite_achat),
           client_vente: parseInt(collecte.client_vente) || 0,
-          client_principal: collecte.client_principal || '',
-          fournisseur_principal: collecte.fournisseur_principal || '',
-          niveau_approvisionement: collecte.niveau_approvisionement || '',
-          statut: collecte.statut || '',
+          autre_client_principal: parseInt(collecte.autre_client_principal),
+          statut: collecte.statut,
           observation: collecte.observation || '',
-          enquete: parseInt(collecte.enquete, 10) || 0,
+          enquete: parseInt(collecte.enquete),
           produit: collecte.produit || '',
-          localite_origine: parseInt(collecte.localite_origine, 10) || 0
         };
-
-
         try {
           await FormGrossiste.postFormGrossiste(ficheData);  // Envoi de la collecte
           console.log(`Enregistrement ${collecte.id} envoyé avec succès.`);
           console.log('Fiche envoyée', ficheData);
 
           // Suppression locale après envoi réussi
-          await deletegrossistes(collecte.id);
+          await handleDelete(collecte._raw.id);
           console.log('suppression locale', collecte.id);
           setCollectes((prevCollectes) => prevCollectes.filter((c) => c.id !== collecte.id));
           // Mise à jour de la progression
@@ -204,6 +220,13 @@ const ListesGrossistesCollect = () => {
     }
   };
 
+  const renderNoData = () => (
+    <View style={styles.noDataContainer}>
+        <Image source={require('../../../assets/images/no-data.png')} style={styles.noDataImage} />
+        <IconButton icon="alert-circle" size={50} />
+        <Text style={styles.noDataText}>Aucune donnée disponible</Text>
+    </View>
+);
 
   if (loading) {
     return (
@@ -232,78 +255,53 @@ const ListesGrossistesCollect = () => {
   </View>
 )}
 
-      <ScrollView
-        showsVerticalScrollIndicator={false} 
-        showsHorizontalScrollIndicator={false}
-      >
-        {filteredCollectes.map((collecte, index) => {
-          const produitInfo = getProduitInfo(collecte.produit);
-          const uniteInfo = getUniteInfo(collecte.unite_stock);
-          const localiteInfo = getLocaliteInfo(collecte.localite_origine);
+<ScrollView showsVerticalScrollIndicator={false}>
+        {collectes.map((collecte, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.card}
+            onPress={() => toggleExpand(collecte.id)}
+            onLongPress={() => handleLongPress(collecte)}
+          >
+            <View style={styles.infoContainer}>
+              <Image source={{ uri: collecte.produit.image }} style={styles.produitImage} />
+              <Text style={styles.produitLabel}>{collecte.produit}</Text>
+              <View style={styles.chevronContainer}>
+                <Text>Unité de Stock: <Text style={styles.label}>{collecte.unite}</Text></Text>
+                <Ionicons
+                  name={expandedCollecte === collecte.id ? "chevron-up-outline" : "chevron-down-outline"}
+                  size={24}
+                  color="black"
+                  style={styles.chevronIcon}
+                />
+              </View>
 
-          return (
-            <TouchableOpacity
-              key={index}
-              style={styles.card}
-              onLongPress={() => handleLongPress(collecte)}
-              onPress={() => {
-                toggleExpand(collecte.id);
-              }}
-            >
-              {produitInfo && (
+              {expandedCollecte === collecte.id && (
                 <>
-                  <Image source={{ uri: produitInfo.image }} style={styles.produitImage} />
-                  <View style={styles.infoContainer}>
-                    <Text style={styles.produitLabel}>{produitInfo.label}</Text>
-
-                    <View style={styles.chevronContainer}>
-                      <Text>Unité de Stock :<Text style={styles.label}> {getUniteInfo(collecte.unite_stock)}</Text></Text>
-                      <Ionicons
-                        name={expandedCollecte === collecte.id ? "chevron-up-outline" : "chevron-down-outline"}
-                        size={24}
-                        color="black"
-                        style={styles.chevronIcon}
-                      />
-                    </View>
-                    {expandedCollecte === collecte.id && (
-                      <>
-                        {/* <Text style={styles.produitLabel}>{produitInfo.label}</Text> */}
-                        {/* <Text>Unité de Stock :<Text style={styles.label}> {uniteInfo}</Text></Text> */}
-                        <Text>Localité : <Text style={styles.label}>{localiteInfo}</Text></Text>
                         <Text>Poids Moyen Unité de Stock : <Text style={styles.label}>{collecte.poids_moyen_unite_stock}</Text></Text>
-                        <Text>Poids Stock : <Text style={styles.label}>{collecte.poids_stock}</Text></Text>
+                        <Text>Stock anterieur: <Text style={styles.label}>{collecte.stock_anterieur}</Text></Text>
                         <Text>Unité d'Achat : <Text style={styles.label}>{collecte.unite_achat}</Text></Text>
                         <Text>Nombre d'Unités d'Achat : <Text style={styles.label}>{collecte.nombre_unite_achat}</Text></Text>
-                        <Text>Poids Moyen Unité d'Achat : <Text style={styles.label}>{collecte.poids_moyen_unite_achat}</Text></Text>
-                        <Text>Poids Total Achat : <Text style={styles.label}>{collecte.poids_total_achat}</Text></Text>
+                        <Text>Poids stock : <Text style={styles.label}>{collecte.poids_stock}</Text></Text>
                         <Text>Localité d'Achat : <Text style={styles.label}>{collecte.localite_achat}</Text></Text>
-                        <Text>Fournisseur d'Achat : <Text style={styles.label}>{collecte.fournisseur_achat}</Text></Text>
+                        <Text>Fournisseur : <Text style={styles.label}>{collecte.fournisseur_principaux}</Text></Text>
                         <Text>Unité de Vente : <Text style={styles.label}>{collecte.unite_vente}</Text></Text>
-                        <Text>Nombre d'Unités de Vente : <Text style={styles.label}>{collecte.nombre_unite_vente}</Text></Text>
-                        <Text>Poids Moyen Unité de Vente : <Text style={styles.label}>{collecte.poids_moyen_unite_vente}</Text></Text>
-                        <Text>Poids Total Unité de Vente : <Text style={styles.label}>{collecte.poids_total_unite_vente}</Text></Text>
+                        <Text>Nombre d'Unités d'achat : <Text style={styles.label}>{collecte.nombre_unite_achat}</Text></Text>
                         <Text>Prix Unitaire de Vente : <Text style={styles.label}>{collecte.prix_unitaire_vente}</Text></Text>
-                        <Text>Client de Vente : <Text style={styles.label}>{collecte.client_vente}</Text></Text>
-                        <Text>Client Principal : <Text style={styles.label}>{collecte.client_principal}</Text></Text>
-                        <Text>Fournisseur Principal : <Text style={styles.label}>{collecte.fournisseur_principal}</Text></Text>
-                        <Text>Niveau d'Approvisionnement : <Text style={styles.label}>{collecte.niveau_approvisionement}</Text></Text>
-                        <Text>Statut : <Text style={styles.label}>{collecte.statut}</Text></Text>
+                        <Text>Client : <Text style={styles.label}>{collecte.client_vente}</Text></Text>
+                        <Text>Autre Client Principal : <Text style={styles.label}>{collecte.autre_client_principal}</Text></Text>
                         <Text>Observation : <Text style={styles.label}>{collecte.observation}</Text></Text>
-
-                      </>
-                    )}
-                  </View>
                 </>
               )}
-            </TouchableOpacity>
-          );
-        })}
+            </View>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
       <FAB
         style={[styles.fab, { backgroundColor: filteredCollectes.length > 0 ? '#006951' : '#d3d3d3' }]}
         icon="send"
-        onPress={filteredCollectes.length > 0 ? postForm : null}
-        disabled={filteredCollectes.length === 0}
+        onPress={postForm}
+        // disabled={filteredCollectes.length === 0}
       />
       <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
         <Dialog.Title>Supprimer la collecte</Dialog.Title>
@@ -418,6 +416,19 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#4caf50',
   },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+},
+noDataImage: {
+    width: 250,
+    height: 250,
+},
+noDataText: {
+    fontSize: 18,
+    color: '#888',
+},
 });
 
 export default ListesGrossistesCollect;

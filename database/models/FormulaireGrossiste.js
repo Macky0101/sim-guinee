@@ -12,7 +12,6 @@ export default class FormulaireGrossiste extends Model {
     @field('stock_du_jour') stock_du_jour;
     @field('quantite_entree') quantite_entree;
     @field('fournisseur_principaux') fournisseur_principaux;
-    @field('provenance_produit') provenanceProduit;
     @field('nombre_unite_achat') nombre_unite_achat;
     @field('unite_achat') unite_achat;
     @field('unite_vente') unite_vente;
@@ -25,7 +24,7 @@ export default class FormulaireGrossiste extends Model {
     @field('observation') observation;
     @field('enquete') enquete;
     @field('produit') produit;
-    @field('fiche_id') ficheId; // Champ de relation
+    @field('fiche_id') fiche_id; // Champ de relation
 
     // Relation avec Fiche
     @relation('fiches', 'fiche_id') fiche;

@@ -476,7 +476,6 @@ const renderUniteMesure = () => (
       </Modal>
 
       <KeyboardAwareScrollView contentContainerStyle={styles.inner}>
-        <Text style={styles.sectionTitle}>Produit</Text>
         <Dropdown
           style={styles.dropdown}
           data={Object.keys(groupedProduits).map((category) => ({

@@ -66,7 +66,7 @@ const ListeJournalier = () => {
     setDialogVisible(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     deleteFiche(selectedCollecte._raw.id);
     setDialogVisible(false);
   };
@@ -126,6 +126,7 @@ const ListeJournalier = () => {
           // Envoi de l'enregistrement à l'API
           await FormConso.postFormJournalier(ficheData);
           console.log(`Enregistrement ${collecte.id} envoyé avec succès.${ficheData}`);
+        
   
           // Suppression de l'enregistrement local si l'envoi a réussi
           setCollectes((prevCollectes) => prevCollectes.filter((c) => c.id !== collecte.id));
@@ -243,7 +244,7 @@ const ListeJournalier = () => {
               {expandedCollecte === collecte.id && (
                 <>
                     <Text>Niveau d'Approvisionnement: <Text style={styles.label}>{collecte.niveau_approvisionement}</Text></Text>
-                    <Text>Statut: <Text style={styles.label}>{collecte.statut}</Text></Text>
+                    {/* <Text>Statut: <Text style={styles.label}>{collecte.statut}</Text></Text> */}
                     <Text>Poids Unitaire: <Text style={styles.label}>{collecte.poids_unitaire}</Text></Text>
                     <Text>Prix Mesure: <Text style={styles.label}>{collecte.prix_mesure}</Text> GNF</Text>
                     <Text>Prix KG/Litre: <Text style={styles.label}>{collecte.prix_kg_litre}</Text> GNF</Text>

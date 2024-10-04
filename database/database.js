@@ -17,6 +17,7 @@ import UniteRelation from './models/uniteRelation';
 import FormulaireJournalier from './models/FormulaireJournalier';
 import FormulaireDebarcadere from './models/FormulaireDebarcadere';
 import FormulaireTransfrontalier from './models/FormulaireTransfrontalier';
+import OrigineProduit from './models/OrigineProduit';
 
 // Configuration de l'adapter SQLite pour WatermelonDB
 const adapter = new SQLiteAdapter({
@@ -50,6 +51,7 @@ const database = new Database({
     FormulaireJournalier,
     FormulaireDebarcadere,
     FormulaireTransfrontalier,
+    OrigineProduit
     
   ],
   actionsEnabled: true, // Permet l'utilisation d'actions pour la synchronisation

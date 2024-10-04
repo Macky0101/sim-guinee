@@ -167,7 +167,15 @@ export const schema = appSchema({
         { name: 'created_at', type: 'number' }  // Date au format ISO
       ]
     }),
-
+    tableSchema({
+      name: 'origines_produits',
+      columns: [
+        { name: 'id_origine_produit', type: 'number' },
+        { name: 'code_origine_produit', type: 'string' },
+        { name: 'nom_origine_produit', type: 'string' },
+        { name: 'created_at', type: 'number' },
+      ],
+    }),
     // Table pour les formulaires spécifiques au type de marché Collecte
     tableSchema({
       name: 'formulaire_collecte',

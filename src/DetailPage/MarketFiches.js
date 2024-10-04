@@ -9,8 +9,19 @@ import Toast from 'react-native-toast-message';
 
 const MarketFiches = ({ route }) => {
   const navigation = useNavigation();
-  const { idCollecteur, id_marche, type_marche } = route.params;
+  const { idCollecteur, id_marche, type_marche, nom_marche ,nom_marche1} = route.params;
   console.log('les parametres de navigation', route.params);
+  
+  useEffect(() => {
+    if (nom_marche && nom_marche1) {
+      navigation.setOptions({ title: `${nom_marche} : ${nom_marche1}` });
+    } else {
+      console.log('nom_type_marche est indéfini');
+    }
+  }, [navigation, nom_marche ,nom_marche1]);
+
+  console.log('les parametres de navigation', route.params);
+
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,6 +85,7 @@ const MarketFiches = ({ route }) => {
         type: 'success',
         text1: 'Succès',
         text2: 'Collecte supprimé avec succès!',
+        position: 'bottom'
       });
 
       fetchData();
@@ -83,6 +95,7 @@ const MarketFiches = ({ route }) => {
         type: 'error',
         text1: 'Erreur',
         text2: 'Impossible de supprimer le Collecte.',
+        position: 'bottom'
       });
     }
   };
@@ -177,7 +190,7 @@ if (isLoading) {
                       break;
                     case 2:
                       // Navigate to Grossiste form and pass the fiche id
-                      navigation.navigate('GrossisteForm', { idCollecteur, id_marche, type_marche, ficheId: item.id });
+                      navigation.navigate('ListesGrossistesCollect', { idCollecteur, id_marche, type_marche, ficheId: item.id });
                       break;
                     case 3:
                       // Navigate to Consommation form and pass the fiche id
@@ -227,7 +240,7 @@ if (isLoading) {
                       break;
                     case 2:
                       // Navigate to Grossiste form and pass the fiche id
-                      navigation.navigate('GrossisteForm', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
+                      navigation.navigate('FormGrossistes', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
                       break;
                     case 3:
                       // Navigate to Consommation form and pass the fiche id

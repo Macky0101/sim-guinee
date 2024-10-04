@@ -12,13 +12,7 @@ const styles = StyleSheet.create({
         bottom: 10,
         right: 10,
     },
-    modalContainer: {
-        padding: 20,
-        backgroundColor: 'white',
-        borderRadius: 10,
-        marginHorizontal: 20,
-        elevation: 4,
-    },
+  
     errorText: {
         color: 'red',
         fontSize: 12,
@@ -39,11 +33,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333333',
     },
-
-
-
-
-
 
     card: {
         margin: 10,
@@ -109,7 +98,35 @@ const styles = StyleSheet.create({
         height: 50,
         justifyContent: 'center',
       },
- 
+      modalContainer: {
+        flex: 1,  // Modal prend toute la hauteur
+        width: '100%',  // Modal prend toute la largeur
+        padding: 5,
+        margin: 0,
+        backgroundColor: 'white',
+        borderRadius: 0,  // Supprime les bordures arrondies
+      },
+      scrollViewContent: {
+        padding: 10,  // Ajoute du padding pour l'intérieur du ScrollView
+      },
+      modalTitle: {
+        padding: 10,
+        marginBottom: 5,
+        backgroundColor: '#dddddd',
+      },
+      button: {
+        marginTop: 16,
+        backgroundColor: '#4CAF50',
+      },
+      closeButton: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+      },
+      input: {
+        marginBottom: 15,
+        backgroundColor: '#ddd',
+      },
 });
 
 export default styles;

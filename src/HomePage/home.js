@@ -132,7 +132,7 @@ const Home = () => {
                 const Marches = await MarchesCollection.query().fetch();
 
                 // Récupérer les fiches depuis WatermelonDB
-                const ficheCollection = database.collections.get('fiches');
+                const ficheCollection = database.collections.get('origines_produits');
                 const Fiches = await ficheCollection.query().fetch();
 
 
@@ -156,9 +156,9 @@ const Home = () => {
 
                 if (Fiches.length > 0) {
                     // console.log('Données trouvées dans la table:', fichesToSync);
-                    console.log('Données trouvées dans la table :', Fiches);
+                    // console.log('Données trouvées dans la table  :', Fiches);
                     // Fiches.forEach(marche => {
-                    //     console.log(`ID : ${marche._raw.unite_mesure}, id_type_marche: ${marche._raw.type_marche}, marche: ${marche._raw.id}, collecteur: ${marche._raw.collecteur}, numero_point_collecte: ${marche._raw.numero_point_collecte}, nom_personne_enquete: ${marche._raw.nom_personne_enquete}, contact_personne_enquete: ${marche._raw.contact_personne_enquete}, id_type_marche : ${marche._raw.id_type_marche},source: ${marche._raw.source},  `);
+                    //     console.log(`ID: ${marche._raw.code_origine_produit}, nom_origine_produit: ${marche._raw.nom_origine_produit}, id_origine_produit: ${marche._raw.id_origine_produit}, created_at: ${marche._raw.created_at}, numero_point_collecte: ${marche._raw.numero_point_collecte}, nom_personne_enquete: ${marche._raw.nom_personne_enquete}, contact_personne_enquete: ${marche._raw.contact_personne_enquete}, id_type_marche : ${marche._raw.id_type_marche},source: ${marche._raw.source},  `);
                     // });
 
                 } else {
@@ -394,7 +394,8 @@ const Home = () => {
                                 // Navigation vers la page 'MarketFiches' en passant les valeurs
                                 navigation.navigate('DetailPage', {
                                     idCollecteur: userInfo.collecteur,// Transmission du collecteur ID
-                                    typeMarche: typeMarche.id_type_marche  // Transmission du type de marché
+                                    typeMarche: typeMarche.id_type_marche , // Transmission du type de marché
+                                    nom_type_marche: typeMarche.nom_type_marche  // Transmission du type de marché
                                 });
                             }}
                         >

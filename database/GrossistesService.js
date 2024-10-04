@@ -7,39 +7,29 @@ const GrossistesService = {
   // Créer un nouvel enregistrement grossiste
   createGrossiste: async (data) => {
     try {
-      const grossistesCollection = database.get('grossistes');
+      const grossistesCollection = database.get('formulaire_grossiste');
       await database.write(async () => {
         await grossistesCollection.create((grossiste) => {
-          // grossiste.uniteStock = data.uniteStock;
-          grossiste.uniteStock = Number(data.uniteStock);
-          // grossiste.poidsMoyenUniteStock = data.poidsMoyenUniteStock;
-          grossiste.poidsMoyenUniteStock = Number(data.poidsMoyenUniteStock)
-          // grossiste.poidsStock = data.poidsStock;
-          grossiste.poidsStock = Number(data.poidsStock);
-          grossiste.uniteAchat = data.uniteAchat;
-          // grossiste.nombreUniteAchat = data.nombreUniteAchat;
-          grossiste.nombreUniteAchat = Number(data.nombreUniteAchat);
-          // grossiste.poidsMoyenUniteAchat = data.poidsMoyenUniteAchat;
-          grossiste.poidsMoyenUniteAchat = Number(data.poidsMoyenUniteAchat);
-          // grossiste.poidsTotalAchat = data.poidsTotalAchat;
-          grossiste.poidsTotalAchat = Number(data.poidsTotalAchat);
-          grossiste.localiteAchat = data.localiteAchat;
-          grossiste.fournisseurAchat = data.fournisseurAchat;
-          grossiste.uniteVente = data.uniteVente;
-          grossiste.nombreUniteVente = Number(data.nombreUniteVente);
-          grossiste.poidsMoyenUniteVente = Number(data.poidsMoyenUniteVente);
-          grossiste.poidsTotalUniteVente = Number(data.poidsTotalUniteVente);
-          grossiste.prixUnitaireVente = Number(data.prixUnitaireVente);
-          grossiste.clientVente = Number(data.clientVente);
-          grossiste.clientPrincipal = data.clientPrincipal;
-          grossiste.fournisseurPrincipal = data.fournisseurPrincipal;
-          grossiste.niveauApprovisionement = data.niveauApprovisionement;
+          grossiste.unite_stock = Number(data.unite_stock);
+          grossiste.stock_anterieur = Number(data.stock_anterieur)
+          grossiste.poids_moyen_unite_stock = Number(data.poids_moyen_unite_stock);
+          grossiste.poids_stock = Number(data.poids_stock);
+          grossiste.stock_du_jour = Number(data.stock_du_jour);
+          grossiste.quantite_entree = Number(data.quantite_entree);
+          grossiste.fournisseur_principaux = Number(data.fournisseur_principaux);
+          grossiste.nombre_unite_achat = Number(data.nombre_unite_achat);
+          grossiste.unite_achat = Number(data.unite_achat);
+          grossiste.unite_vente = Number(data.unite_vente);
+          grossiste.prix_achat = Number(data.prix_achat);
+          grossiste.prix_unitaire_vente = Number(data.prix_unitaire_vente);
+          grossiste.localite_achat = Number(data.localite_achat);
+          grossiste.client_vente = Number(data.client_vente);
+          grossiste.autre_client_principal = Number(data.autre_client_principal);
           grossiste.statut = data.statut;
           grossiste.observation = data.observation;
-          grossiste.enquete = data.enquete;
+          grossiste.enquete = Number(data.enquete);
           grossiste.produit = data.produit;
-          grossiste.localiteOrigine = data.localiteOrigine;
-          grossiste.numFiche = data.numFiche;
+          grossiste.fiche_id = data.fiche_id;
         });
         console.log('Données enregistrées:', data);
       });
@@ -47,6 +37,7 @@ const GrossistesService = {
         type: 'success',
         text1: 'Succès',
         text2: 'Grossiste enregistré avec succès!',
+         position: 'bottom'
       });
     } catch (error) {
       console.error('Erreur lors de la création du grossiste:', error);
@@ -54,6 +45,7 @@ const GrossistesService = {
         type: 'error',
         text1: 'Erreur',
         text2: 'Impossible de créer le grossiste.',
+         position: 'bottom'
       });
     }
   },
@@ -127,13 +119,8 @@ const GrossistesService = {
 deleteGrossiste: async (id) => {
     try {
       await database.write(async () => {
-        const grossistesCollection = database.get('grossistes');
+        const grossistesCollection = database.get('formulaire_grossiste');
         const grossiste = await grossistesCollection.find(id);
-  
-        // Suppression soft (marqué comme supprimé mais toujours présent)
-        // await grossiste.markAsDeleted(); // Soft delete - cela permet la synchronisation
-  
-        // OU pour une suppression permanente
         await grossiste.destroyPermanently(); // Supprime définitivement
       });
   
@@ -141,6 +128,8 @@ deleteGrossiste: async (id) => {
         type: 'success',
         text1: 'Succès',
         text2: 'Grossiste supprimé avec succès!',
+        position: 'bottom'
+
       });
     } catch (error) {
       console.error('Erreur lors de la suppression du grossiste:', error);
@@ -148,6 +137,8 @@ deleteGrossiste: async (id) => {
         type: 'error',
         text1: 'Erreur',
         text2: 'Impossible de supprimer le grossiste.',
+        position: 'bottom'
+
       });
     }
   },

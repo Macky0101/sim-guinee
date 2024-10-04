@@ -85,9 +85,6 @@ const FormulaireJournalier = () => {
         fetchProduits();
     }, []);
   
-    
-    
-    
     // Fonction pour récupérer et filtrer les produits
   const fetchProduits = async () => {
     setLoading(true);

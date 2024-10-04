@@ -692,17 +692,44 @@ const SyncService = {
                   collecteur: ficheData.collecteur,
                 };
                 break;
-            case 'Betail':
+            case 5:
               url = `${SIMGUINEE_URL}enquetes/Fiches/betails`;
               dataToSend = {
                 num_fiche: ficheData.num_fiche,
                 date_enquete: ficheData.date_enquete,
                 marche: ficheData.marche,
                 collecteur: ficheData.collecteur,
-                stock_initial_bovins: ficheData.stock_initial_bovins,
+               stock_initial_bovins: ficheData.stock_initial_bovins,
                 nbr_bovins_debarques: ficheData.nbr_bovins_debarques,
-                stock_soir_bovins: ficheData.stock_soir_bovins,
-                nombre_bovin_vendu_calcule: ficheData.nombre_bovin_vendu_calcule,
+                stock_soir_bovins : ficheData.stock_soir_bovins,
+                nombre_bovin_vendu_calcule : ficheData.nombre_bovin_vendu_calcule,
+                nombre_bovin_present_marche : ficheData.nombre_bovin_present_marche,
+                nombre_tete_bovins_vendu : ficheData.nombre_tete_bovins_vendu,
+                taureaux_4_8_ans_vendus  : ficheData.taureaux_4_8_ans_vendus,
+                taurillons_2_3_ans_vendus  : ficheData.taurillons_2_3_ans_vendus,
+                vaches_4_10_ans_vendus  : ficheData.vaches_4_10_ans_vendus,
+                genisses_2_3_ans_vendus : ficheData.genisses_2_3_ans_vendus,
+                veaux_velles_0_12_mois : ficheData.veaux_velles_0_12_mois,
+                destination_bovins_vendus : ficheData.destination_bovins_vendus,
+                origine_bovins_debarques : ficheData.origine_bovins_debarques,
+                stock_initial_ovins : ficheData.stock_initial_ovins,
+              nombre_ovins_debarques : ficheData.nombre_ovins_debarques,
+                stock_soir_ovins : ficheData.stock_soir_ovins,
+                nombre_ovins_presentes_marche : ficheData.nombre_ovins_presentes_marche,
+                nombre_ovins_vendus : ficheData.nombre_ovins_vendus,
+                ovins_males_femelles_0_12_vendus : ficheData.ovins_males_femelles_0_12_vendus,
+                ovins_males_femelles_plus_1_vendus : ficheData.ovins_males_femelles_plus_1_vendus,
+                destination_ovins_vendus : ficheData.destination_ovins_vendus,
+                origine_ovins_debarques : ficheData.origine_ovins_debarques,
+                stock_initial_caprins : ficheData.stock_initial_caprins,
+                nombre_caprins_debarques : ficheData.nombre_caprins_debarques,
+                stock_soir_caprins : ficheData.stock_soir_caprins,
+                nombre_caprins_presentes_marche : ficheData.nombre_caprins_presentes_marche,
+                nombre_caprins_vendus : ficheData.nombre_caprins_vendus,
+                caprins_males_femelles_0_12_ans : ficheData.caprins_males_femelles_0_12_ans,
+                caprins_males_femelles_plus_1_ans  : ficheData.caprins_males_femelles_plus_1_ans,
+                destination_caprins_vendus : ficheData.destination_caprins_vendus,
+                origine_caprins_debarques : ficheData.origine_caprins_debarques,
               };
               break;
             default:
@@ -735,6 +762,64 @@ const SyncService = {
       });
     } catch (error) {
       console.error('Erreur lors de la synchronisation:', error);
+    }
+  },
+
+  syncOrigineProduit: async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        throw new Error('Aucun jeton trouvé');
+      }
+  
+      const url = `${SIMGUINEE_URL}parametrages/origines`;
+      console.log('URL de la requête:', url);
+  
+      // Récupérer les origines des produits depuis l'API
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+  
+      const origineProduitData = response.data;
+      const idOrigineProduitArray = [];  // Tableau pour stocker les id_origine_produit
+  
+      // Mettre à jour la base de données locale WatermelonDB
+      await database.write(async () => {
+        const origineProduitCollection = database.collections.get('origines_produits');
+  
+        for (const item of origineProduitData) {
+          const idOrigineProduit = item.id_origine_produit;
+  
+          idOrigineProduitArray.push(idOrigineProduit); // Stocker chaque id_origine_produit
+          console.log('Origine produit ID:', idOrigineProduit);
+  
+          // Rechercher un enregistrement existant par id_origine_produit
+          const existingRecords = await origineProduitCollection.query(Q.where('id_origine_produit', idOrigineProduit)).fetch();
+  
+          if (existingRecords.length > 0) {
+            // Si l'enregistrement existe, le mettre à jour
+            await existingRecords[0].update(origineProduitRecord => {
+              origineProduitRecord.id_origine_produit = item.id_origine_produit;
+              origineProduitRecord.code_origine_produit = item.code_origine_produit;
+              origineProduitRecord.nom_origine_produit = item.nom_origine_produit;
+              origineProduitRecord.created_at = item.created_at;
+            });
+          } else {
+            // Si l'enregistrement n'existe pas, en créer un nouveau
+            await origineProduitCollection.create(origineProduitRecord => {
+              origineProduitRecord.id_origine_produit = item.id_origine_produit;
+              origineProduitRecord.code_origine_produit = item.code_origine_produit;
+              origineProduitRecord.nom_origine_produit = item.nom_origine_produit;
+              origineProduitRecord.created_at = item.created_at;
+            });
+          }
+        }
+      });
+      console.log('Origines des produits synchronisées avec succès dans WatermelonDB.');
+  
+      return idOrigineProduitArray; // Retourner le tableau des id_origine_produit
+    } catch (error) {
+      console.error('Erreur lors de la synchronisation des origines des produits:', error);
     }
   },
   

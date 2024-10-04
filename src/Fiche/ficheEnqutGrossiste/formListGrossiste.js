@@ -11,44 +11,40 @@ import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
-import database from '../../../database/database';
 import GrossistesService from '../../../database/GrossistesService';
+import database from '../../../database/database';
+import { Q } from '@nozbe/watermelondb';
 import axios from 'axios';
 
 
 const FormGrossistes = () => {
   const route = useRoute();
-  const { id, num_fiche ,type_marche} = route.params;
+  const { id, idCollecteur, id_marche, type_marche, ficheId, num_fiche, external_id } = route.params;
+  const [typeMarche, setTypeMarche] = useState(type_marche || '');
   const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
-  // console.log('type marche', type_marche);
-  const [uniteStock, setUniteStock] = useState(0);
-  const [poidsMoyenUniteStock, setPoidsMoyenUniteStock] = useState('');
-  const [poidsStock, setPoidsStock] = useState('');
-  const [uniteAchat, setUniteAchat] = useState('');
-  const [nombreUniteAchat, setNombreUniteAchat] = useState('');
-  const [poidsMoyenUniteAchat, setPoidsMoyenUniteAchat] = useState('');
-  const [poidsTotalAchat, setPoidsTotalAchat] = useState('');
-  const [localiteAchat, setLocaliteAchat] = useState('');
-  const [fournisseurAchat, setFournisseurAchat] = useState('');
-  const [uniteVente, setUniteVente] = useState('');
-  const [nombreUniteVente, setNombreUniteVente] = useState('');
-  const [poidsMoyenUniteVente, setPoidsMoyenUniteVente] = useState('');
-  const [poidsTotalUniteVente, setPoidsTotalUniteVente] = useState('');
-  const [prixUnitaireVente, setPrixUnitaireVente] = useState('');
-  const [clientVente, setClientVente] = useState('');
-  const [clientPrincipal, setClientPrincipal] = useState('');
-  const [fournisseurPrincipal, setFournisseurPrincipal] = useState('');
-  const [niveauApprovisionement, setNiveauApprovisionement] = useState('');
+  const [unite_stock, setUniteStock] = useState(0);
+  const [poids_moyen_unite_stock, setPoidsMoyenUniteStock] = useState('');
+  const [stock_anterieur, setstock_anterieur] = useState('');
+  const [poids_stock, setPoidsStock] = useState('');
+  const [stock_du_jour, setstock_du_jour] = useState('');
+  const [quantite_entree, setquantite_entree] = useState('');
+  const [fournisseur_principaux, setFournisseurP] = useState('');
+  const [nombre_unite_achat, setnombreuniteachat] = useState('');
+  const [unite_achat, setuniteachat] = useState('');
+  const [unite_vente, setunitevente] = useState('');
+  const [prix_achat, setprixachat] = useState('');
+  const [prix_unitaire_vente, setPrixUnitaireVente] = useState('');
+  const [localite_achat, setlocalite_achat] = useState('');
+  const [client_vente, setClientVente] = useState('');
+  const [autre_client_principal, setautreclientprincipal] = useState('');
+  // const [clientPrincipal, setClientPrincipal] = useState('');
+  // const [fournisseurPrincipal, setFournisseurPrincipal] = useState('');
+  // const [niveauApprovisionement, setNiveauApprovisionement] = useState('');
   const [statut, setStatut] = useState('');
   const [observation, setObservation] = useState('');
   const [enquete, setEnquete] = useState(parseInt(id, 10) || 0);
-  // const [produit, setProduit] = useState(null);
-  const [produits, setProduits] = useState([]);
   const [localiteOrigine, setLocaliteOrigine] = useState('');
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
-  // const [selectedCategory, setSelectedCategory] = useState(null);
-  // const [groupedProduits, setGroupedProduits] = useState({});
   const [communes, setcommunes] = useState([]);
   const [commune, setCommune] = useState([]);
   const [searchCommune, setSearchCommune] = useState('');
@@ -113,43 +109,49 @@ const FormGrossistes = () => {
     }
   }, [isConnected]);
 
-  // useEffect(() => {
-  //   // getProduit();
-  //   getCommune();
-  //   getUniteMesure();
-  //   fetchProduits();
-  // }, []);
 
+  // Fonction pour récupérer et filtrer les produits
   const fetchProduits = async () => {
     setLoading(true);
     try {
-      const response = await FormConso.getProduit();
-      const grouped = response.reduce((acc, item) => {
-        const category = item.categorie.nom_categorie_produit;
-        if (!acc[category]) {
-          acc[category] = [];
-        }
-        acc[category].push({
-          label: item.nom_produit,
-          value: item.code_produit,
-          image: item.image || 'https://via.placeholder.com/150',
-        });
-        // console.log(acc[category])
-        return acc;
-      }, {});
-      setGroupedProduits(grouped);
-      await storeData('produits', grouped);
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Erreur',
-        text2: 'Impossible de récupérer les produits',
-     });
-      console.error('Erreur lors de la récupération des produits:', error);
-      // Alert.alert(
-      //   'Erreur',
-      //   'Impossible de récupérer les produits. Veuillez réessayer plus tard.'
-      // );
+      // Récupérer les produits pour le type de marché donné
+      const produits = await database.collections.get('produits').query(
+        Q.where('type_marche', Q.like(`%${typeMarche}%`)) // Vérifier que 'type_marche' est bien le champ à filtrer
+      ).fetch();
+
+      // Si on a des produits, on récupère les catégories associées
+      if (produits.length > 0) {
+        // Récupérer les IDs des catégories de produit
+        const categorieIds = produits.map(p => p.categorie_produit);
+
+        // Récupérer les catégories correspondantes à ces IDs
+        const categories = await database.collections.get('categories_produit').query(
+          Q.where('id_categorie_produit', Q.oneOf(categorieIds)) // Requête pour récupérer les catégories correspondant aux IDs
+        ).fetch();
+
+        // Associer chaque produit à sa catégorie
+        const grouped = produits.reduce((acc, item) => {
+          // Trouver la catégorie correspondante pour le produit
+          const category = categories.find(cat => cat.id_categorie_produit === item.categorie_produit)?.nom_categorie_produit || 'Inconnu';
+
+          // Organiser les produits par catégorie
+          if (!acc[category]) {
+            acc[category] = [];
+          }
+          acc[category].push({
+            label: item.nom_produit,
+            value: item.code_produit,
+            image: item.image || 'https://via.placeholder.com/150',
+          });
+
+          return acc;
+        }, {});
+
+        setGroupedProduits(grouped);
+        // console.log('Liste des produits filtrés et groupés par catégorie:', grouped);
+      }
+    } catch (err) {
+      console.error('Erreur lors du filtrage des produits:', err);
     } finally {
       setLoading(false);
     }
@@ -166,13 +168,14 @@ const FormGrossistes = () => {
       <Dropdown
         style={styles.dropdown}
         data={products.filter((product) =>
-          product.label.toLowerCase().includes(searchProduit.toLowerCase())
+          product.label && product.label.toLowerCase().includes(searchProduit.toLowerCase())
+
         )}
         search
         searchPlaceholder="Rechercher un produit..."
         labelField="label"
         valueField="value"
-        placeholder="Sélectionnez un produit"
+        placeholder="Sélectionnez un produit *"
         value={produit}
         onChange={(item) => setProduit(item)}
         onChangeText={(text) => setSearchProduit(text)}
@@ -189,91 +192,135 @@ const FormGrossistes = () => {
     );
   };
 
-  // useEffect(() => {
-  //   console.log('type_marche:', type_marche);
-  //   getUniteMesure();
-  // }, [type_marche]);
+
   
-  // const getUniteMesure = async () => {
-  //   try {
-  //     const userToken = await AsyncStorage.getItem('userToken');
-  //     if (!userToken) {
-  //       throw new Error('Aucun jeton trouvé');
-  //     }
-  
-  //     const response = await axios.get(`http://92.112.194.154:8000/api/parametrages/unites/associated-unites/type-marche?id_of_type_market=${type_marche}`, {
-  //       headers: {
-  //         Authorization: `Bearer ${userToken}`,
-  //       },
-  //     });
-  
-  //     const UniteMesures = response.data[0].unites.map((unite) => ({
-  //       label: unite.unite_relation.nom_unite,
-  //       value: unite.id, // Assurez-vous que la valeur est bien l'ID correct
-  //     }));
-  //     console.log('UniteMesures', UniteMesures);
-  //     setUniteMesures(UniteMesures);
-  //     await storeData('uniteMesures', UniteMesures);
-  //   } catch (error) {
-  //     console.error('Erreur lors de la récupération des UniteMesure:', error.response ? error.response.data : error.message);
-  //   }
-  // };
-  
-  // useEffect(() => {
-  //   getUniteMesure();
-  // }, [type_marche]);
-  
-  // const renderUniteMesure = () => (
-  //   <Dropdown
-  //     style={styles.dropdown}
-  //     data={UniteMesures.filter(item => item.label?.toLowerCase().includes(searchUniteMesure.toLowerCase()))}
-  //     labelField="label"
-  //     valueField="value"
-  //     placeholder="Sélectionnez une unité de mesure"
-  //     value={UniteMesure}
-  //     onChange={item => setUniteMesure(item.value)}
-  //     search
-  //     searchPlaceholder="Rechercher une unité de mesure..."
-  //     onSearch={setSearchUniteMesure}
-  //     renderLeftIcon={() => (
-  //       <AntDesign style={styles.icon} color="black" name="barschart" size={20} />
-  //     )}
-  //   />
-  // );
+
+  useEffect(() => {
+    if (typeMarche) {
+      // console.log('Type de marché:', typeMarche);
+      getUniteMesure(); 
+      getUniteAchat();
+      getUniteVente();
+    }
+  }, [typeMarche]);
 
   const getUniteMesure = async () => {
     try {
-      const response = await FormGrossiste.getUniteMesure();
-      const UniteMesures = response.map((UniteMesure) => ({
-        label: UniteMesure.nom_unite,
-        value: UniteMesure.id_unite.toString(), // Assurez-vous que la valeur est bien l'ID correct
+      const uniteRelationCollection = database.collections.get('unite_relations');
+
+      // Exécuter une requête pour récupérer toutes les unités
+      const unites = await uniteRelationCollection.query().fetch();
+      const UniteMesures = unites.map((unite) => ({
+        label: unite.nom_unite, // Assurez-vous que 'unite_relation.nom_unite' existe dans la structure
+        value: unite.id_unite, // Assurez-vous que 'id' est correct
       }));
-      setUniteMesures(UniteMesures);
-      await storeData('uniteMesures', UniteMesures);
+
+      setUniteMesures(UniteMesures); // Mettre à jour l'état avec les unités récupérées
+      await storeData('uniteMesures', UniteMesures); // Enregistrer les unités localement
     } catch (error) {
-      console.error('Erreur lors de la récupération des UniteMesure:', error);
+      console.error('Erreur lors de la récupération des unités de mesure:', error.message || error);
     }
   };
 
   const renderUniteMesure = () => (
     <Dropdown
       style={styles.dropdown}
-      data={UniteMesures.filter(item =>
-        item.label.toLowerCase().includes(searchUniteMesure.toLowerCase())
-      )}
+      data={UniteMesures.filter(item => item.label?.toLowerCase().includes(searchUniteMesure.toLowerCase()))}
       labelField="label"
       valueField="value"
-      placeholder="Sélectionnez une unite de mésure"
+      placeholder="Sélectionnez une unité de mesure *"
       value={UniteMesure}
       onChange={item => setUniteMesure(item.value)}
       search
-      searchPlaceholder="Rechercher une unité de mésure..."
+      searchPlaceholder="Rechercher une unité de mesure..."
       onSearch={setSearchUniteMesure}
       renderLeftIcon={() => (
         <AntDesign style={styles.icon} color="black" name="barschart" size={20} />
       )}
     />
   );
+
+// pour unite acheter
+const [UniteAchats, setUniteAchats] = useState([]);
+const [UniteAchat, setUniteAchat] = useState(null);
+const [searchUniteAchat, setSearchUniteAchat] = useState('');
+const getUniteAchat = async () => {
+  try {
+    const uniteAchatCollection = database.collections.get('unite_relations');
+
+    // Exécuter une requête pour récupérer toutes les unités
+    const unites = await uniteAchatCollection.query().fetch();
+    const UniteAchats = unites.map((unite) => ({
+      label: unite.nom_unite, // Assurez-vous que 'unite_achats.nom_unite' existe dans la structure
+      value: unite.id_unite, // Assurez-vous que 'id' est correct
+    }));
+
+    setUniteAchats(UniteAchats); // Mettre à jour l'état avec les unités récupérées
+    await storeData('uniteAchats', UniteAchats); // Enregistrer les unités localement
+  } catch (error) {
+    console.error('Erreur lors de la récupération des unités d\'achat:', error.message || error);
+  }
+};
+
+const renderUniteAchat = () => (
+  <Dropdown
+    style={styles.dropdown}
+    data={UniteAchats.filter(item => item.label?.toLowerCase().includes(searchUniteAchat.toLowerCase()))}
+    labelField="label"
+    valueField="value"
+    placeholder="Sélectionnez une unité d'achat"
+    value={UniteAchat}
+    onChange={item => setUniteAchat(item.value)}
+    search
+    searchPlaceholder="Rechercher une unité d'achat..."
+    onSearch={setSearchUniteAchat}
+    renderLeftIcon={() => (
+      <AntDesign style={styles.icon} color="black" name="barschart" size={20} />
+    )}
+  />
+);
+
+// pour unite de mesure
+const [UniteVentes, setUniteVentes] = useState([]);
+const [UniteVente, setUniteVente] = useState(null);
+const [searchUniteVente, setSearchUniteVente] = useState('');
+const getUniteVente = async () => {
+  try {
+    const uniteVenteCollection = database.collections.get('unite_relations');
+
+    // Exécuter une requête pour récupérer toutes les unités
+    const unites = await uniteVenteCollection.query().fetch();
+    const UniteVentes = unites.map((unite) => ({
+      label: unite.nom_unite, // Assurez-vous que 'unite_ventes.nom_unite' existe dans la structure
+      value: unite.id_unite, // Assurez-vous que 'id' est correct
+    }));
+
+    setUniteVentes(UniteVentes); // Mettre à jour l'état avec les unités récupérées
+    await storeData('uniteVentes', UniteVentes); // Enregistrer les unités localement
+  } catch (error) {
+    console.error('Erreur lors de la récupération des unités de vente:', error.message || error);
+  }
+};
+
+const renderUniteVente = () => (
+  <Dropdown
+    style={styles.dropdown}
+    data={UniteVentes.filter(item => item.label?.toLowerCase().includes(searchUniteVente.toLowerCase()))}
+    labelField="label"
+    valueField="value"
+    placeholder="Sélectionnez une unité de vente"
+    value={UniteVente}
+    onChange={item => setUniteVente(item.value)}
+    search
+    searchPlaceholder="Rechercher une unité de vente..."
+    onSearch={setSearchUniteVente}
+    renderLeftIcon={() => (
+      <AntDesign style={styles.icon} color="black" name="barschart" size={20} />
+    )}
+  />
+);
+
+
 
   const getCommune = async () => {
     try {
@@ -307,7 +354,7 @@ const FormGrossistes = () => {
       )}
       labelField="nom"
       valueField="id"
-      placeholder="Sélectionnez une commune"
+      placeholder="Provenance du produit *"
       value={commune.id}
       onChange={item => setCommune(item)}
       search
@@ -341,38 +388,49 @@ const FormGrossistes = () => {
       console.error('Erreur lors du chargement des données locales:', error);
     }
   };
+  const validateFields = () => {
+    if (!UniteMesure || !produit || !prix_achat) {
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: 'Veuillez remplir tous les champs obligatoires.',
+        position: 'bottom'
+      });
+      return false;
+    }
+    return true;
+  };
   const postForm = async () => {
+    if (!validateFields()) {
+      return;
+    }
     setLoading(true);
     const ficheData = {
-      uniteStock: UniteMesure,
-      poidsMoyenUniteStock,
-      poidsStock,
-      uniteAchat,
-      nombreUniteAchat,
-      poidsMoyenUniteAchat,
-      poidsTotalAchat,
-      localiteAchat,
-      fournisseurAchat,
-      uniteVente,
-      nombreUniteVente,
-      poidsMoyenUniteVente,
-      poidsTotalUniteVente,
-      prixUnitaireVente,
-      clientVente,
-      clientPrincipal,
-      fournisseurPrincipal,
-      niveauApprovisionement,
+      unite_stock: UniteMesure,
+      stock_anterieur,
+      poids_moyen_unite_stock,
+      poids_stock,
+      stock_du_jour,
+      quantite_entree,
+      fournisseur_principaux,
+      nombre_unite_achat,
+      unite_achat: UniteAchat,
+      unite_vente: UniteVente,
+      prix_achat,
+      prix_unitaire_vente,
+      localite_achat:commune?.id,
+      client_vente,
+      autre_client_principal,
       statut,
       observation,
-      enquete,
+      enquete : external_id,
       produit: produit?.value,
-      localiteOrigine: commune?.id,
-      numFiche,
+      fiche_id: ficheId,
     };
     resetFields();
     try {
       await GrossistesService.createGrossiste(ficheData);
-      console.log("Envoi réussi");
+      console.log("Envoi réussi", ficheData);
     } catch (error) {
       console.error("Erreur lors de la création de la fiche:", error);
     }
@@ -380,77 +438,22 @@ const FormGrossistes = () => {
     setLoading(false);
 
   };
-
-  // const postForm = async () => {
-  //   const ficheData = {
-  //     unite_stock: parseInt(UniteMesure, 10),
-  //     poids_moyen_unite_stock: parseFloat(poidsMoyenUniteStock) || 0,
-  //     poids_stock: parseFloat(poidsStock) || 0,
-  //     unite_achat: uniteAchat || '',
-  //     nombre_unite_achat: parseFloat(nombreUniteAchat) || 0,
-  //     poids_moyen_unite_achat: parseFloat(poidsMoyenUniteAchat) || 0,
-  //     poids_total_achat: parseFloat(poidsTotalAchat) || 0,
-  //     localite_achat: localiteAchat || '',
-  //     fournisseur_achat: fournisseurAchat || '',
-  //     unite_vente: uniteVente || '',
-  //     nombre_unite_vente: parseFloat(nombreUniteVente) || 0,
-  //     poids_moyen_unite_vente: parseFloat(poidsMoyenUniteVente) || 0,
-  //     poids_total_unite_vente: parseFloat(poidsTotalUniteVente) || 0,
-  //     prix_unitaire_vente: parseFloat(prixUnitaireVente) || 0,
-  //     client_vente: parseFloat(clientVente) || 0,
-  //     client_principal: clientPrincipal || '',
-  //     fournisseur_principal: fournisseurPrincipal || '',
-  //     niveau_approvisionement: niveauApprovisionement || '',
-  //     statut: statut || '',
-  //     observation: observation || '',
-  //     enquete: parseInt(enquete, 10) || 0,
-  //     produit: produit.value,
-  //     localite_origine: parseInt(commune.id, 10) || 0,
-  //     num_fiche: numFiche
-  //   };
-  //   console.log('Données envoyées:', JSON.stringify(ficheData, null, 2));
-   
-
-  //   try {
-  //     setLoading(true);
-  //     // await FormGrossiste.postFormGrossiste(ficheData);
-  //     Toast.show({
-  //       type: 'success',
-  //       text1: 'Succès',
-  //       text2: 'Formulaire soumis avec succès.',
-  //     });
-  //     resetFields();
-  //   } catch (error) {
-  //     Toast.show({
-  //       type: 'error',
-  //       text1: 'Erreur',
-  //       text2: 'Impossible de soumettre le formulaire. Veuillez réessayer.',
-  //     });
-  //     console.error('Erreur lors de la création de la fiche:', error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const resetFields = () => {
     setUniteStock(0);
     setPoidsMoyenUniteStock(0);
+    setstock_anterieur(0);
     setPoidsStock(0);
-    setUniteAchat('');
-    setNombreUniteAchat(0);
-    setPoidsMoyenUniteAchat(0);
-    setPoidsTotalAchat(0);
-    setLocaliteAchat('');
-    setFournisseurAchat('');
-    setUniteVente('');
-    setNombreUniteVente(0);
-    setPoidsMoyenUniteVente(0);
-    setPoidsTotalUniteVente(0);
+    setstock_du_jour('');
+    setquantite_entree('');
+    setFournisseurP(0);
+    setnombreuniteachat(0);
+    setuniteachat('');
+    setunitevente('');
+    setprixachat('');
     setPrixUnitaireVente(0);
+    setlocalite_achat(0);
     setClientVente(0);
-    setClientPrincipal('');
-    setFournisseurPrincipal('');
-    setNiveauApprovisionement('');
+    setautreclientprincipal(0);
     setStatut('');
     setObservation('');
     setEnquete(parseInt(id, 10) || 0);
@@ -462,11 +465,11 @@ const FormGrossistes = () => {
     setProduit(null); // Reset selected product when category changes
     setSearchProduit(''); // Réinitialiser la recherche produit
   };
-  const niveauApprovisionementOptions = [
-    { label: 'Abondant', value: 'Abondant' },
-    { label: 'Normal', value: 'Normal' },
-    { label: 'Rare', value: 'Rare' },
-  ];
+  // const niveauApprovisionementOptions = [
+  //   { label: 'Abondant', value: 'Abondant' },
+  //   { label: 'Normal', value: 'Normal' },
+  //   { label: 'Rare', value: 'Rare' },
+  // ];
   const ClientPrincipaledata = [
     { label: 'Grossistes', value: 'Grossistes' },
     { label: 'Sémi-Grossistes', value: 'Sémi-Grossistes' },
@@ -474,16 +477,15 @@ const FormGrossistes = () => {
     { label: 'Autre', value: 'Autre' },
   ];
   const FournisseursPrincipaledata = [
-    { label: 'Grossistes', value: 'Grossistes' },
-    { label: 'Collecteurs', value: 'Collecteurs' },
+    { label: 'Grossiste', value: 'Grossiste' },
+    { label: 'Collecteur', value: 'Collecteur' },
     { label: 'Importateur', value: 'Importateur' },
     { label: 'Producteur', value: 'Producteur' },
   ];
 
   const statutOptions = [
-    { label: 'En cours', value: 'En cours' },
-    { label: 'Terminé', value: 'Terminé' },
-    { label: 'Annulé', value: 'Annulé' },
+    { label: 'Validé', value: 'Validé' },
+    { label: 'Nom validé', value: 'Nom_Validé' },
   ];
   if (loading) {
     return (
@@ -508,7 +510,6 @@ const FormGrossistes = () => {
           </View>
         </Modal>
 
-        <Text style={styles.sectionTitle}>Produit</Text>
         <Dropdown
           style={styles.dropdown}
           data={Object.keys(groupedProduits).map((category) => ({
@@ -519,7 +520,7 @@ const FormGrossistes = () => {
           searchPlaceholder="Rechercher une catégorie..."
           labelField="label"
           valueField="value"
-          placeholder="Sélectionnez une catégorie"
+          placeholder="Sélectionnez une catégorie *"
           value={selectedCategory}
           onChange={(item) => handleCategoryChange(item.value)}
           onChangeText={(text) => setSearchProduit(text)}
@@ -530,143 +531,103 @@ const FormGrossistes = () => {
 
         {renderProductsDropdown()}
 
-        <Text style={styles.categoryHeader}>Localité d'origine</Text>
+        {/* <Text style={styles.categoryHeader}>Localité d'origine</Text> */}
         {renderCommunes()}
-        <Text style={styles.categoryHeader}>Unité de mesure</Text>
+        {/* <Text style={styles.categoryHeader}>Unité de mesure</Text> */}
         {renderUniteMesure()}
-
+        <TextInput
+          label="Stock anterieur "
+          value={stock_anterieur.toString()}
+          onChangeText={setstock_anterieur}
+          style={styles.input}
+          keyboardType="numeric"
+        />
 
         <TextInput
-          label="Poids moyen par unité de stock"
-          value={poidsMoyenUniteStock.toString()}
+          label="Poids moyen d'unite de stock "
+          value={poids_moyen_unite_stock.toString()}
           onChangeText={setPoidsMoyenUniteStock}
           style={styles.input}
           keyboardType="numeric"
         />
         <TextInput
-          label="Poids total du stock"
-          value={poidsStock.toString()}
+          label="Poids du stock"
+          value={poids_stock.toString()}
           onChangeText={setPoidsStock}
           style={styles.input}
           keyboardType="numeric"
         />
         <TextInput
-          label="Unité d'achat"
-          value={uniteAchat}
-          onChangeText={setUniteAchat}
+          label="Stock du jour"
+          value={stock_du_jour}
+          onChangeText={setstock_du_jour}
           style={styles.input}
         />
         <TextInput
-          label="Nombre d'unités d'achat"
-          value={nombreUniteAchat.toString()}
-          onChangeText={setNombreUniteAchat}
+          label="Quantite entrée"
+          value={quantite_entree.toString()}
+          onChangeText={setquantite_entree}
           style={styles.input}
           keyboardType="numeric"
         />
-        <TextInput
-          label="Poids moyen par unité d'achat"
-          value={poidsMoyenUniteAchat.toString()}
-          onChangeText={setPoidsMoyenUniteAchat}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-        <TextInput
-          label="Poids total d'achat"
-          value={poidsTotalAchat.toString()}
-          onChangeText={setPoidsTotalAchat}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-        <TextInput
-          label="Localité d'achat"
-          value={localiteAchat}
-          onChangeText={setLocaliteAchat}
-          style={styles.input}
-        />
-        <TextInput
-          label="Fournisseur d'achat"
-          value={fournisseurAchat}
-          onChangeText={setFournisseurAchat}
-          style={styles.input}
-        />
-        <TextInput
-          label="Unité de vente"
-          value={uniteVente}
-          onChangeText={setUniteVente}
-          style={styles.input}
-        />
-        <TextInput
-          label="Nombre d'unités de vente"
-          value={nombreUniteVente.toString()}
-          onChangeText={setNombreUniteVente}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-        <TextInput
-          label="Poids moyen par unité de vente"
-          value={poidsMoyenUniteVente.toString()}
-          onChangeText={setPoidsMoyenUniteVente}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-        <TextInput
-          label="Poids total des unités de vente"
-          value={poidsTotalUniteVente.toString()}
-          onChangeText={setPoidsTotalUniteVente}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-        <TextInput
-          label="Prix unitaire de vente"
-          value={prixUnitaireVente.toString()}
-          onChangeText={setPrixUnitaireVente}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-        <TextInput
-          label="Nombre de clients vente"
-          value={clientVente.toString()}
-          onChangeText={setClientVente}
-          style={styles.input}
-          keyboardType="numeric"
-        />
-         <Dropdown
-          style={styles.dropdown}
-          data={ClientPrincipaledata}
-          labelField="label"
-          valueField="value"
-          placeholder="Client principal"
-          value={clientPrincipal}
-          onChange={item => setClientPrincipal(item.value)}
-          renderLeftIcon={() => (
-            <AntDesign name="user" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
-          )}
-        />
-        {/* <TextInput
-          label="Client principal"
-          value={clientPrincipal}
-          onChangeText={setClientPrincipal}
-          style={styles.input}
-        /> */}
             <Dropdown
           style={styles.dropdown}
           data={FournisseursPrincipaledata}
           labelField="label"
           valueField="value"
           placeholder="Fournisseur principal"
-          value={fournisseurPrincipal}
-          onChange={item => setFournisseurPrincipal(item.value)}
+          value={fournisseur_principaux}
+          onChange={item => setFournisseurP(item.value)}
           renderLeftIcon={() => (
             <AntDesign name="user" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
           )}
         />
-        {/* <TextInput
-          label="Fournisseur principal"
-          value={fournisseurPrincipal}
-          onChangeText={setFournisseurPrincipal}
+     
+        <TextInput
+          label="Nombre unite achate"
+          value={nombre_unite_achat.toString()}
+          onChangeText={setnombreuniteachat}
           style={styles.input}
-        /> */}
-        <Dropdown
+          keyboardType="numeric"
+        />
+       {renderUniteAchat()}
+
+       {renderUniteVente()}
+        <TextInput
+          label="Prix d'achat"
+          value={prix_achat}
+          onChangeText={setprixachat}
+          style={styles.input}
+        />
+        <TextInput
+          label="Prix unitaire vente"
+          value={prix_unitaire_vente.toString()}
+          onChangeText={setPrixUnitaireVente}
+          style={styles.input}
+          keyboardType="numeric"
+        />
+  
+         <Dropdown
+          style={styles.dropdown}
+          data={ClientPrincipaledata}
+          labelField="label"
+          valueField="value"
+          placeholder="Client principal"
+          value={client_vente}
+          onChange={item => setClientVente(item.value)}
+          renderLeftIcon={() => (
+            <AntDesign name="user" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
+          )}
+        />
+        <TextInput
+          label="Autre client principal"
+          value={autre_client_principal.toString()}
+          onChangeText={setautreclientprincipal}
+          style={styles.input}
+          keyboardType="numeric"
+        />
+      
+        {/* <Dropdown
           style={styles.dropdown}
           data={niveauApprovisionementOptions}
           labelField="label"
@@ -677,7 +638,7 @@ const FormGrossistes = () => {
           renderLeftIcon={() => (
             <AntDesign name="barschart" size={20} color="black" style={styles.icon} />  // Icône valide pour le niveau d'approvisionnement
           )}
-        />
+        /> */}
       
 
         <Dropdown

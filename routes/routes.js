@@ -33,9 +33,7 @@ import ListeTransfrontalier from '../src/Fiche/ficheEnqutTransf/listeTransfronta
 const Stack = createStackNavigator();
 
 const Routes = () => {
-  //   const { theme } = useTheme();
   const [initialRoute, setInitialRoute] = useState(null);
-
   useEffect(() => {
     const checkToken = async () => {
       const token = await AsyncStorage.getItem('userToken');
