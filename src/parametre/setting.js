@@ -128,80 +128,6 @@ const clearFiches = async () => {
 
 
 
-
-
-// // Votre fonction handleSync mise à jour avec callWriter
-// const handleSync = async () => {
-//   if (!isConnected) {
-//     // Afficher un Toast si pas de connexion
-//     Toast.show({
-//       type: 'error',
-//       text1: 'Pas de connexion Internet',
-//       text2: 'Veuillez vous connecter à Internet pour synchroniser.',
-//     });
-//     return; // Arrêter la fonction ici si pas de connexion
-//   }
-
-//   try {
-//     setIsSyncing(true);
-//     setSyncProgress(0);
-
-//     // Étape 1: Vider la table des fiches avant de synchroniser
-//     await database.write(async () => {
-//       await clearFiches();  // Appel de la fonction de suppression avec writer
-//     });
-
-//     // Synchronisation TypeMarche (25%)
-//     await database.write(async () => {
-//       await SyncService.syncTypeMarche();
-//     });
-//     setSyncProgress(25);
-
-//     // Synchronisation des Marchés (50%)
-//     await database.write(async () => {
-//       await SyncService.syncAllMarches();
-//     });
-//     setSyncProgress(50);
-
-//     const idTypeMarcheArray = await database.write(async () => {
-//       return await SyncService.syncTypeMarche();
-//     });
-
-//     await database.write(async () => {
-//       await SyncService.syncProduits(idTypeMarcheArray);
-//       await SyncService.syncUnites(idTypeMarcheArray);
-//     });
-
-//     // Synchronisation des Fiches (75%)
-//     await database.write(async () => {
-//       await SyncService.syncFiche();  // Synchroniser les fiches dans un writer
-//     });
-//     setSyncProgress(75);
-
-//     // Synchronisation OrigineProduit (100%)
-//     await database.write(async () => {
-//       await SyncService.syncOrigineProduit();
-//     });
-//     setSyncProgress(100);
-
-//     Alert.alert('Succès', 'La synchronisation est terminée avec succès.');
-//   } catch (error) {
-//     console.error('Erreur lors de la synchronisation:', error);
-//     Alert.alert('Erreur', 'Erreur lors de la synchronisation.');
-//   } finally {
-//     setIsSyncing(false);
-//     setSyncProgress(0);
-//   }
-// };
-
-
-
-
-
-
-
-
-
 // Votre fonction handleSync mise à jour
 const handleSync = async () => {
   if (!isConnected) {
@@ -217,7 +143,23 @@ const handleSync = async () => {
   try {
     setIsSyncing(true);
     setSyncProgress(0);
+ // Synchronisation des fiches locales
+ const localFiches = await database.collections.get('fiches')
+ .query(Q.where('source', 'local'))
+ .fetch();
+ 
+const totalFiches = localFiches.length;
+let syncedFichesCount = 0;
 
+for (const fiche of localFiches) {
+ // Synchroniser chaque fiche ici
+ await SyncService.syncFiches(fiche);
+ syncedFichesCount++;
+
+ // Mettre à jour le pourcentage basé sur le nombre de fiches synchronisées
+ const newProgress = Math.round(75 + (syncedFichesCount / totalFiches) * 25); // de 75% à 100%
+ setSyncProgress(newProgress);
+}
     // Étape 1: Vider la table des fiches avant de synchroniser
     await clearFiches();
 
@@ -313,7 +255,7 @@ const handleSync = async () => {
 
 
       {/* Bouton de synchronisation */}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={[
           styles.button,
           (!isConnected || !isSyncFicheButtonEnabled || isSyncingfiche) ? styles.disabledButton : styles.enabledButton
@@ -328,7 +270,7 @@ const handleSync = async () => {
             {isSyncingfiche ? `Synchronisation... ${syncProgress}%` : 'Synchroniser les fiches'}
           </Text>
         )}
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
  {/* Bouton de synchronisation */}
  <TouchableOpacity

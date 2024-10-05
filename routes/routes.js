@@ -29,7 +29,8 @@ import FormulaireDebarcadere from '../src/Fiche/ficheEnqutDebarcadere/Formulaire
 import ListeDebarcadere from '../src/Fiche/ficheEnqutDebarcadere/ListeDebarcadere';
 import FormulaireTranfrontalier from '../src/Fiche/ficheEnqutTransf/FormulaireTranfrontalier';
 import ListeTransfrontalier from '../src/Fiche/ficheEnqutTransf/listeTransfrontalier';
-
+import FormulaireBetail from '../src/Fiche/ficheEnqutBetail/formulaireBetail';
+import ListeBetail from '../src/Fiche/ficheEnqutBetail/ListeBetail';
 const Stack = createStackNavigator();
 
 const Routes = () => {
@@ -159,6 +160,16 @@ const Routes = () => {
           name="FormulaireTranfrontalier"
           component={FormulaireTranfrontalier}
           options={{ title: 'Nouvelle collecte' }}
+        />
+          <Stack.Screen
+          name="formulaireBetail"
+          component={FormulaireBetail}
+          options={{ title: 'Nouvelle collecte' }}
+        />
+           <Stack.Screen
+          name="ListeBetail"
+          component={ListeBetail}
+          options={{ title: 'Liste bétail' }}
         />
         <Stack.Screen
           name="listeTransfrontalier"

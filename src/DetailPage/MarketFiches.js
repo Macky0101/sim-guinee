@@ -204,6 +204,10 @@ if (isLoading) {
                       // Navigate to FormulaireDebarcadere form and pass the fiche id
                       navigation.navigate('ListeDebarcadere', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
                       break;
+                      case 5:
+                        // Navigate to FormulaireDebarcadere form and pass the fiche id
+                        navigation.navigate('ListeBetail', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
+                        break;
                     case 7:
                       // Navigate to Port form and pass the fiche id
                       navigation.navigate('ListPort', { idCollecteur, id_marche, type_marche, ficheId: item.id });
@@ -254,6 +258,10 @@ if (isLoading) {
                       // Navigate to FormulaireDebarcadere form and pass the fiche id
                       navigation.navigate('FormulaireDebarcadere', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
                       break;
+                      case 5:
+                        // Navigate to FormulaireDebarcadere form and pass the fiche id
+                        navigation.navigate('formulaireBetail', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });
+                        break;
                     case 7:
                       // Navigate to Port form and pass the fiche id
                       navigation.navigate('FormPort', { idCollecteur, id_marche, type_marche, ficheId: item.id, external_id: item.external_id });

@@ -135,8 +135,6 @@ const DetailPage = ({ route }) => {
             console.error('Erreur lors de la récupération des communes:', error);
         }
     };
-
-
     const renderCommunes = () => (
         <Dropdown
             style={styles.dropdown}
@@ -264,80 +262,77 @@ const DetailPage = ({ route }) => {
             )}
         />
     );
-    // pour la partie destination des caprin vendu
-    const [destinationCaprinsVendus, setsetDestinationCaprinsVendus] = useState([]);
-    const [destinationCaprinVendu, setDestinationCaprinVendu] = useState([]);
-    const [searchDestinationCaprinVendu, setSearchDestinationCaprinVendu] = useState('');
-    const [filteredDestinationCaprinsVendus, setFilteredDestinationCaprinsVendus] = useState([]);
+    // // pour la partie destination des caprin vendu
+    // const [destinationCaprinsVendus, setsetDestinationCaprinsVendus] = useState([]);
+    // const [destinationCaprinVendu, setDestinationCaprinVendu] = useState([]);
+    // const [searchDestinationCaprinVendu, setSearchDestinationCaprinVendu] = useState('');
+    // const [filteredDestinationCaprinsVendus, setFilteredDestinationCaprinsVendus] = useState([]);
 
-    const getDestinationCaprinsVendus = async () => {
-        try {
-            const response = await FormGrossiste.getCommune(); // Remplacer par l'appel API approprié si nécessaire
-            if (!response) {
-                console.error('No data found in the response');
-                return;
-            }
-            const data = response;
-            const destinationCaprinsVendus = data.map(commune => ({
-                id: commune.id_commune,
-                nom: commune.nom_commune ? commune.nom_commune.toLowerCase() : '',
-            }));
-            setsetDestinationCaprinsVendus(destinationCaprinsVendus);
-            setFilteredDestinationCaprinsVendus(destinationCaprinsVendus); // Initialiser filteredDestinationCaprinsVendus
-            await storeData('destinationCaprinsVendus', destinationCaprinsVendus);
-        } catch (error) {
-            console.error('Erreur lors de la récupération des communes:', error);
-        }
-    };
+    // const getDestinationCaprinsVendus = async () => {
+    //     try {
+    //         const response = await FormGrossiste.getCommune(); // Remplacer par l'appel API approprié si nécessaire
+    //         if (!response) {
+    //             console.error('No data found in the response');
+    //             return;
+    //         }
+    //         const data = response;
+    //         const destinationCaprinsVendus = data.map(commune => ({
+    //             id: commune.id_commune,
+    //             nom: commune.nom_commune ? commune.nom_commune.toLowerCase() : '',
+    //         }));
+    //         setsetDestinationCaprinsVendus(destinationCaprinsVendus);
+    //         setFilteredDestinationCaprinsVendus(destinationCaprinsVendus); // Initialiser filteredDestinationCaprinsVendus
+    //         await storeData('destinationCaprinsVendus', destinationCaprinsVendus);
+    //     } catch (error) {
+    //         console.error('Erreur lors de la récupération des communes:', error);
+    //     }
+    // };
 
-    const renderDestinationCaprinsVendus = () => (
-        <Dropdown
-            style={styles.dropdown}
-            data={filteredDestinationCaprinsVendus.filter(item =>
-                item.nom.toLowerCase().includes(searchDestinationCaprinVendu.toLowerCase())
-            )}
-            labelField="nom"
-            valueField="id"
-            placeholder="Destination des caprins vendus"
-            value={destinationCaprinVendu.id}
-            onChange={item => setDestinationCaprinVendu(item)} // Mise à jour de la sélection
-            search
-            searchPlaceholder="Rechercher une commune..."
-            onSearch={setSearchDestinationCaprinVendu}
-            renderLeftIcon={() => (
-                <AntDesign name="enviromento" size={20} color="black" style={styles.icon} />
-            )}
-        />
-    );
+    // const renderDestinationCaprinsVendus = () => (
+    //     <Dropdown
+    //         style={styles.dropdown}
+    //         data={filteredDestinationCaprinsVendus.filter(item =>
+    //             item.nom.toLowerCase().includes(searchDestinationCaprinVendu.toLowerCase())
+    //         )}
+    //         labelField="nom"
+    //         valueField="id"
+    //         placeholder="Destination des caprins vendus"
+    //         value={destinationCaprinVendu.id}
+    //         onChange={item => setDestinationCaprinVendu(item)} // Mise à jour de la sélection
+    //         search
+    //         searchPlaceholder="Rechercher une commune..."
+    //         onSearch={setSearchDestinationCaprinVendu}
+    //         renderLeftIcon={() => (
+    //             <AntDesign name="enviromento" size={20} color="black" style={styles.icon} />
+    //         )}
+    //     />
+    // );
+    // //origin des caprin debarque
+    // const [origineCaprinDebarques, setOrigineCaprinDebarques] = useState(null);
+    // const [modalVisibleCaprins, setModalVisibleCaprins] = useState(false);
 
-
-
-    //origin des caprin debarque
-    const [origineCaprinDebarques, setOrigineCaprinDebarques] = useState(null);
-    const [modalVisibleCaprins, setModalVisibleCaprins] = useState(false);
-
-    const DropdownOrigineCaprinDebarques = () => (
-        <Dropdown
-            style={styles.dropdown}
-            data={originesProduits.map(item => ({
-                id: item.id_origine_produit,       // ID pour la gestion interne
-                label: item.nom_origine_produit,    // Nom pour l'affichage
-            }))}
-            labelField="label"
-            valueField="id"
-            placeholder="Sélectionnez une origine des caprins"
-            value={origineCaprinDebarques?.id} // Utilise l'ID pour le contrôle
-            onChange={item => {
-                setOrigineCaprinDebarques(item); // Stocke l'objet complet
-                setModalVisibleCaprins(true);    // Ouvrir le modal sur la sélection
-            }}
-            search
-            searchPlaceholder="Rechercher une origine..."
-            renderLeftIcon={() => (
-                <AntDesign name="down" size={20} color="black" style={styles.icon} />
-            )}
-        />
-    );
+    // const DropdownOrigineCaprinDebarques = () => (
+    //     <Dropdown
+    //         style={styles.dropdown}
+    //         data={originesProduits.map(item => ({
+    //             id: item.id_origine_produit,       // ID pour la gestion interne
+    //             label: item.nom_origine_produit,    // Nom pour l'affichage
+    //         }))}
+    //         labelField="label"
+    //         valueField="id"
+    //         placeholder="Sélectionnez une origine des caprins"
+    //         value={origineCaprinDebarques?.id} // Utilise l'ID pour le contrôle
+    //         onChange={item => {
+    //             setOrigineCaprinDebarques(item); // Stocke l'objet complet
+    //             setModalVisibleCaprins(true);    // Ouvrir le modal sur la sélection
+    //         }}
+    //         search
+    //         searchPlaceholder="Rechercher une origine..."
+    //         renderLeftIcon={() => (
+    //             <AntDesign name="down" size={20} color="black" style={styles.icon} />
+    //         )}
+    //     />
+    // );
 
 
 
@@ -346,7 +341,7 @@ const DetailPage = ({ route }) => {
         getCommunes();
         getDestinationOvinsVendus();
         fetchOriginesProduits();
-        getDestinationCaprinsVendus();
+        // getDestinationCaprinsVendus();
     }, [])
 
     // Fonction pour récupérer et filtrer les produits
@@ -716,8 +711,8 @@ const DetailPage = ({ route }) => {
             ficheData.nombre_caprins_vendus = nombre_caprins_vendus;
             ficheData.caprins_males_femelles_0_12_ans = caprins_males_femelles_0_12_ans;
             ficheData.caprins_males_femelles_plus_1_ans = caprins_males_femelles_plus_1_ans;
-            ficheData.destination_caprins_vendus = destinationCaprinVendu.nom;
-            ficheData.origine_caprins_debarques = origineCaprinDebarques.label;
+            ficheData.destination_caprins_vendus = destination_caprins_vendus;
+            ficheData.origine_caprins_debarques = origine_caprins_debarques;
         }
 
         try {
@@ -1172,24 +1167,24 @@ const DetailPage = ({ route }) => {
                                         style={styles.input}
 
                                     />
-                                    {/* <TextInput
+                                    <TextInput
                                         label="Origine des caprins débarqués"
                                         value={destination_caprins_vendus}
                                         onChangeText={setDestinationCaprinsVendus}
                                         keyboardType='numeric'
                                         style={styles.input}
 
-                                    /> */}
-                                    {DropdownOrigineCaprinDebarques()}
-                                    {/* <TextInput
+                                    />
+                                    {/* {DropdownOrigineCaprinDebarques()} */}
+                                    <TextInput
                                         label="Destination des caprins vendus "
                                         value={origine_caprins_debarques}
                                         onChangeText={setOrigineCaprinsDebarques}
                                         keyboardType='numeric'
                                         style={styles.input}
 
-                                    /> */}
-                                    {renderDestinationCaprinsVendus()}
+                                    />
+                                    {/* {renderDestinationCaprinsVendus()} */}
                                 </>
                             )}
 
