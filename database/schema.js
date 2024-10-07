@@ -287,27 +287,45 @@ export const schema = appSchema({
         { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
       ]
     }),
-        // Table pour les formulaires spécifiques au type de marché Tranfrontalier
-        tableSchema({
-          name: 'formulaire_tranfrontalier',
-          columns: [
-            { name: 'unite', type: 'number' },
-            { name: 'date_enquete', type: 'string' },
-            { name: 'prix_vente', type: 'number' },
-            { name: 'prix_achat', type: 'number' },
-            { name: 'collecteur', type: 'number' },
-            { name: 'quantite_sortant', type: 'number' },
-            { name: 'region_provenance', type: 'number' },
-            { name: 'region_destination', type: 'number' },
-            { name: 'quantite_entrant', type: 'number' },
-            { name: 'pays_destination', type: 'string' },
-            { name: 'pays_origine', type: 'string' },
-            { name: 'observation', type: 'string' },
-            { name: 'enquete', type: 'number' },
-            { name: 'produit', type: 'string' },
-            { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
-          ]
-        }),
+    // Table pour les formulaires spécifiques au type de marché Tranfrontalier
+    tableSchema({
+      name: 'formulaire_tranfrontalier',
+      columns: [
+        { name: 'unite', type: 'number' },
+        { name: 'date_enquete', type: 'string' },
+        { name: 'prix_vente', type: 'number' },
+        { name: 'prix_achat', type: 'number' },
+        { name: 'collecteur', type: 'number' },
+        { name: 'quantite_sortant', type: 'number' },
+        { name: 'region_provenance', type: 'number' },
+        { name: 'region_destination', type: 'number' },
+        { name: 'quantite_entrant', type: 'number' },
+        { name: 'pays_destination', type: 'string' },
+        { name: 'pays_origine', type: 'string' },
+        { name: 'observation', type: 'string' },
+        { name: 'enquete', type: 'number' },
+        { name: 'produit', type: 'string' },
+        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+      ]
+    }),
+    // Table pour les formulaires spécifiques au type de marché betails
+    tableSchema({
+      name: 'formulaire_betail',
+      columns: [
+        { name: 'prix_unitaire', type: 'number' },
+        { name: 'etat_corporel', type: 'string' },
+        { name: 'nombre_present_chez_vendeur', type: 'number' },
+        { name: 'provenance', type: 'string' },
+        { name: 'nombre_tete_par_provenance', type: 'number' },
+        { name: 'nombre_vendu_par_provenance', type: 'number' },
+        { name: 'nombre_present_chez_acheteur', type: 'number' },
+        { name: 'nombre_tete_achete', type: 'number' },
+        { name: 'total_vendu_distribues', type: 'number' },
+        { name: 'enquete', type: 'number' },
+        { name: 'produit', type: 'string' },
+        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+      ]
+    }),
   ]
 });
 

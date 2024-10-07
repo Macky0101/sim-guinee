@@ -440,7 +440,7 @@ const FormulaireTranfrontalier = () => {
           locale="fr-FR"
         />
       )}
-      <Text style={styles.sectionTitle}>Produit</Text>
+      {/* <Text style={styles.sectionTitle}>Produit</Text> */}
       <Dropdown
         style={styles.dropdown}
         data={Object.keys(groupedProduits).map((category) => ({

@@ -5,7 +5,7 @@ import { deletegrossistes, getGrossistesData } from '../../../database/requeteGr
 import FormGrossiste from '../../../services/serviceAgricultures/ficheGrossiste/formGrossiste';
 import { getData } from '../../../database/db';
 import { useNavigation } from '@react-navigation/native';
-import { Searchbar, FAB, Dialog, Button } from 'react-native-paper';
+import { Searchbar, FAB, Dialog, Button ,IconButton} from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import GrossistesService from '../../../database/GrossistesService';
 import database from '../../../database/database';
@@ -28,6 +28,8 @@ const ListesGrossistesCollect = () => {
   const [dialogVisible, setDialogVisible] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0); // État pour suivre le pourcentage d'envoi
   const [isUploading, setIsUploading] = useState(false);   // État pour suivre si l'envoi est en cours
+  const [uniteRelations, setUniteRelations] = useState([]); 
+  const [produitsFind,setProduitsFind] = useState([]);
 
   const fetchFiches = async () => {
     try {
@@ -43,8 +45,44 @@ const ListesGrossistesCollect = () => {
     }
   };
 
+
+  
+  const fetchUniteMesure = async () => {
+    try {
+      const fetchedUnite = await database.collections.get('unite_relations').query().fetch();
+      setUniteRelations(fetchedUnite);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des unités:', error);
+      setLoading(false);
+    }
+  };
+  const fetchProduits = async () => {
+    try {
+      const fetchedProduits = await database.collections.get('produits').query().fetch();
+      setProduitsFind(fetchedProduits);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des produits:', error);
+      setLoading(false);
+    }
+  };
+  
+
+  const getUniteName = (uniteId) => {
+    const unite = uniteRelations.find(u => u._raw.id_unite === uniteId);
+    return unite ? unite._raw.nom_unite : 'Unknown';
+  };
+
+  const getProduitName = (codeProduit) => {
+    const produit = produitsFind.find(p => p._raw.code_produit === codeProduit);
+    return produit ? produit._raw.nom_produit : 'Produit inconnu';
+  };
+
   useEffect(() => {
     fetchFiches();
+    fetchUniteMesure();
+    fetchProduits();
   }, []);
 
 
@@ -113,18 +151,6 @@ const ListesGrossistesCollect = () => {
       }
     }
     return null;
-  };
-
-  const getUniteInfo = (codeUnite) => {
-    const codeUniteString = String(codeUnite);
-    const unite = uniteMesures.find((unite) => String(unite.value) === codeUniteString);
-    return unite?.label || 'N/A';
-  };
-
-  const getLocaliteInfo = (localiteId) => {
-    const localiteIdString = String(localiteId);
-    const commune = communes.find((commune) => String(commune.id) === localiteIdString);
-    return commune?.nom || 'N/A';
   };
 
   const filteredCollectes = collectes.filter(collecte => {
@@ -254,6 +280,9 @@ const ListesGrossistesCollect = () => {
     </View>
   </View>
 )}
+   {collectes.length === 0 ? (
+                renderNoData()
+            ) : (
 
 <ScrollView showsVerticalScrollIndicator={false}>
         {collectes.map((collecte, index) => (
@@ -264,10 +293,10 @@ const ListesGrossistesCollect = () => {
             onLongPress={() => handleLongPress(collecte)}
           >
             <View style={styles.infoContainer}>
-              <Image source={{ uri: collecte.produit.image }} style={styles.produitImage} />
-              <Text style={styles.produitLabel}>{collecte.produit}</Text>
+              {/* <Image source={{ uri: collecte.produit.image }} style={styles.produitImage} /> */}
+              <Text style={styles.produitLabel}>{getProduitName(collecte.produit)}</Text>
               <View style={styles.chevronContainer}>
-                <Text>Unité de Stock: <Text style={styles.label}>{collecte.unite}</Text></Text>
+                <Text>Unité de Stock: <Text style={styles.label}>{getUniteName(collecte.unite_stock)}</Text></Text>
                 <Ionicons
                   name={expandedCollecte === collecte.id ? "chevron-up-outline" : "chevron-down-outline"}
                   size={24}
@@ -297,9 +326,10 @@ const ListesGrossistesCollect = () => {
           </TouchableOpacity>
         ))}
       </ScrollView>
+            )}
       <FAB
         style={[styles.fab, { backgroundColor: filteredCollectes.length > 0 ? '#006951' : '#d3d3d3' }]}
-        icon="send"
+        icon="sync"
         onPress={postForm}
         // disabled={filteredCollectes.length === 0}
       />

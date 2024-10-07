@@ -940,8 +940,8 @@ const DetailPage = ({ route }) => {
                                     />
                                     <TextInput
                                         label="Nombre de bovins débarqués"
-                                        value={stock_initial_bovins}
-                                        onChangeText={setStockInitialBovins}
+                                        value={nbr_bovins_debarques}
+                                        onChangeText={setNbrBovinsDebarques}
                                         keyboardType='numeric'
                                         style={styles.input}
 

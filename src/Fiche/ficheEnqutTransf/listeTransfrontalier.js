@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, Image, ScrollView, TouchableOpacity, Alert, Act
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useRoute } from '@react-navigation/native';
 import FicheConsommationService from '../../../services/serviceAgricultures/ficheConsommation/serviceConsommation';
-import { Searchbar, FAB, Dialog, Button } from 'react-native-paper';
+import { Searchbar, FAB, Dialog, Button ,IconButton} from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import FormConso from '../../../services/serviceAgricultures/ficheConsommation/serviceFormulaireCons';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +27,9 @@ const ListeTransfrontalier = () => {
   const [dialogVisible, setDialogVisible] = useState(false); // Visibilité du dialog
   const [uploadProgress, setUploadProgress] = useState(0); // État pour suivre le pourcentage d'envoi
   const [isUploading, setIsUploading] = useState(false);   // État pour suivre si l'envoi est en cours
-  
+  const [uniteRelations, setUniteRelations] = useState([]); 
+  const [produitsFind,setProduitsFind] = useState([]);
+
   const fetchFiches = async () => {
     try {
       const fetchedFiches = await database.collections.get('formulaire_tranfrontalier').query(
@@ -42,8 +44,42 @@ const ListeTransfrontalier = () => {
     }
   };
 
+  const fetchUniteMesure = async () => {
+    try {
+      const fetchedUnite = await database.collections.get('unite_relations').query().fetch();
+      setUniteRelations(fetchedUnite);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des unités:', error);
+      setLoading(false);
+    }
+  };
+  const fetchProduits = async () => {
+    try {
+      const fetchedProduits = await database.collections.get('produits').query().fetch();
+      setProduitsFind(fetchedProduits);
+      setLoading(false);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des produits:', error);
+      setLoading(false);
+    }
+  };
+  
+
+  const getUniteName = (uniteId) => {
+    const unite = uniteRelations.find(u => u._raw.id_unite === uniteId);
+    return unite ? unite._raw.nom_unite : 'Unknown';
+  };
+
+  const getProduitName = (codeProduit) => {
+    const produit = produitsFind.find(p => p._raw.code_produit === codeProduit);
+    return produit ? produit._raw.nom_produit : 'Produit inconnu';
+  };
+  
   useEffect(() => {
     fetchFiches();
+    fetchUniteMesure();
+    fetchProduits();
   }, []);
 
   const deleteFiche = async (ficheId) => {
@@ -131,6 +167,7 @@ const ListeTransfrontalier = () => {
           console.log(`Enregistrement ${collecte.id} envoyé avec succès.${ficheData}`);
   
           // Suppression de l'enregistrement local si l'envoi a réussi
+          await deleteFiche(collecte.id);
           setCollectes((prevCollectes) => prevCollectes.filter((c) => c.id !== collecte.id));
   
           // Mise à jour de la progression
@@ -203,7 +240,13 @@ const ListeTransfrontalier = () => {
       </View>
     );
   }
-
+  const renderNoData = () => (
+    <View style={styles.noDataContainer}>
+        <Image source={require('../../../assets/images/no-data.png')} style={styles.noDataImage} />
+        <IconButton icon="alert-circle" size={50} />
+        <Text style={styles.noDataText}>Aucune donnée disponible</Text>
+    </View>
+);
   return (
     <View style={styles.container}>
       
@@ -221,7 +264,9 @@ const ListeTransfrontalier = () => {
     </View>
   </View>
 )}
-
+   {collectes.length === 0 ? (
+                renderNoData()
+            ) : (
 <ScrollView showsVerticalScrollIndicator={false}>
         {collectes.map((collecte, index) => (
           <TouchableOpacity
@@ -231,10 +276,10 @@ const ListeTransfrontalier = () => {
             onLongPress={() => handleLongPress(collecte)}
           >
             <View style={styles.infoContainer}>
-              <Image source={{ uri: collecte.produit.image }} style={styles.produitImage} />
-              <Text style={styles.produitLabel}>{collecte.produit}</Text>
+              {/* <Image source={{ uri: collecte.produit.image }} style={styles.produitImage} /> */}
+              <Text style={styles.produitLabel}>{getProduitName(collecte.produit)}</Text>
               <View style={styles.chevronContainer}>
-                <Text>Unité de Stock: <Text style={styles.label}>{collecte.unite}</Text></Text>
+                <Text>Unité de Stock: <Text style={styles.label}>{getUniteName(collecte.unite)}</Text></Text>
                 <Ionicons
                   name={expandedCollecte === collecte.id ? "chevron-up-outline" : "chevron-down-outline"}
                   size={24}
@@ -260,9 +305,10 @@ const ListeTransfrontalier = () => {
           </TouchableOpacity>
         ))}
       </ScrollView>
+            )}
       <FAB
         style={[styles.fab, { backgroundColor: collectes.length > 0 ? '#006951' : '#d3d3d3' }]}
-        icon="send"
+        icon="sync"
         onPress={collectes.length > 0 ? postFormConso : null}
         disabled={collectes.length === 0}
       />
@@ -384,6 +430,19 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#4caf50',
   },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+},
+noDataImage: {
+    width: 250,
+    height: 250,
+},
+noDataText: {
+    fontSize: 18,
+    color: '#888',
+},
 });
 
 export default ListeTransfrontalier
