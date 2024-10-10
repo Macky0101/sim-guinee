@@ -13,7 +13,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 const FormPort = () => {
     const route = useRoute();
-    const { ficheId, idCollecteur, id_marche, type_marche,external_id } = route.params;
+    const { ficheId, idCollecteur, id_marche, type_marche,external_id ,NumFiche} = route.params;
+    console.log('====================================');
+    console.log(NumFiche);
+    console.log('====================================');
     const [typeMarche, setTypeMarche] = useState(type_marche || '');
     const [observation, setObservation] = useState('');
     const [volumePoissonsPeches, setVolumePoissonsPeches] = useState('');
@@ -44,7 +47,7 @@ const FormPort = () => {
 
             const productList = produits.map(prod => {
                 // Log pour chaque produit
-                console.log('Produit:', prod);
+                // console.log('Produit:', prod);
                 return {
                     label: prod.nom_produit,
                     value: prod.code_produit,
@@ -54,7 +57,7 @@ const FormPort = () => {
 
             setFilteredProducts(productList);
             // Log pour vérifier le produit final
-            console.log('Liste des produits filtrés:', productList);
+            // console.log('Liste des produits filtrés:', productList);
         } catch (err) {
             console.error('Erreur lors du filtrage des produits :', err);
         } finally {
@@ -110,6 +113,7 @@ const FormPort = () => {
                 observation,
                 principale_espece_peche: principaleEspecePeche,
                 ficheId: ficheId,
+                NumFiche: NumFiche,
             };
 
             console.log('Données envoyées :', ficheData);
@@ -127,6 +131,7 @@ const FormPort = () => {
                     fiche.observation = ficheData.observation;
                     fiche.principale_espece_peche = ficheData.principale_espece_peche;
                     fiche.ficheId = ficheData.ficheId;
+                    fiche.NumFiche = ficheData.NumFiche;
                 });
                 console.log('Fiche créée avec succès :', newFiche);
             });

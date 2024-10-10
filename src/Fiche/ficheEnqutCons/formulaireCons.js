@@ -26,14 +26,14 @@ import { Q } from '@nozbe/watermelondb';
 
 const FormCons = () => {
   const route = useRoute();
-  const { id, idCollecteur ,id_marche, type_marche ,ficheId,num_fiche, external_id} = route.params;
+  const { id, idCollecteur ,id_marche, type_marche ,ficheId,num_fiche, external_id, NumFiche} = route.params;
   const [typeMarche, setTypeMarche] = useState(type_marche || '');
   const [numFiche, setNumFiche] = useState(num_fiche || ''); // Stocker num_fiche
   console.log('====================================');
-  console.log('route param',route.params);
+  console.log(NumFiche);
   console.log('====================================');
   // États pour gérer les valeurs du formulaire
-  const [niveau_approvisionement, setNiveauApprovisionnement] = useState('');
+  const [niveau_approvisionement, setNiveauApprovisionnement,] = useState('');
   const [statut, setStatut] = useState('');
   const [observation, setObservation] = useState('');
   const [enquete, setEnquete] = useState(parseInt(id, 10) || 0);
@@ -357,6 +357,8 @@ const renderUniteMesure = () => (
         enquete:external_id,
         produit: produit.value,
         fiche_id: ficheId,
+        NumFiche: NumFiche,
+
       };
       console.log("Données envoyées à WatermelonDB:", ficheData);
 

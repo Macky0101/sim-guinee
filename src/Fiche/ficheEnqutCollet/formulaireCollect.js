@@ -17,7 +17,7 @@ import { Q } from '@nozbe/watermelondb';
 
 const FormCollecte = () => {
   const route = useRoute();
-  const { id, idCollecteur ,id_marche, type_marche ,ficheId,external_id} = route.params;
+  const { id, idCollecteur ,id_marche, type_marche ,ficheId,external_id , numfiche} = route.params;
   const [typeMarche, setTypeMarche] = useState(type_marche || '');
   // console.log('route', route.params);
   const [unite, setUnite] = useState(0);
@@ -389,9 +389,9 @@ const renderUniteMesure = () => (
         statut: getStatusForAPI(statut),
         observation,
         etat,
-        enquete: external_id, // Utiliser la nouvelle valeur de 'enquete' calculée
+        enquete: external_id, 
         produit: produit?.value,
-        destination_finale: commune?.id, // Récupérer l'ID de la commune sélectionnée
+        destination_finale: commune?.id, 
         ficheId: ficheId,
       };
   

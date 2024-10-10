@@ -11,7 +11,8 @@ import FormCollect from '../../../services/serviceAgricultures/ficheCollect/serv
 const ListesCollecte = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { ficheId } = route.params;
+  const { ficheId ,numfiche} = route.params;
+  // console.log(ficheId, numfiche)
   const [loading, setLoading] = useState(true);
   const [collectes, setCollectes] = useState([]);
   const [expandedCollecte, setExpandedCollecte] = useState(null);
@@ -128,9 +129,6 @@ const ListesCollecte = () => {
           produit: collecte.produit,
           destination_finale: parseFloat(collecte.destination_finale),
         };
-console.log('====================================');
-console.log(ficheData);
-console.log('====================================');
         try {
           await FormCollect.postFormCollect(ficheData);
           await deleteCollect(collecte.id);

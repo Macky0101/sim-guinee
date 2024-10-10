@@ -19,6 +19,8 @@ export default class FormulaireCollecte extends Model {
     @field('produit') produit;
     @field('destination_finale') destination_finale;
     @field('fiche_id') fiche_id; // Champ de relation
+    @field('NumFiche') NumFiche; 
+
 
     // Relation avec Fiche
     @relation('fiches', 'fiche_id') fiche;

@@ -15,6 +15,7 @@ export default class FormulairePort extends Model {
     @field('enquete') enquete;
     @field('principale_espece_peche') principale_espece_peche;
     @field('fiche_id') ficheId; // Champ de relation
+    @field('NumFiche') NumFiche; 
 
     // Relation avec Fiche
     @relation('fiches', 'fiche_id') fiche;

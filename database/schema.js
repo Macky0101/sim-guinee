@@ -193,7 +193,9 @@ export const schema = appSchema({
         { name: 'enquete', type: 'number' },
         { name: 'produit', type: 'string' },
         { name: 'destination_finale', type: 'number' },
-        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+        { name: 'fiche_id', type: 'string' } ,// Relation avec la table fiches
+        { name: 'NumFiche', type: 'string' }  
+     
       ]
     }),
 
@@ -236,7 +238,9 @@ export const schema = appSchema({
         { name: 'observation', type: 'string' },
         { name: 'enquete', type: 'number' },
         { name: 'produit', type: 'string' },
-        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+        { name: 'fiche_id', type: 'string' }, // Relation avec la table fiches
+        { name: 'NumFiche', type: 'string' }  
+      
       ]
     }),
     // Table pour les formulaires spécifiques au type de marché journaliers
@@ -268,7 +272,8 @@ export const schema = appSchema({
         { name: 'observation', type: 'string' },
         { name: 'enquete', type: 'number' },
         { name: 'principale_espece_peche', type: 'string' },
-        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+        { name: 'fiche_id', type: 'string' } ,// Relation avec la table fiches
+        { name: 'NumFiche', type: 'string' } // 
       ]
     }),
     // Table pour les formulaires spécifiques au type de marché debarcaderers

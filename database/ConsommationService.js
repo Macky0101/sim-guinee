@@ -21,6 +21,8 @@ const ConsommationServices = {
           consommations.enquete = data.enquete;
           consommations.produit = data.produit;
           consommations.fiche_id = data.fiche_id;
+          consommations.NumFiche = data.NumFiche;
+
         });
         console.log('Données enregistrées:', data);
       });
