@@ -12,7 +12,7 @@ const AuthService = {
       if (response.data.access_token) {
         // Stocker le token après connexion réussie
         await AsyncStorage.setItem('userToken', response.data.access_token);
-        
+
         // Appeler getUserInfo après la connexion
         const userInfo = await AuthService.getUserInfo();
 
@@ -21,8 +21,8 @@ const AuthService = {
           await SyncService.syncTypeMarche();
           await SyncService.syncAllMarches(); // Démarre la synchronisation manuelle
           // await SyncService.syncMarche();
-          const idTypeMarcheArray = await SyncService.syncTypeMarche();
-await SyncService.syncProduits(idTypeMarcheArray);
+          // const idTypeMarcheArray = await SyncService.syncTypeMarche();
+          // await SyncService.syncProduits(idTypeMarcheArray);
 
         } else {
           throw new Error("Impossible de récupérer l'ID du collecteur.");
@@ -113,17 +113,17 @@ await SyncService.syncProduits(idTypeMarcheArray);
         throw new Error('No token found');
       }
       const response = await axios.post(
-          `${SIMGUINEE_URL}auth-change-password`,
-          {
-            old_password: oldPassword,
-            password: newPassword,
-            password_confirmation: newPasswordConfirmation
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+        `${SIMGUINEE_URL}auth-change-password`,
+        {
+          old_password: oldPassword,
+          password: newPassword,
+          password_confirmation: newPasswordConfirmation
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
+        }
       );
       // console.log('Change Password Response:', response.data);
       return response.data;
@@ -141,13 +141,13 @@ await SyncService.syncProduits(idTypeMarcheArray);
       }
       // console.log('Logout Token:', token);
       const response = await axios.post(
-          `${SIMGUINEE_URL}auth-user-logout`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+        `${SIMGUINEE_URL}auth-user-logout`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
+        }
       );
       // console.log('Logout Response:', response.data);
       await AsyncStorage.removeItem('userToken');

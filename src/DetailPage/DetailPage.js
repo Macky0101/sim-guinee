@@ -493,7 +493,7 @@ const DetailPage = ({ route }) => {
                             style={{ padding: 10, backgroundColor: '#009C57', borderRadius: 50 }}
                         >
                             {/* <MaterialIcons name="add" size={24} color="black" /> */}
-                            <AntDesign name="addfile" size={24} color="white" />
+                            <AntDesign name="pluscircle" size={24} color="white" />
                         </TouchableOpacity>
 
                     </View>

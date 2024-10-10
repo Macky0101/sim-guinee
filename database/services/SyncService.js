@@ -582,14 +582,14 @@ const SyncService = {
         }
       }
       // pour la partie fiche des marche
-      const typeMarcheIds = await SyncService.syncTypeMarche();
-      for (const idTypeMarche of typeMarcheIds) {
-        const marcheIds = await SyncService.syncMarche(idTypeMarche);
+      // const typeMarcheIds = await SyncService.syncTypeMarche();
+      // for (const idTypeMarche of typeMarcheIds) {
+      //   const marcheIds = await SyncService.syncMarche(idTypeMarche);
 
-        for (const idMarche of marcheIds) {
-          await SyncService.syncFiche(idMarche);
-        }
-      }
+      //   for (const idMarche of marcheIds) {
+      //     await SyncService.syncFiche(idMarche);
+      //   }
+      // }
 
 
     } catch (error) {

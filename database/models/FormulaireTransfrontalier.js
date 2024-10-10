@@ -21,6 +21,7 @@ export default class FormulaireTransfrontalier extends Model {
     @field('enquete')enquete;
     @field('produit')produit;
     @field('fiche_id') fiche_id; // Champ de relation
+    @field('NumFiche') NumFiche; 
 
     // Relation avec Fiche
     @relation('fiches', 'fiche_id') fiche;

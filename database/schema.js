@@ -222,7 +222,9 @@ export const schema = appSchema({
         { name: 'observation', type: 'string' },
         { name: 'enquete', type: 'number' },
         { name: 'produit', type: 'string' },
-        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+        { name: 'fiche_id', type: 'string' }, // Relation avec la table fiches
+        { name: 'NumFiche', type: 'string' }  
+     
       ]
     }),
     // Table pour les formulaires spécifiques au type de marché consommation
@@ -256,7 +258,9 @@ export const schema = appSchema({
         { name: 'observation', type: 'string' },
         { name: 'enquete', type: 'number' },
         { name: 'produit', type: 'string' },
-        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+        { name: 'fiche_id', type: 'string' }, // Relation avec la table fiches
+        { name: 'NumFiche', type: 'string' }  
+    
       ]
     }),
     // Table pour les formulaires spécifiques au type de marché port
@@ -274,6 +278,7 @@ export const schema = appSchema({
         { name: 'principale_espece_peche', type: 'string' },
         { name: 'fiche_id', type: 'string' } ,// Relation avec la table fiches
         { name: 'NumFiche', type: 'string' } // 
+      
       ]
     }),
     // Table pour les formulaires spécifiques au type de marché debarcaderers
@@ -289,7 +294,9 @@ export const schema = appSchema({
         { name: 'observation', type: 'string' },
         { name: 'enquete', type: 'number' },
         { name: 'principale_espece_peche', type: 'string' },
-        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+        { name: 'fiche_id', type: 'string' } ,// Relation avec la table fiches
+        { name: 'NumFiche', type: 'string' }  
+      
       ]
     }),
     // Table pour les formulaires spécifiques au type de marché Tranfrontalier
@@ -310,7 +317,9 @@ export const schema = appSchema({
         { name: 'observation', type: 'string' },
         { name: 'enquete', type: 'number' },
         { name: 'produit', type: 'string' },
-        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+        { name: 'fiche_id', type: 'string' },// Relation avec la table fiches
+        { name: 'NumFiche', type: 'string' }  
+    
       ]
     }),
     // Table pour les formulaires spécifiques au type de marché betails
@@ -328,7 +337,9 @@ export const schema = appSchema({
         { name: 'total_vendu_distribues', type: 'number' },
         { name: 'enquete', type: 'number' },
         { name: 'produit', type: 'string' },
-        { name: 'fiche_id', type: 'string' } // Relation avec la table fiches
+        { name: 'fiche_id', type: 'string' }, // Relation avec la table fiches
+        { name: 'NumFiche', type: 'string' }  
+     
       ]
     }),
   ]

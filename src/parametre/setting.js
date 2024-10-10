@@ -144,24 +144,24 @@ const Setting = () => {
       setIsSyncing(true);
       setSyncProgress(0);
       // Synchronisation des fiches locales
-      const localFiches = await database.collections.get('fiches')
-        .query(Q.where('source', 'local'))
-        .fetch();
+      // const localFiches = await database.collections.get('fiches')
+      //   .query(Q.where('source', 'local'))
+      //   .fetch();
 
-      const totalFiches = localFiches.length;
-      let syncedFichesCount = 0;
+      // const totalFiches = localFiches.length;
+      // let syncedFichesCount = 0;
 
-      for (const fiche of localFiches) {
-        // Synchroniser chaque fiche ici
-        await SyncService.syncFiches(fiche);
-        syncedFichesCount++;
+      // for (const fiche of localFiches) {
+      //   // Synchroniser chaque fiche ici
+      //   await SyncService.syncFiches(fiche);
+      //   syncedFichesCount++;
 
-        // Mettre à jour le pourcentage basé sur le nombre de fiches synchronisées
-        const newProgress = Math.round(75 + (syncedFichesCount / totalFiches) * 25); // de 75% à 100%
-        setSyncProgress(newProgress);
-      }
+      //   // Mettre à jour le pourcentage basé sur le nombre de fiches synchronisées
+      //   const newProgress = Math.round(75 + (syncedFichesCount / totalFiches) * 25); // de 75% à 100%
+      //   setSyncProgress(newProgress);
+      // }
       // Étape 1: Vider la table des fiches avant de synchroniser
-      await clearFiches();
+      // await clearFiches();
 
       // Synchronisation TypeMarche (25%)
       await SyncService.syncTypeMarche();
@@ -176,8 +176,8 @@ const Setting = () => {
       await SyncService.syncUnites(idTypeMarcheArray);
 
       // Synchronisation des Fiches (75%)
-      await SyncService.syncFiche(); // Remettre la fonction syncFiche ici si elle existe
-      setSyncProgress(55);
+      // await SyncService.syncFiche(); // Remettre la fonction syncFiche ici si elle existe
+      // setSyncProgress(55);
 
       await SyncService.syncOrigineProduit()
       setSyncProgress(75);

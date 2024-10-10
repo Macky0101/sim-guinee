@@ -17,9 +17,9 @@ import { Q } from '@nozbe/watermelondb';
 
 const FormCollecte = () => {
   const route = useRoute();
-  const { id, idCollecteur ,id_marche, type_marche ,ficheId,external_id , numfiche} = route.params;
+  const { id, idCollecteur ,id_marche, type_marche ,ficheId,external_id , NumFiche} = route.params;
   const [typeMarche, setTypeMarche] = useState(type_marche || '');
-  // console.log('route', route.params);
+  console.log('route', route.params);
   const [unite, setUnite] = useState(0);
   const [poids_unitaire, setPoidsUnitaire] = useState('');
   const [montant_achat, setMontantAchat] = useState('');
@@ -393,6 +393,8 @@ const renderUniteMesure = () => (
         produit: produit?.value,
         destination_finale: commune?.id, 
         ficheId: ficheId,
+        NumFiche: NumFiche,
+
       };
   
       console.log('Données envoyées :', ficheData);
@@ -414,6 +416,7 @@ const renderUniteMesure = () => (
           newCollecte.produit = ficheData.produit;
           newCollecte.destination_finale = ficheData.destination_finale;
           newCollecte.fiche_id = ficheData.ficheId;
+          newCollecte.NumFiche = ficheData.NumFiche;
         });
       console.log("Envoi réussi", newCollectes);
 

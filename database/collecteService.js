@@ -72,7 +72,7 @@ export const getAllCollects = async () => {
     try {
       await database.write(async () => {
         const collectToDelete = await database.get('collecte').find(id);
-        await collectToDelete.markAsDeleted(); // Suppression logique (soft delete)
+        await collectToDelete.destroyPermanently(); // Suppression logique (soft delete)
       });
       console.log('Suppression réussie pour l\'ID :', id);
       Toast.show({

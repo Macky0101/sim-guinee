@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, FlatList, Alert,Image } from 'react-native';
-import { FAB, Snackbar,IconButton } from 'react-native-paper';
+import { View, StyleSheet, Text, FlatList, Alert,Image ,TouchableOpacity} from 'react-native';
+import { FAB, Snackbar,IconButton,Dialog, Button  } from 'react-native-paper';
 import database from '../../../database/database';
 import { Q } from '@nozbe/watermelondb';
 import Toast from 'react-native-toast-message';
@@ -20,6 +20,8 @@ const ListeBetail = () => {
   const [uniteRelations, setUniteRelations] = useState([]); 
   const [produits,setProduits] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [selectedFiche, setSelectedFiche] = useState(null);
 
   const fetchFiches = async () => {
       try {
@@ -76,18 +78,7 @@ console.log('Recherche uniteId:', uniteId);
       fetchProduits();
   }, []);
 
-  const deleteFiche = async (ficheId) => {
-      try {
-          await database.write(async () => {
-              const ficheToDelete = await database.collections.get('formulaire_betail').find(ficheId);
-              await ficheToDelete.destroyPermanently(); // Supprimer définitivement
-          });
-          fetchFiches(); // Rafraîchir la liste après suppression
-          Toast.show({ text1: 'Fiche supprimée avec succès' });
-      } catch (error) {
-          console.error('Erreur lors de la suppression de la fiche:', error);
-      }
-  };
+
 
   const updateFiche = async (ficheId, updatedData) => {
       try {
@@ -111,20 +102,25 @@ console.log('Recherche uniteId:', uniteId);
       }
   };
 
-  const handleLongPress = (fiche) => {
-      Alert.alert(
-          "Confirmation de suppression",
-          "Êtes-vous sûr de vouloir supprimer cette fiche ?",
-          [
-              {
-                  text: "Annuler",
-                  style: "cancel"
-              },
-              { text: "Supprimer", onPress: () => deleteFiche(fiche._raw.id) }
-          ]
-      );
+
+  const deleteFiche = async () => {
+    try {
+      await database.write(async () => {
+        const ficheToDelete = await database.collections.get('formulaire_betail').find(selectedFiche._raw.id);
+        await ficheToDelete.destroyPermanently(); // Supprimer définitivement
+      });
+      fetchFiches(); // Rafraîchir la liste après suppression
+      setDialogVisible(false); // Fermer la boîte de dialogue
+      Toast.show({ text1: 'Fiche supprimée avec succès' });
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la fiche:', error);
+    }
   };
 
+  const handleLongPress = (fiche) => {
+    setSelectedFiche(fiche);
+    setDialogVisible(true); // Ouvrir le dialogue de confirmation
+  };
   const syncDataWithServer = async () => {
       setSyncing(true);
       setSyncProgress(0);
@@ -181,57 +177,71 @@ console.log('Recherche uniteId:', uniteId);
   );
 
   return (
-      <View style={styles.container}>
-             {fiches.length === 0 ? (
-              renderNoData()
-          ) : (
-          <FlatList
-              data={fiches}
-              keyExtractor={item => item._raw.id}
-              renderItem={({ item }) => (
-                  <View style={styles.card} onLongPress={() => handleLongPress(item)}>
-                      <Text>Produit: {getProduitName(item._raw.produit)}</Text>
-                      <Text>Prix unitaire: {item._raw.prix_unitaire}</Text>
-                      <Text>Nombre present chez vendeur: {item._raw.nombre_present_chez_vendeur}</Text>
-                      <Text>Provenance: {item._raw.provenance}</Text>
-                      <Text>Nombre tete par provenance: {item._raw.nombre_tete_par_provenance}</Text>
-                      <Text>Nombre vendu par provenance: {item._raw.nombre_vendu_par_provenance}</Text>
-                      <Text>Nombre Present chez acheteur: {item._raw.principale_espece_peche}</Text>
-                      <Text>Nombre tete achete: {item._raw.nombre_tete_achete}</Text>
-                      <Text>Total vendu distribues: {item._raw.total_vendu_distribues}</Text>
-                  </View>
-              )}
-          />
-          )}
-          <FAB
-              style={styles.fab}
-              icon="sync"
-              onPress={syncDataWithServer}
-          />
-          {syncing && (
-              <View style={styles.progressContainer}>
-                  <Text style={styles.progressText}>Synchronisation en cours...</Text>
-                  <View style={styles.progressBar}>
-                      <View style={[styles.progress, { width: `${syncProgress}%` }]} />
-                  </View>
-                  <Text>{syncProgress.toFixed(0)}%</Text>
+    <View style={styles.container}>
+      {fiches.length === 0 ? (
+        <View style={styles.noDataContainer}>
+          <Image source={require('../../../assets/images/no-data.png')} style={styles.noDataImage} />
+          <IconButton icon="alert-circle" size={50} />
+          <Text style={styles.noDataText}>Aucune donnée disponible</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={fiches}
+          keyExtractor={(item) => item._raw.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity onLongPress={() => handleLongPress(item)}>
+              <View style={styles.card}>
+                <Text>Produit: {getProduitName(item._raw.produit)}</Text>
+                <Text>Prix unitaire: {item._raw.prix_unitaire}</Text>
+                <Text>Nombre present chez vendeur: {item._raw.nombre_present_chez_vendeur}</Text>
+                <Text>Provenance: {item._raw.provenance}</Text>
+                <Text>Nombre tete par provenance: {item._raw.nombre_tete_par_provenance}</Text>
+                <Text>Nombre vendu par provenance: {item._raw.nombre_vendu_par_provenance}</Text>
+                <Text>Nombre Present chez acheteur: {item._raw.principale_espece_peche}</Text>
+                <Text>Nombre tete achete: {item._raw.nombre_tete_achete}</Text>
+                <Text>Total vendu distribues: {item._raw.total_vendu_distribues}</Text>
               </View>
+            </TouchableOpacity>
           )}
-          <Snackbar
-              visible={snackbarVisible}
-              onDismiss={() => setSnackbarVisible(false)}
-              action={{
-                  label: 'Fermer',
-                  onPress: () => {
-                      setSnackbarVisible(false);
-                  },
-              }}>
-              {snackbarMessage}
-          </Snackbar>
-      </View>
+        />
+      )}
+      {/* <FAB style={styles.fab} icon="sync" onPress={syncDataWithServer} /> */}
+      {syncing && (
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>Synchronisation en cours...</Text>
+          <View style={styles.progressBar}>
+            <View style={[styles.progress, { width: `${syncProgress}%` }]} />
+          </View>
+          <Text>{syncProgress.toFixed(0)}%</Text>
+        </View>
+      )}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        action={{
+          label: 'Fermer',
+          onPress: () => {
+            setSnackbarVisible(false);
+          },
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
+
+      {/* Dialog de confirmation de suppression */}
+      <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+        <Dialog.Title>Confirmer la suppression</Dialog.Title>
+        <Dialog.Content>
+          <Text>Êtes-vous sûr de vouloir supprimer cet enregistrement ?</Text>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+          <Button onPress={deleteFiche}>Supprimer</Button>
+        </Dialog.Actions>
+      </Dialog>
+    </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
       flex: 1,

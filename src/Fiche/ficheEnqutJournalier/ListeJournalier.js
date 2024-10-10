@@ -301,12 +301,12 @@ const ListeJournalier = () => {
         ))}
       </ScrollView>
             )}
-      <FAB
+      {/* <FAB
         style={[styles.fab, { backgroundColor: collectes.length > 0 ? '#006951' : '#d3d3d3' }]}
         icon="sync"
         onPress={collectes.length > 0 ? postFormConso : null}
         disabled={collectes.length === 0}
-      />
+      /> */}
 
 
 

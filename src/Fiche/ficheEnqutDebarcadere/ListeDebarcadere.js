@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, FlatList, Alert,Image } from 'react-native';
-import { FAB, Snackbar ,IconButton} from 'react-native-paper';
+import { View, StyleSheet, Text, FlatList, Alert, Image,TouchableOpacity } from 'react-native';
+import { FAB , Snackbar, IconButton, Dialog, Button, Portal } from 'react-native-paper';
 import database from '../../../database/database';
 import { Q } from '@nozbe/watermelondb';
 import Toast from 'react-native-toast-message';
@@ -16,6 +16,8 @@ const ListeDebarcadere = () => {
     const [syncProgress, setSyncProgress] = useState(0);
     const [snackbarVisible, setSnackbarVisible] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [dialogVisible, setDialogVisible] = useState(false);
+    const [selectedFiche, setSelectedFiche] = useState(null);
 
     const fetchFiches = async () => {
         try {
@@ -45,7 +47,17 @@ const ListeDebarcadere = () => {
             console.error('Erreur lors de la suppression de la fiche:', error);
         }
     };
+    const handleLongPress = (fiche) => {
+        setSelectedFiche(fiche); // Store the fiche to be deleted
+        setDialogVisible(true);  // Show confirmation dialog
+    };
 
+    const confirmDelete = () => {
+        if (selectedFiche) {
+            deleteFiche(selectedFiche._raw.id); // Delete the selected fiche
+            setDialogVisible(false); // Hide the dialog after deletion
+        }
+    };
     const updateFiche = async (ficheId, updatedData) => {
         try {
             await database.write(async () => {
@@ -68,19 +80,6 @@ const ListeDebarcadere = () => {
         }
     };
 
-    const handleLongPress = (fiche) => {
-        Alert.alert(
-            "Confirmation de suppression",
-            "Êtes-vous sûr de vouloir supprimer cette fiche ?",
-            [
-                {
-                    text: "Annuler",
-                    style: "cancel"
-                },
-                { text: "Supprimer", onPress: () => deleteFiche(fiche._raw.id) }
-            ]
-        );
-    };
 
     const syncDataWithServer = async () => {
         setSyncing(true);
@@ -138,54 +137,50 @@ const ListeDebarcadere = () => {
 
     return (
         <View style={styles.container}>
-             {fiches.length === 0 ? (
+            {fiches.length === 0 ? (
                 renderNoData()
             ) : (
-            <FlatList
-                data={fiches}
-                keyExtractor={item => item._raw.id}
-                renderItem={({ item }) => (
-                    <View style={styles.card} onLongPress={() => handleLongPress(item)}>
-                        <Text>Date: {item._raw.date_enquete}</Text>
-                        <Text>Volume: {item._raw.volume_poissons_peches}</Text>
-                        <Text>Prix Grossiste: {item._raw.prix_moyen_semaine_grossiste}</Text>
-                        <Text>Prix Detaillant: {item._raw.prix_moyen_semaine_detaillant}</Text>
-                        <Text>Niveau Disponibilité: {item._raw.niveau_disponibilite}</Text>
-                        <Text>Observation: {item._raw.observation}</Text>
-                        <Text>Principale Espèce Pêche: {item._raw.principale_espece_peche}</Text>
-                    </View>
-                )}
-            />
-        )}
-            <FAB
+                <FlatList
+                    data={fiches}
+                    keyExtractor={item => item._raw.id}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            onLongPress={() => handleLongPress(item)} // Long appui pour la suppression
+                        >
+                            <View style={styles.card}>
+                                <Text>Date: {item._raw.date_enquete}</Text>
+                                <Text>Volume: {item._raw.volume_poissons_peches}</Text>
+                                <Text>Prix Grossiste: {item._raw.prix_moyen_semaine_grossiste}</Text>
+                                <Text>Prix Detaillant: {item._raw.prix_moyen_semaine_detaillant}</Text>
+                                <Text>Niveau Disponibilité: {item._raw.niveau_disponibilite}</Text>
+                                <Text>Observation: {item._raw.observation}</Text>
+                                <Text>Principale Espèce Pêche: {item._raw.principale_espece_peche}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
+                />
+            )}
+
+            {/* <FAB
                 style={styles.fab}
                 icon="sync"
                 onPress={syncDataWithServer}
-            />
-            {syncing && (
-                <View style={styles.progressContainer}>
-                    <Text style={styles.progressText}>Synchronisation en cours...</Text>
-                    <View style={styles.progressBar}>
-                        <View style={[styles.progress, { width: `${syncProgress}%` }]} />
-                    </View>
-                    <Text>{syncProgress.toFixed(0)}%</Text>
-                </View>
-            )}
-            <Snackbar
-                visible={snackbarVisible}
-                onDismiss={() => setSnackbarVisible(false)}
-                action={{
-                    label: 'Fermer',
-                    onPress: () => {
-                        setSnackbarVisible(false);
-                    },
-                }}>
-                {snackbarMessage}
-            </Snackbar>
+            /> */}
+
+            {/* Dialog de confirmation */}
+            <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+                <Dialog.Title>Confirmer la suppression</Dialog.Title>
+                <Dialog.Content>
+                    <Text>Êtes-vous sûr de vouloir supprimer cet enregistrement ?</Text>
+                </Dialog.Content>
+                <Dialog.Actions>
+                    <Button onPress={() => setDialogVisible(false)}>Annuler</Button>
+                    <Button onPress={confirmDelete}>Supprimer</Button>
+                </Dialog.Actions>
+            </Dialog>
         </View>
     );
 };
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,

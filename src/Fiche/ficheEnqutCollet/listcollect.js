@@ -214,9 +214,13 @@ const ListesCollecte = () => {
 
               {expandedCollecte === collecte.id && (
                 <>
-                  <Text>Localité: <Text style={styles.label}>{collecte.destination_finale}</Text></Text>
+                  {/* <Text>Localité: <Text style={styles.label}>{collecte.destination_finale}</Text></Text> */}
                   <Text>Quantité Collecte: <Text style={styles.label}>{collecte.quantite_collecte}</Text></Text>
                   <Text>Niveau d'Approvisionnement: <Text style={styles.label}>{collecte.niveau_approvisionement}</Text></Text>
+                  <Text>Quantite collecte: <Text style={styles.label}>{collecte.quantite_collecte}</Text></Text>
+                  <Text>Montant d'achat: <Text style={styles.label}>{collecte.montant_achat}</Text></Text>
+                  <Text>Poids unitaire: <Text style={styles.label}>{collecte.poids_unitaire}</Text></Text>
+                  <Text>Prix/fg/kg: <Text style={styles.label}>{collecte.prix_fg_kg}</Text></Text>
                   <Text>Etat Route: <Text style={styles.label}>{collecte.etat_route}</Text></Text>
                   <Text>Observation: <Text style={styles.label}>{collecte.observation}</Text></Text>
                 </>
